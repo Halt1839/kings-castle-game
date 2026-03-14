@@ -49,10 +49,10 @@ function isSolid(px, py, pw, ph) {
         if (typeof dragonKills === 'undefined' || dragonKills === 0) {
             // Block south of hut until spider defeated
             if (row >= 85 && row <= 89 && col >= 14 && col <= 15
-                && (typeof spider !== 'undefined' && spider.alive)) return true;
+                && !questTasks.spiderDefeated) return true;
             // Block far beach/dock until sea snake defeated
             if (row >= 109 && row <= 110
-                && (typeof seaSnake !== 'undefined' && seaSnake.alive)) return true;
+                && !questTasks.seaSnakeDefeated) return true;
             // Block path south of camp until orc siege complete
             if (row >= 119 && col >= 14 && col <= 15
                 && (typeof orcSiege !== 'undefined' && !orcSiege.complete)) return true;
