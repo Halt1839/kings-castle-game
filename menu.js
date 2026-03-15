@@ -47,7 +47,7 @@ function saveGame(slot) {
         kingSwordUnlocked,
         dragonSwordUnlocked,
         weaponryBuilt,
-        courtyardBuilt,
+        guestRoomBuilt,
         dragonKills,
         dragonRespawnTime,
         npcCongrats: { ...npcCongrats },
@@ -92,6 +92,8 @@ function loadGame(slot) {
     if (s.shieldUnlocked !== undefined) shieldUnlocked = s.shieldUnlocked;
     if (s.lastShieldTime !== undefined) lastShieldTime = s.lastShieldTime;
     orcs = [];
+    guardCombat.active = false; guard1.x = guardCombat.guard1Home.x; guard1.y = guardCombat.guard1Home.y;
+    guard2.x = guardCombat.guard2Home.x; guard2.y = guardCombat.guard2Home.y;
     if (s.healPowerUnlocked !== undefined) healPowerUnlocked = s.healPowerUnlocked;
     if (s.lastHealTime !== undefined) lastHealTime = s.lastHealTime;
     if (s.troll) { troll.hp = s.troll.hp; if (s.troll.maxHp) troll.maxHp = s.troll.maxHp; troll.alive = s.troll.alive; if (s.troll.deathTime !== undefined) trollDeathTime = s.troll.deathTime; }
@@ -107,7 +109,8 @@ function loadGame(slot) {
     if (s.kingSwordUnlocked !== undefined) kingSwordUnlocked = s.kingSwordUnlocked;
     if (s.dragonSwordUnlocked !== undefined) dragonSwordUnlocked = s.dragonSwordUnlocked;
     if (s.weaponryBuilt !== undefined) { weaponryBuilt = false; if (s.weaponryBuilt) buildWeaponryRoom(true); }
-    if (s.courtyardBuilt !== undefined) { courtyardBuilt = false; if (s.courtyardBuilt) buildCourtyardRoom(true); }
+    const savedGuestRoom = s.guestRoomBuilt !== undefined ? s.guestRoomBuilt : s.courtyardBuilt;
+    if (savedGuestRoom !== undefined) { guestRoomBuilt = false; if (savedGuestRoom) buildGuestRoom(true); }
     if (s.dragonKills !== undefined) dragonKills = s.dragonKills;
     if (s.dragonRespawnTime !== undefined) dragonRespawnTime = s.dragonRespawnTime;
     if (s.npcCongrats) { npcCongrats.cook = s.npcCongrats.cook || 0; npcCongrats.butler = s.npcCongrats.butler || 0; npcCongrats.wizard = s.npcCongrats.wizard || 0; npcCongrats.campLeader = s.npcCongrats.campLeader || 0; }
@@ -154,6 +157,8 @@ function newGame(slot) {
     inBoat = false;
     orcSiege.active = false; orcSiege.complete = false; orcSiege.shieldGiven = false;
     orcs = [];
+    guardCombat.active = false; guard1.x = guardCombat.guard1Home.x; guard1.y = guardCombat.guard1Home.y;
+    guard2.x = guardCombat.guard2Home.x; guard2.y = guardCombat.guard2Home.y;
     shieldUnlocked = false; shieldActive = false; lastShieldTime = -Infinity;
     campLeaderDialog.active = false; campLeaderDialog.stage = null;
     wizardDialog.active = false; wizardDialog.stage = null;
@@ -165,7 +170,7 @@ function newGame(slot) {
     dragon.fireTimer = 0; dragon.windingUp = false; dragon.firing = false;
     dragon.stunned = false; dragon.stunUntil = 0;
     goldCount = 0; swordDamage = 2; currentSword = 'legendary'; kingSwordUnlocked = false; dragonSwordUnlocked = false;
-    weaponryBuilt = false; courtyardBuilt = false; dragonKills = 0; dragonRespawnTime = -Infinity;
+    weaponryBuilt = false; guestRoomBuilt = false; dragonKills = 0; dragonRespawnTime = -Infinity;
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     hunger.max = 10; health.max = 10;
     notifications = [];

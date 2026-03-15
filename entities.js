@@ -17,6 +17,13 @@ function isNPCSolid(px, py, pw, ph) {
     // Camp leader collision
     if (px < campLeader.x + campLeader.width && px + pw > campLeader.x &&
         py < campLeader.y + campLeader.height && py + ph > campLeader.y) return true;
+    // Guest room NPC collisions
+    if (typeof guestRoomBuilt !== 'undefined' && guestRoomBuilt) {
+        if (px < guestWizard.x + guestWizard.width && px + pw > guestWizard.x &&
+            py < guestWizard.y + guestWizard.height && py + ph > guestWizard.y) return true;
+        if (px < guestCampLeader.x + guestCampLeader.width && px + pw > guestCampLeader.x &&
+            py < guestCampLeader.y + guestCampLeader.height && py + ph > guestCampLeader.y) return true;
+    }
     return false;
 }
 
@@ -28,6 +35,11 @@ const wizard = { x: 15 * T + 8, y: 82 * T + 8, width: 16, height: 16 };
 
 const campLeader = { x: 17 * T + 8, y: 115 * T + 8, width: 16, height: 16 };
 
+// ── Guest Room NPCs (same characters, guest room positions) ──
+
+const guestWizard = { x: 25 * T + 8, y: 7 * T + 8, width: 16, height: 16 };
+const guestCampLeader = { x: 27 * T + 8, y: 8 * T + 8, width: 16, height: 16 };
+
 // ── Player (King) ───────────────────────────────────────────
 
 const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
@@ -35,6 +47,22 @@ const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
 let swordPickedUp = false;
 
 const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK]);
+
+// Collision check for NPC movement (orcs/guards) — same as SOLID but allows GRASS
+const NPC_SOLID = new Set(SOLID);
+NPC_SOLID.delete(GRASS);
+
+function isNPCBlocked(px, py, pw, ph) {
+    const corners = [[px,py],[px+pw-1,py],[px,py+ph-1],[px+pw-1,py+ph-1]];
+    for (const [cx, cy] of corners) {
+        const col = Math.floor(cx / T), row = Math.floor(cy / T);
+        if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) return true;
+        const tile = map[row][col];
+        if (tile === VOID) return true;
+        if (NPC_SOLID.has(tile)) return true;
+    }
+    return false;
+}
 
 function isSolid(px, py, pw, ph) {
     const corners = [[px,py],[px+pw-1,py],[px,py+ph-1],[px+pw-1,py+ph-1]];
@@ -74,7 +102,10 @@ function isNearButler() {
 
 function isNearWizard() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
-    return Math.hypot(pcx - (wizard.x + 8), pcy - (wizard.y + 8)) < T * 2;
+    if (Math.hypot(pcx - (wizard.x + 8), pcy - (wizard.y + 8)) < T * 2) return true;
+    if (typeof guestRoomBuilt !== 'undefined' && guestRoomBuilt &&
+        Math.hypot(pcx - (guestWizard.x + 8), pcy - (guestWizard.y + 8)) < T * 2) return true;
+    return false;
 }
 
 function isNearBoat() {
@@ -91,7 +122,10 @@ function isNearBoat() {
 
 function isNearCampLeader() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
-    return Math.hypot(pcx - (campLeader.x + 8), pcy - (campLeader.y + 8)) < T * 2;
+    if (Math.hypot(pcx - (campLeader.x + 8), pcy - (campLeader.y + 8)) < T * 2) return true;
+    if (typeof guestRoomBuilt !== 'undefined' && guestRoomBuilt &&
+        Math.hypot(pcx - (guestCampLeader.x + 8), pcy - (guestCampLeader.y + 8)) < T * 2) return true;
+    return false;
 }
 
 function isNearAnyOrc() {

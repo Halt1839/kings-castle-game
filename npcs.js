@@ -479,10 +479,10 @@ function drawDragon(ox, oy) {
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(hpBarX, hpBarY, hpBarW, hpBarH);
 }
 
-function drawCourtyardNPCs(ox, oy) {
-    if (typeof courtyardBuilt === 'undefined' || !courtyardBuilt) return;
-    // Draw wizard friend at courtyard
-    const wzx = 5 * T + 8, wzy = 33 * T + 8;
+function drawGuestRoomNPCs(ox, oy) {
+    if (typeof guestRoomBuilt === 'undefined' || !guestRoomBuilt) return;
+    // Draw wizard friend in guest room
+    const wzx = 25 * T + 8, wzy = 7 * T + 8;
     const wsx = Math.round(wzx - ox), wsy = Math.round(wzy - oy);
     const wcx = wsx + 8;
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -495,7 +495,7 @@ function drawCourtyardNPCs(ox, oy) {
     ctx.beginPath(); ctx.moveTo(wcx, wsy - 14); ctx.lineTo(wsx + 2, wsy + 2); ctx.lineTo(wsx + 14, wsy + 2); ctx.closePath(); ctx.fill();
 
     // Draw camp leader friend
-    const clx = 8 * T + 8, cly = 35 * T + 8;
+    const clx = 27 * T + 8, cly = 8 * T + 8;
     const csx = Math.round(clx - ox), csy = Math.round(cly - oy);
     const ccx = csx + 8;
     ctx.fillStyle = 'rgba(0,0,0,0.2)';

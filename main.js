@@ -363,8 +363,8 @@ function gameLoop(now) {
             } else if (isNearWeaponryBuildSite()) {
                 if (goldCount >= 20) buildWeaponryRoom();
                 else addNotification(`Need 20 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
-            } else if (isNearCourtyardBuildSite()) {
-                if (goldCount >= 30) buildCourtyardRoom();
+            } else if (isNearGuestRoomBuildSite()) {
+                if (goldCount >= 30) buildGuestRoom();
                 else addNotification(`Need 30 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
             } else if (isNearCampLeader() && !orcSiege.active) {
                 openCampLeaderDialog();
@@ -394,10 +394,10 @@ function gameLoop(now) {
     // Movement
     if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen) {
         let dx = 0, dy = 0;
-        if (keys.has('ArrowUp') || keys.has('w') || keys.has('W')) dy -= 1;
-        if (keys.has('ArrowDown') || keys.has('s') || keys.has('S')) dy += 1;
-        if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) dx -= 1;
-        if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) dx += 1;
+        if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
+        if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
+        if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A') || touchState.left) dx -= 1;
+        if (keys.has('ArrowRight') || keys.has('d') || keys.has('D') || touchState.right) dx += 1;
         if (dx !== 0 && dy !== 0) { const len = Math.SQRT2; dx /= len; dy /= len; }
         const newX = player.x + dx * player.speed * dt;
         const newY = player.y + dy * player.speed * dt;
@@ -440,7 +440,7 @@ function gameLoop(now) {
     drawTroll(camX, camY);
     drawDragon(camX, camY);
     drawFireBreath(camX, camY);
-    drawCourtyardNPCs(camX, camY);
+    drawGuestRoomNPCs(camX, camY);
 
     if (inBoat) drawKingInBoat(camX, camY);
     else if (activeAction && activeAction.name === 'sitting') drawKingSitting(camX, camY);
@@ -466,8 +466,8 @@ function gameLoop(now) {
         drawPrompt(`Press E to switch to ${other}`);
     } else if (isNearWeaponryBuildSite()) {
         drawPrompt(`Press E to build Weaponry (20 gold) [${goldCount} gold]`);
-    } else if (isNearCourtyardBuildSite()) {
-        drawPrompt(`Press E to build Courtyard (30 gold) [${goldCount} gold]`);
+    } else if (isNearGuestRoomBuildSite()) {
+        drawPrompt(`Press E to build Guest Room (30 gold) [${goldCount} gold]`);
     } else if (isNearGold()) {
         drawPrompt('Press E to pick up the gold block');
     } else if (isNearDragon()) {
@@ -515,6 +515,8 @@ function gameLoop(now) {
     drawNotifications();
 
     if (shopOpen) drawShopMenu();
+
+    drawTouchControls();
 
     // Auto-save periodically
     if (currentSlot && Math.floor(gameTime / 30000) > Math.floor((gameTime - realDt) / 30000)) {

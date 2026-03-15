@@ -19,7 +19,8 @@ This is a 2D canvas adventure game (~4,200 lines of JS across 10 files). **All v
 7. **rendering.js** — `drawTile()` for all 42 tile types, player sprite rendering
 8. **hud.js** — Health/hunger bars, quest panel, interaction prompts, pause/death screens
 9. **menu.js** — Main menu, `saveGame()`/`loadGame()`/`newGame()` using localStorage (`kingGame_saves`)
-10. **main.js** — `gameLoop()` via requestAnimationFrame, keyboard input, WASD movement with collision, camera follow
+10. **touch.js** — Touch controls overlay for mobile/tablet (d-pad + action buttons). Only activates on touch-capable devices (`isTouchDevice`). Fires synthetic key events for menu navigation; sets `touchState.*` flags for continuous movement. HUD elements in hud.js shift up via `touchOffsetL`/`touchOffsetR` when touch is active.
+11. **main.js** — `gameLoop()` via requestAnimationFrame, keyboard input, WASD movement with collision, camera follow
 
 ## Key Patterns
 
@@ -40,3 +41,5 @@ This is a 2D canvas adventure game (~4,200 lines of JS across 10 files). **All v
 ## Controls
 
 WASD/Arrows: Move | E: Interact/advance dialog | H: Attack | F: Heal | B: Shield | G: Switch sword | P/Esc: Pause | 1-3: Save slots (while paused)
+
+**Touch (iPad/mobile):** D-pad (bottom-right) for movement, ACT/HIT/BLK/HEAL buttons (bottom-left). Pause and Shop buttons are tap-enabled. Controls only appear on touch devices.

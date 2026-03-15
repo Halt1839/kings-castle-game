@@ -505,7 +505,7 @@ function drawQuestTasks() {
     }
     if (questTasks.gaveGold) {
         tasks.push({ label: 'Slay the sea snake', done: questTasks.seaSnakeDefeated });
-        tasks.push({ label: 'Help the camp', done: questTasks.campHelped });
+        tasks.push({ label: 'Defend the castle', done: questTasks.campHelped });
         tasks.push({ label: 'Kill the troll', done: questTasks.trollDefeated });
         tasks.push({ label: 'Defeat the dragon', done: questTasks.dragonDefeated });
     }
@@ -771,7 +771,7 @@ let currentSword = 'legendary'; // 'legendary' (2 dmg), 'kings' (3 dmg), 'dragon
 let kingSwordUnlocked = false;
 let dragonSwordUnlocked = false;
 let weaponryBuilt = false;
-let courtyardBuilt = false;
+let guestRoomBuilt = false;
 let dragonKills = 0;
 let dragonRespawnTime = -Infinity;
 let lastCongratsKill = 0; // tracks which dragon kill NPCs last congratulated for
@@ -825,24 +825,36 @@ function buildWeaponryRoom(free) {
     if (!free) addNotification('Weaponry built! Visit it in the castle.', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
 }
 
-function buildCourtyardRoom(free) {
-    if (courtyardBuilt && !free) return;
+function buildGuestRoom(free) {
+    if (guestRoomBuilt && !free) return;
     if (!free && goldCount < 30) return;
     if (!free) goldCount -= 30;
-    courtyardBuilt = true;
-    // Courtyard: rows 30-37, cols 2-12
-    for (let r = 30; r <= 37; r++)
-        for (let c = 2; c <= 12; c++) map[r][c] = PATH;
-    // Fence
-    for (let c = 2; c <= 12; c++) { map[30][c] = HUT_WALL; map[37][c] = HUT_WALL; }
-    for (let r = 30; r <= 37; r++) { map[r][2] = HUT_WALL; map[r][12] = HUT_WALL; }
-    // Entry facing main path
-    map[33][12] = PATH; map[34][12] = PATH;
-    // Connect to main path
-    map[33][13] = PATH; map[34][13] = PATH;
-    // Torch
-    map[31][3] = TORCH; map[31][11] = TORCH;
-    if (!free) addNotification('Courtyard built! Your friends await.', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
+    guestRoomBuilt = true;
+    // Guest room: east side of throne room, rows 1-10, cols 25-29
+    // Walls
+    for (let c = 25; c <= 29; c++) { map[1][c] = WALL; map[10][c] = WALL; }
+    for (let r = 1; r <= 10; r++) map[r][29] = WALL;
+    // Floor
+    for (let r = 2; r <= 9; r++)
+        for (let c = 25; c <= 28; c++) map[r][c] = FLOOR;
+    // Door connecting to throne room east wall
+    map[5][24] = DOOR; map[6][24] = DOOR;
+    // Guest bed
+    map[3][27] = BED_HEAD; map[3][28] = BED_HEAD;
+    map[4][27] = PILLOW; map[4][28] = PILLOW;
+    map[5][27] = BED_FOOT; map[5][28] = BED_FOOT;
+    // Nightstand
+    map[3][26] = NIGHTSTAND;
+    // Rug
+    map[7][26] = RUG; map[7][27] = RUG;
+    map[8][26] = RUG; map[8][27] = RUG;
+    // Table & chair
+    map[9][26] = TABLE; map[9][27] = CHAIR;
+    // Torches
+    map[2][25] = TORCH; map[2][28] = TORCH;
+    // Windows
+    map[1][26] = WINDOW_TILE; map[1][27] = WINDOW_TILE;
+    if (!free) addNotification('Guest room built! Your friends await.', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
 }
 
 function isNearWeaponRack() {
@@ -864,11 +876,11 @@ function isNearWeaponryBuildSite() {
     return row >= 23 && row <= 26 && col >= 16 && col <= 17;
 }
 
-function isNearCourtyardBuildSite() {
-    if (courtyardBuilt || dragonKills === 0) return false;
+function isNearGuestRoomBuildSite() {
+    if (guestRoomBuilt || dragonKills === 0) return false;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     const col = Math.floor(pcx / T), row = Math.floor(pcy / T);
-    return row >= 33 && row <= 34 && col >= 12 && col <= 14;
+    return row >= 5 && row <= 6 && col >= 22 && col <= 24;
 }
 
 function isNearSpider() {
@@ -1097,7 +1109,7 @@ function advanceCampLeaderDialog() {
         campLeaderDialog.active = false; campLeaderDialog.stage = null;
         orcSiege.active = true; orcSiege.complete = false;
         spawnOrcs();
-        addNotification('Orcs are attacking! Defend the camp!', 4000, 'rgba(255,100,100,1)', 'rgba(80,0,0,0.9)');
+        addNotification('Orcs are attacking the castle!', 4000, 'rgba(255,100,100,1)', 'rgba(80,0,0,0.9)');
     } else if (campLeaderDialog.stage === 'victory') {
         campLeaderDialog.active = false; campLeaderDialog.stage = null;
         orcSiege.shieldGiven = true;
@@ -1138,7 +1150,7 @@ function drawCampLeaderDialog() {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
-        ctx.fillText('"More orcs have been spotted nearby."', bx + 16, by + 40);
+        ctx.fillText('"More orcs approach the castle!"', bx + 16, by + 40);
         ctx.fillText('"Want to face them again, sire?"', bx + 16, by + 60);
         const choices = ['Yes, bring them on!', 'Not now'];
         ctx.font = 'bold 14px monospace';
@@ -1157,7 +1169,7 @@ function drawCampLeaderDialog() {
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
         ctx.fillText('"King! Thank the gods you\'re here."', bx + 16, by + 40);
         ctx.fillText('"A large orc war party approaches -"', bx + 16, by + 60);
-        ctx.fillText('"we need your help to defend the camp!"', bx + 16, by + 80);
+        ctx.fillText('"we need your help to defend the castle!"', bx + 16, by + 80);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
         ctx.fillText('Press E to continue', bx + 16, by + bh - 24);
     } else if (campLeaderDialog.stage === 'battle_start') {
@@ -1165,16 +1177,16 @@ function drawCampLeaderDialog() {
         ctx.textAlign = 'center';
         ctx.fillText('TO ARMS!', bx + bw / 2, by + 30);
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#FFD700';
-        ctx.fillText('Defend the camp!', bx + bw / 2, by + 60);
+        ctx.fillText('Defend the castle!', bx + bw / 2, by + 60);
         ctx.font = '13px monospace'; ctx.fillStyle = '#ccc';
-        ctx.fillText('Orcs will attack from both sides.', bx + bw / 2, by + 90);
+        ctx.fillText('Orcs approach the castle gate!', bx + bw / 2, by + 90);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
         ctx.fillText('Press E to begin', bx + bw / 2, by + bh - 24);
     } else if (campLeaderDialog.stage === 'victory') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
-        ctx.fillText('"You saved our camp, Your Majesty!"', bx + 16, by + 40);
+        ctx.fillText('"You saved the castle, Your Majesty!"', bx + 16, by + 40);
         ctx.fillText('"Take this enchanted shield as thanks."', bx + 16, by + 60);
         ctx.fillStyle = '#8888FF';
         ctx.fillText('"Press B to raise it - it will protect"', bx + 16, by + 80);
@@ -1192,28 +1204,47 @@ function drawCampLeaderDialog() {
     }
 }
 
+// Guard combat state
+const guardCombat = {
+    active: false,
+    guard1Target: null,
+    guard2Target: null,
+    guard1Home: { x: guard1.x, y: guard1.y },
+    guard2Home: { x: guard2.x, y: guard2.y },
+    attackCooldown1: 0,
+    attackCooldown2: 0,
+    guardDamage: 3,
+    guardSpeed: 80,
+    guardAttackRate: 1200,
+    guard1Path: null, guard1PathIndex: 0, guard1PathTime: 0,
+    guard2Path: null, guard2PathIndex: 0, guard2PathTime: 0,
+};
+
 function spawnOrcs() {
     orcs = [];
+    // Spawn 3 orcs around the castle gate area (row 29-33)
+    const spawnSides = [-1, 1, -1]; // alternate left/right
     for (let i = 0; i < 3; i++) {
-        const row = 113 + Math.floor(Math.random() * 6);
+        const row = 29 + Math.floor(Math.random() * 5);
+        const fromLeft = spawnSides[i] < 0;
         orcs.push({
-            x: 0, y: row * T + Math.random() * T,
+            x: fromLeft ? 0 : (MAP_COLS - 1) * T,
+            y: row * T + Math.random() * T,
             width: 20, height: 20,
             hp: 10, maxHp: 10, alive: true,
             lastAttack: 0, attackCooldown: 1500, damage: 1, speed: 70,
             stunned: false, stunUntil: 0,
+            path: null, pathIndex: 0, pathTime: 0,
         });
     }
-    for (let i = 0; i < 3; i++) {
-        const row = 113 + Math.floor(Math.random() * 6);
-        orcs.push({
-            x: (MAP_COLS - 1) * T, y: row * T + Math.random() * T,
-            width: 20, height: 20,
-            hp: 10, maxHp: 10, alive: true,
-            lastAttack: 0, attackCooldown: 1500, damage: 1, speed: 70,
-            stunned: false, stunUntil: 0,
-        });
-    }
+    // Activate guards — move them to castle gate to defend
+    guardCombat.active = true;
+    guardCombat.guard1Target = null;
+    guardCombat.guard2Target = null;
+    guardCombat.attackCooldown1 = 0;
+    guardCombat.attackCooldown2 = 0;
+    guardCombat.guard1Path = null; guardCombat.guard1PathIndex = 0; guardCombat.guard1PathTime = 0;
+    guardCombat.guard2Path = null; guardCombat.guard2PathIndex = 0; guardCombat.guard2PathTime = 0;
 }
 
 function updateOrcs(dt) {
@@ -1224,6 +1255,12 @@ function updateOrcs(dt) {
             orcSiege.complete = true;
             orcs = [];
             questTasks.campHelped = true;
+            // Return guards home
+            guardCombat.active = false;
+            guardCombat.guard1Target = null;
+            guardCombat.guard2Target = null;
+            guard1.x = guardCombat.guard1Home.x; guard1.y = guardCombat.guard1Home.y;
+            guard2.x = guardCombat.guard2Home.x; guard2.y = guardCombat.guard2Home.y;
             addNotification('The orcs have been defeated! Victory!', 6000, 'rgba(100,255,100,1)', 'rgba(0,40,0,0.9)');
             return;
         }
@@ -1241,8 +1278,32 @@ function updateOrcs(dt) {
         const dx = pcx - ocx, dy = pcy - ocy;
         const dist = Math.hypot(dx, dy);
         if (dist > 4) {
-            orc.x += (dx / dist) * orc.speed * dt;
-            orc.y += (dy / dist) * orc.speed * dt;
+            if (dist > PATHFIND_THRESHOLD) {
+                // Recompute path periodically
+                if (!orc.path || orc.pathIndex >= orc.path.length || gameTime - orc.pathTime > 1000) {
+                    const sc = Math.floor(ocx / T), sr = Math.floor(ocy / T);
+                    const gc = Math.floor(pcx / T), gr = Math.floor(pcy / T);
+                    orc.path = findPath(sc, sr, gc, gr);
+                    orc.pathIndex = 0;
+                    orc.pathTime = gameTime;
+                }
+                if (orc.path && orc.pathIndex < orc.path.length) {
+                    orc.pathIndex = moveAlongPath(orc, orc.path, orc.pathIndex, orc.speed, dt);
+                } else {
+                    // Fallback direct movement
+                    const mx = (dx / dist) * orc.speed * dt;
+                    const my = (dy / dist) * orc.speed * dt;
+                    if (!isNPCBlocked(orc.x + mx, orc.y, orc.width, orc.height)) orc.x += mx;
+                    if (!isNPCBlocked(orc.x, orc.y + my, orc.width, orc.height)) orc.y += my;
+                }
+            } else {
+                // Close range: direct movement
+                orc.path = null;
+                const mx = (dx / dist) * orc.speed * dt;
+                const my = (dy / dist) * orc.speed * dt;
+                if (!isNPCBlocked(orc.x + mx, orc.y, orc.width, orc.height)) orc.x += mx;
+                if (!isNPCBlocked(orc.x, orc.y + my, orc.width, orc.height)) orc.y += my;
+            }
         }
         if (dist < T * 1.5) {
             if (gameTime - orc.lastAttack >= orc.attackCooldown) {
@@ -1258,14 +1319,86 @@ function updateOrcs(dt) {
             }
         }
     }
+
+    // Guard AI — chase and attack orcs
+    if (guardCombat.active && orcSiege.active) {
+        updateGuardCombat(guard1, 'guard1Target', 'attackCooldown1', dt);
+        updateGuardCombat(guard2, 'guard2Target', 'attackCooldown2', dt);
+    }
+
     orcs = orcs.filter(o => o.alive);
 }
 
+function updateGuardCombat(g, targetKey, cdKey, dt) {
+    const pathKey = targetKey.replace('Target', 'Path');
+    const pathIndexKey = targetKey.replace('Target', 'PathIndex');
+    const pathTimeKey = targetKey.replace('Target', 'PathTime');
+
+    // Pick closest alive orc as target
+    let target = guardCombat[targetKey];
+    if (!target || !target.alive) {
+        let best = null, bestDist = Infinity;
+        for (const orc of orcs) {
+            if (!orc.alive) continue;
+            const d = Math.hypot(g.x - orc.x, g.y - orc.y);
+            if (d < bestDist) { best = orc; bestDist = d; }
+        }
+        guardCombat[targetKey] = best;
+        guardCombat[pathKey] = null; // new target, clear path
+        target = best;
+    }
+    if (!target) return;
+
+    const gcx = g.x + g.width / 2, gcy = g.y + g.height / 2;
+    const ocx = target.x + target.width / 2, ocy = target.y + target.height / 2;
+    const dx = ocx - gcx, dy = ocy - gcy;
+    const dist = Math.hypot(dx, dy);
+
+    // Move toward target with pathfinding
+    if (dist > T * 1.2) {
+        if (dist > PATHFIND_THRESHOLD) {
+            if (!guardCombat[pathKey] || guardCombat[pathIndexKey] >= guardCombat[pathKey].length || gameTime - guardCombat[pathTimeKey] > 1000) {
+                const sc = Math.floor(gcx / T), sr = Math.floor(gcy / T);
+                const gc = Math.floor(ocx / T), gr = Math.floor(ocy / T);
+                guardCombat[pathKey] = findPath(sc, sr, gc, gr);
+                guardCombat[pathIndexKey] = 0;
+                guardCombat[pathTimeKey] = gameTime;
+            }
+            if (guardCombat[pathKey] && guardCombat[pathIndexKey] < guardCombat[pathKey].length) {
+                guardCombat[pathIndexKey] = moveAlongPath(g, guardCombat[pathKey], guardCombat[pathIndexKey], guardCombat.guardSpeed, dt);
+            } else {
+                const mx = (dx / dist) * guardCombat.guardSpeed * dt;
+                const my = (dy / dist) * guardCombat.guardSpeed * dt;
+                if (!isNPCBlocked(g.x + mx, g.y, g.width, g.height)) g.x += mx;
+                if (!isNPCBlocked(g.x, g.y + my, g.width, g.height)) g.y += my;
+            }
+        } else {
+            guardCombat[pathKey] = null;
+            const mx = (dx / dist) * guardCombat.guardSpeed * dt;
+            const my = (dy / dist) * guardCombat.guardSpeed * dt;
+            if (!isNPCBlocked(g.x + mx, g.y, g.width, g.height)) g.x += mx;
+            if (!isNPCBlocked(g.x, g.y + my, g.width, g.height)) g.y += my;
+        }
+    }
+    // Attack
+    if (dist < T * 1.5) {
+        if (gameTime - guardCombat[cdKey] >= guardCombat.guardAttackRate) {
+            guardCombat[cdKey] = gameTime;
+            target.hp -= guardCombat.guardDamage;
+            if (target.hp <= 0) {
+                target.hp = 0;
+                target.alive = false;
+                guardCombat[targetKey] = null;
+                goldCount += 2;
+                addNotification('Guard slays an orc! +2 Gold', 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+            }
+        }
+    }
+}
+
+
 function hitNearestOrc() {
     if (!swordPickedUp) return;
-    // Only in camp area
-    const pRow = Math.floor((player.y + player.height / 2) / T);
-    if (pRow < 111 || pRow > 120) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     let nearest = null, nearestDist = Infinity;

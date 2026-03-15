@@ -2,7 +2,8 @@
 
 function drawPrompt(text) {
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    const px = canvas.width/2, py = canvas.height-40;
+    const touchOff = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 160 : 0;
+    const px = canvas.width/2, py = canvas.height - 40 - touchOff;
     const w = ctx.measureText(text).width + 24;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(px-w/2, py-18, w, 24);
     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 1; ctx.strokeRect(px-w/2, py-18, w, 24);
@@ -12,7 +13,8 @@ function drawPrompt(text) {
 function drawActionMessage() {
     if (!activeAction) return;
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    const px = canvas.width/2, py = canvas.height-40;
+    const touchOff = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 160 : 0;
+    const px = canvas.width/2, py = canvas.height - 40 - touchOff;
     const text = activeAction.message;
     const w = ctx.measureText(text).width + 24;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(px-w/2, py-18, w, 24);
@@ -47,12 +49,16 @@ function drawBar(label, value, max, bx, by, color, critThreshold) {
 }
 
 function drawHUD() {
+    // Offset bottom HUD elements above touch controls on touch devices
+    const touchOffsetL = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 140 : 0;
+    const touchOffsetR = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 190 : 0;
+
     // Health bar
     const hpColor = health.value > 5 ? '#e53935' : '#b71c1c';
-    drawBar('Health', health.value, health.max, 16, canvas.height - 80, hpColor, 3);
+    drawBar('Health', health.value, health.max, 16, canvas.height - 80 - touchOffsetL, hpColor, 3);
     // Hunger bar
     const hungerColor = hunger.value > 5 ? '#4CAF50' : (hunger.value > 2.5 ? '#FF9800' : '#F44336');
-    drawBar('Hunger', hunger.value, hunger.max, 16, canvas.height - 40, hungerColor, 5);
+    drawBar('Hunger', hunger.value, hunger.max, 16, canvas.height - 40 - touchOffsetL, hungerColor, 5);
 
     // Bathroom need indicator
     if (bathroom.needsToGo) {
@@ -61,14 +67,14 @@ function drawHUD() {
         const pulse = 0.6 + 0.4 * Math.sin(performance.now() / (300 - urgency * 200));
         ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         ctx.fillStyle = `rgba(200,150,50,${pulse})`;
-        ctx.fillText('! Needs bathroom !', 16, canvas.height - 90);
+        ctx.fillText('! Needs bathroom !', 16, canvas.height - 90 - touchOffsetL);
     }
 
     // Poop stain indicator
     if (bathroom.pooped) {
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         ctx.fillStyle = '#8B4513';
-        ctx.fillText('(soiled)', 16, canvas.height - 90);
+        ctx.fillText('(soiled)', 16, canvas.height - 90 - touchOffsetL);
     }
 
     // Orc siege indicator
@@ -88,14 +94,14 @@ function drawHUD() {
         if (shieldActive) {
             const remaining = Math.max(0, SHIELD_DURATION - (gameTime - shieldStartTime));
             ctx.fillStyle = '#4488FF';
-            ctx.fillText(`[B] Shield Active ${(remaining / 1000).toFixed(1)}s`, 16, canvas.height - 110);
+            ctx.fillText(`Shield Active ${(remaining / 1000).toFixed(1)}s`, 16, canvas.height - 110 - touchOffsetL);
         } else if (shieldCdLeft <= 0) {
             ctx.fillStyle = '#4488FF';
-            ctx.fillText('[B] Shield Ready', 16, canvas.height - 110);
+            ctx.fillText('Shield Ready', 16, canvas.height - 110 - touchOffsetL);
         } else {
             const secs = Math.ceil(shieldCdLeft / 1000);
             ctx.fillStyle = '#666';
-            ctx.fillText(`[B] Shield ${secs}s`, 16, canvas.height - 110);
+            ctx.fillText(`Shield ${secs}s`, 16, canvas.height - 110 - touchOffsetL);
         }
     }
 
@@ -105,12 +111,12 @@ function drawHUD() {
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         if (cooldownLeft <= 0) {
             ctx.fillStyle = '#8A2BE2';
-            ctx.fillText('[F] Heal Ready', 16, canvas.height - 100);
+            ctx.fillText('Heal Ready', 16, canvas.height - 100 - touchOffsetL);
         } else {
             const secs = Math.ceil(cooldownLeft / 1000);
             const mins = Math.floor(secs / 60), s = secs % 60;
             ctx.fillStyle = '#666';
-            ctx.fillText(`[F] Heal ${mins}:${s.toString().padStart(2, '0')}`, 16, canvas.height - 100);
+            ctx.fillText(`Heal ${mins}:${s.toString().padStart(2, '0')}`, 16, canvas.height - 100 - touchOffsetL);
         }
     }
 
@@ -120,7 +126,32 @@ function drawHUD() {
         const mins = Math.floor(remaining / 60), secs = remaining % 60;
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
         ctx.fillStyle = '#FF6666';
-        ctx.fillText(`Dragon returns: ${mins}:${secs.toString().padStart(2, '0')}`, canvas.width - 16, canvas.height - 60);
+        ctx.fillText(`Dragon returns: ${mins}:${secs.toString().padStart(2, '0')}`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+    }
+
+    // Dragon boss health bar
+    if (typeof dragon !== 'undefined' && dragon.alive) {
+        const py = player.y / T;
+        if (py >= 165 && py <= 195) {
+            const barW = 400, barH = 24;
+            const bx = canvas.width / 2 - barW / 2, by = 16;
+            // Label
+            ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillStyle = '#FF4444';
+            ctx.fillText('DRAGON', canvas.width / 2, by - 4);
+            // Background
+            ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(bx, by, barW, barH);
+            ctx.strokeStyle = '#8B0000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, barW, barH);
+            // Fill
+            const ratio = dragon.hp / dragon.maxHp;
+            const pulse = dragon.hp <= dragon.maxHp * 0.25 ? 0.7 + 0.3 * Math.sin(performance.now() / 200) : 1;
+            ctx.fillStyle = ratio > 0.5 ? `rgba(200,30,30,${pulse})` : ratio > 0.25 ? `rgba(220,120,0,${pulse})` : `rgba(200,0,0,${pulse})`;
+            ctx.fillRect(bx + 2, by + 2, (barW - 4) * ratio, barH - 4);
+            // HP text
+            ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`${dragon.hp} / ${dragon.maxHp}`, canvas.width / 2, by + barH / 2);
+        }
     }
 
     // Dragon fire windup warning
@@ -135,19 +166,19 @@ function drawHUD() {
     // Gold counter (bottom right)
     ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#FFD700';
-    ctx.fillText(`Gold: ${goldCount}`, canvas.width - 16, canvas.height - 46);
+    ctx.fillText(`Gold: ${goldCount}`, canvas.width - 16, canvas.height - 46 - touchOffsetR);
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
         ctx.fillStyle = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
         const swordName = currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
-        ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30);
+        ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
     // Death counter (bottom right)
     ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#888';
-    ctx.fillText(`Deaths: ${deathCount}`, canvas.width - 16, canvas.height - 16);
+    ctx.fillText(`Deaths: ${deathCount}`, canvas.width - 16, canvas.height - 16 - touchOffsetR);
 }
 
 // ── Death Screen ────────────────────────────────────────────
@@ -199,7 +230,7 @@ function drawShopButton() {
 function getShopItems() {
     const items = [];
     if (!weaponryBuilt) items.push({ name: 'Weaponry', cost: 20, action: () => buildWeaponryRoom() });
-    if (!courtyardBuilt) items.push({ name: 'Courtyard', cost: 30, action: () => buildCourtyardRoom() });
+    if (!guestRoomBuilt) items.push({ name: 'Guest Room', cost: 30, action: () => buildGuestRoom() });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
     return items;
 }
