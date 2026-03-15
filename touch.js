@@ -134,6 +134,11 @@ function handleTouchStart(e) {
                 shopOpen = true; shopSelection = 0;
             }
         }
+
+        // Tap on shop close button
+        if (shopOpen && touchHitTest(tx, ty, shopCloseBtn)) {
+            shopOpen = false;
+        }
     }
 }
 

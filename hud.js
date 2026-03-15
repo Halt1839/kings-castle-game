@@ -218,6 +218,7 @@ function drawDeathScreen() {
 const shopBtn = { x: 12, y: 12, w: 80, h: 32 };
 let shopOpen = false;
 let shopSelection = 0;
+const shopCloseBtn = { x: 0, y: 0, w: 36, h: 36 };
 
 function drawShopButton() {
     if (dragonKills <= 0) return; // only show after first dragon kill
@@ -244,6 +245,17 @@ function drawShopMenu() {
 
     ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillStyle = '#FFD700'; ctx.fillText('SHOP', bx + bw/2, by + 16);
+
+    // Touch-only close button
+    if (isTouchDevice) {
+        shopCloseBtn.x = bx + bw - 40; shopCloseBtn.y = by + 4;
+        ctx.fillStyle = 'rgba(180,40,40,0.8)'; ctx.fillRect(shopCloseBtn.x, shopCloseBtn.y, shopCloseBtn.w, shopCloseBtn.h);
+        ctx.strokeStyle = '#FF6666'; ctx.lineWidth = 1; ctx.strokeRect(shopCloseBtn.x, shopCloseBtn.y, shopCloseBtn.w, shopCloseBtn.h);
+        ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#fff';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', shopCloseBtn.x + shopCloseBtn.w/2, shopCloseBtn.y + shopCloseBtn.h/2);
+        ctx.textBaseline = 'top';
+    }
 
     // Gold display
     ctx.font = 'bold 14px monospace';
