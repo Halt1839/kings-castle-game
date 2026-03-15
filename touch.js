@@ -148,38 +148,46 @@ function drawRoundedRect(x, y, w, h, r) {
 }
 
 function drawTouchButton(rect, label, pressed, color) {
-    const alpha = pressed ? 0.7 : TOUCH_OPACITY;
-    const bg = pressed ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)';
+    ctx.save();
+    ctx.globalAlpha = 1;
 
-    drawRoundedRect(rect.x, rect.y, rect.w, rect.h, 8);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.strokeStyle = `rgba(${color},${alpha})`;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Background
+    ctx.fillStyle = pressed ? 'rgba(255,255,255,0.3)' : 'rgba(30,30,40,0.75)';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-    ctx.font = `bold ${rect.w > 80 ? 16 : 14}px monospace`;
+    // Border
+    ctx.strokeStyle = `rgba(${color},${pressed ? 0.9 : 0.7})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+
+    // Label
+    ctx.font = `bold ${rect.w > 80 ? 18 : 15}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = `rgba(${color},${alpha + 0.2})`;
+    ctx.fillStyle = `rgba(${color},1)`;
     ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2);
+
+    ctx.restore();
 }
 
 function drawDpadArrow(rect, direction, pressed) {
-    const alpha = pressed ? 0.8 : TOUCH_OPACITY;
-    const bg = pressed ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)';
+    ctx.save();
+    ctx.globalAlpha = 1;
 
-    drawRoundedRect(rect.x, rect.y, rect.w, rect.h, 8);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Background
+    ctx.fillStyle = pressed ? 'rgba(255,255,255,0.3)' : 'rgba(30,30,40,0.75)';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
+    // Border
+    ctx.strokeStyle = pressed ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+
+    // Arrow
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
-    const s = 10;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    const s = 12;
+    ctx.fillStyle = pressed ? '#fff' : 'rgba(255,255,255,0.85)';
     ctx.beginPath();
     if (direction === 'up') {
         ctx.moveTo(cx, cy - s); ctx.lineTo(cx - s, cy + s * 0.6); ctx.lineTo(cx + s, cy + s * 0.6);
@@ -192,6 +200,8 @@ function drawDpadArrow(rect, direction, pressed) {
     }
     ctx.closePath();
     ctx.fill();
+
+    ctx.restore();
 }
 
 function drawTouchControls() {
