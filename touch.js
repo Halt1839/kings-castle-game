@@ -2,7 +2,13 @@
 // D-pad (right side) + action buttons (left side)
 // Only shown on touch-capable devices
 
-const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+let isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+
+// Also detect on first touch event in case initial detection missed it
+window.addEventListener('touchstart', function onFirstTouch() {
+    isTouchDevice = true;
+    window.removeEventListener('touchstart', onFirstTouch);
+}, { passive: true });
 
 // Track active touches per button
 const touchState = {
@@ -115,12 +121,15 @@ function handleTouchEnd(e) {
     updateDpadFromTouches(e);
 }
 
-if (isTouchDevice) {
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-}
+// Always register touch listeners (harmless on non-touch devices)
+// Also enables detection via first touch if initial check missed it
+canvas.addEventListener('touchstart', function(e) {
+    isTouchDevice = true;
+    handleTouchStart(e);
+}, { passive: false });
+canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
 // ── Draw touch controls ─────────────────────────────────────
 
