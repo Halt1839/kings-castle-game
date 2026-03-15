@@ -223,7 +223,7 @@ function drawMainMenu() {
             }
         }
         ctx.font = '12px monospace'; ctx.fillStyle = '#666';
-        ctx.fillText('W/S to navigate, E to select', cx, canvas.height - 40);
+        ctx.fillText(`${kl('nav')} to navigate, ${kl('E')} to select`, cx, canvas.height - 40);
     } else if (menuScreen === 'slots') {
         const saves = getSaves();
         ctx.font = 'bold 16px monospace';
@@ -244,6 +244,6 @@ function drawMainMenu() {
             }
         }
         ctx.font = '12px monospace'; ctx.fillStyle = '#666';
-        ctx.fillText('W/S to navigate, E to load/create, Esc to back', cx, canvas.height - 40);
+        ctx.fillText(`${kl('nav')} to navigate, ${kl('E')} to load/create`, cx, canvas.height - 40);
     }
 }

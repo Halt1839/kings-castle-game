@@ -56,7 +56,7 @@ function drawDialog() {
         ctx.fillText('"The whole castle is celebrating!"', bx + 16, by + 62);
         ctx.fillText('"Let me prepare a feast in your honor!"', bx + 16, by + 84);
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('Press E to continue', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')} to continue`, bx + bw / 2, by + bh - 22);
     } else if (dialog.stage === 'meal') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#FFD700'; ctx.fillText('Cook:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff'; ctx.fillText('"What shall I prepare, Your Majesty?"', bx + 16, by + 36);
@@ -68,7 +68,7 @@ function drawDialog() {
             } else { ctx.fillStyle = '#ccc'; ctx.fillText('  ' + meals[i], bx + 16, iy); }
         }
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('W/S to choose, E to select', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw / 2, by + bh - 22);
     } else if (dialog.stage === 'dessert') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#FFD700'; ctx.fillText('Cook:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -81,7 +81,7 @@ function drawDialog() {
             } else { ctx.fillStyle = '#ccc'; ctx.fillText('  ' + desserts[i], bx + 16, iy); }
         }
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('E to select', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')} to select`, bx + bw / 2, by + bh - 22);
     } else if (dialog.stage === 'confirmed') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#FFD700'; ctx.fillText('Cook:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -89,7 +89,7 @@ function drawDialog() {
         ctx.fillText('"Right away, Your Majesty!"', bx + 16, by + 62);
         ctx.fillText('"It will take about a minute."', bx + 16, by + 84);
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('Press E to confirm', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')} to confirm`, bx + bw / 2, by + bh - 22);
     }
 }
 
@@ -167,19 +167,19 @@ function drawButlerDialog() {
         ctx.fillText('"Your Majesty! Word has reached us"', bx + 16, by + 40);
         ctx.fillText('"that you have slain the dragon!"', bx + 16, by + 60);
         ctx.fillText('"The kingdom rejoices! Well done, sire!"', bx + 16, by + 80);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'no_food') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
         ctx.fillText('"No meal has been ordered yet,"', bx + 16, by + 40);
         ctx.fillText('"Your Majesty. Speak to the cook."', bx + 16, by + 60);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'not_ready') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
         ctx.fillText('"The food is not ready yet,"', bx + 16, by + 40);
         ctx.fillText('"Your Majesty."', bx + 16, by + 60);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'ask') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -193,13 +193,13 @@ function drawButlerDialog() {
                 ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + opts[i], bx + 16, iy);
             } else { ctx.fillStyle = '#ccc'; ctx.fillText('  ' + opts[i], bx + 16, iy); }
         }
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('W/S to choose, E to select', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'fetching_confirm') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
         ctx.fillText('"Very well, Your Majesty."', bx + 16, by + 40);
         ctx.fillText('"I shall fetch it at once."', bx + 16, by + 60);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'farewell_1') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#8A2BE2'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -207,7 +207,7 @@ function drawButlerDialog() {
         ctx.fillText('"leave... I must tell you"', bx + 16, by + 60);
         ctx.fillText('"something."', bx + 16, by + 80);
         ctx.fillStyle = '#aaa'; ctx.fillText('"I have kept a secret..."', bx + 16, by + 108);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'farewell_2') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#8A2BE2'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -215,7 +215,7 @@ function drawButlerDialog() {
         ctx.fillText('"I gave up my powers to serve"', bx + 16, by + 62);
         ctx.fillText('"the crown. But for you, I shall"', bx + 16, by + 84);
         ctx.fillText('"use what little magic remains."', bx + 16, by + 106);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (butlerDialog.stage === 'farewell_3') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#8A2BE2'; ctx.fillText('Butler:', bx + 16, by + 14);
         ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
@@ -225,7 +225,7 @@ function drawButlerDialog() {
         ctx.fillText('"your journey, Your Majesty."', bx + 16, by + 106);
         ctx.font = '12px monospace'; ctx.fillStyle = '#4CAF50';
         ctx.fillText('"Go forth and save the kingdom!"', bx + 16, by + 130);
-        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     }
 }
 
@@ -405,7 +405,7 @@ function drawMessengerDialog() {
         ctx.font = '12px monospace'; ctx.fillStyle = '#FF6666';
         ctx.fillText('"We need you to slay the beast!"', bx + 16, by + 136);
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('Press E to continue', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')} to continue`, bx + bw / 2, by + bh - 22);
     } else if (messengerDialog.stage === 'accept') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#FFD700';
         ctx.fillText('Messenger:', bx + 16, by + 14);
@@ -417,7 +417,7 @@ function drawMessengerDialog() {
         ctx.font = '12px monospace'; ctx.fillStyle = '#4CAF50';
         ctx.fillText('"Take it and defeat the dragon!"', bx + 16, by + 136);
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('Press E to accept quest', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')} to accept quest`, bx + bw / 2, by + bh - 22);
     }
 }
 
@@ -593,9 +593,9 @@ function isNearToilet() {
 // ── Interactions ────────────────────────────────────────────
 
 const interactions = [
-    { name: 'throne', tiles: [[2,14],[2,15]], prompt: 'Press E to sit on throne', action: 'sitting', duration: Infinity, message: 'The king sits upon his throne... (Press E to get up)' },
-    { name: 'bed', tiles: [[11,2],[11,3],[12,2],[12,3],[13,2],[13,3]], prompt: 'Press E to sleep', action: 'sleeping', duration: Infinity, message: 'The king rests... Zzz... (Press E to wake up)' },
-    { name: 'toilet', tiles: [[22,2]], prompt: 'Press E to use the toilet', action: 'using_toilet', duration: Infinity, message: 'The king is on the throne... the other one. (Press E to finish)' },
+    { name: 'throne', tiles: [[2,14],[2,15]], get prompt() { return `${kl('E')} to sit on throne`; }, action: 'sitting', duration: Infinity, get message() { return `The king sits upon his throne... (${kl('E')} to get up)`; } },
+    { name: 'bed', tiles: [[11,2],[11,3],[12,2],[12,3],[13,2],[13,3]], get prompt() { return `${kl('E')} to sleep`; }, action: 'sleeping', duration: Infinity, get message() { return `The king rests... Zzz... (${kl('E')} to wake up)`; } },
+    { name: 'toilet', tiles: [[22,2]], get prompt() { return `${kl('E')} to use the toilet`; }, action: 'using_toilet', duration: Infinity, get message() { return `The king is on the throne... the other one. (${kl('E')} to finish)`; } },
 ];
 
 let activeAction = null;
@@ -666,7 +666,7 @@ function advanceWizardDialog() {
         questTasks.gaveGold = true; checkAllTasks();
         healPowerUnlocked = true;
         addNotification('The wizard grants you his blessing!', 5000, 'rgba(138,43,226,1)', 'rgba(30,10,60,0.9)');
-        addNotification('Heal power unlocked! Press F to heal (5 min cooldown)', 6000, 'rgba(100,255,200,1)', 'rgba(0,40,30,0.9)');
+        addNotification(`Heal power unlocked! ${kl('F')} to heal (5 min cooldown)`, 6000, 'rgba(100,255,200,1)', 'rgba(0,40,30,0.9)');
     } else if (wizardDialog.stage === 'congrats') {
         npcCongrats.wizard = dragonKills;
         wizardDialog.active = false; wizardDialog.stage = null;
@@ -693,7 +693,7 @@ function drawWizardDialog() {
         ctx.fillText('"Your courage is unmatched,"', bx + 16, by + 62);
         ctx.fillText('"Your Majesty. The realm is safe!"', bx + 16, by + 84);
         ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('Press E', bx + bw / 2, by + bh - 22);
+        ctx.fillText(`${kl('E')}`, bx + bw / 2, by + bh - 22);
     } else if (wizardDialog.stage === 'greeting') {
         ctx.fillText('"Ah, Your Majesty! I have been"', bx + 16, by + 40);
         ctx.fillText('"expecting you. I can help you"', bx + 16, by + 62);
@@ -730,7 +730,7 @@ function drawWizardDialog() {
     }
 
     ctx.fillStyle = '#888'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('Press E to continue', bx + bw / 2, by + bh - 22);
+    ctx.fillText(`${kl('E')} to continue`, bx + bw / 2, by + bh - 22);
 }
 
 // ── Secret Passage ──────────────────────────────────────────
@@ -1114,7 +1114,7 @@ function advanceCampLeaderDialog() {
         campLeaderDialog.active = false; campLeaderDialog.stage = null;
         orcSiege.shieldGiven = true;
         shieldUnlocked = true;
-        addNotification('Shield unlocked! Press B to activate!', 5000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.9)');
+        addNotification(`Shield unlocked! ${kl('B')} to activate!`, 5000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.9)');
     } else if (campLeaderDialog.stage === 'rematch_ask') {
         if (campLeaderDialog.selectedIndex === 0) {
             // Yes - start orc fight
@@ -1145,7 +1145,7 @@ function drawCampLeaderDialog() {
         ctx.fillText('"You are the greatest warrior"', bx + 16, by + 60);
         ctx.fillText('"this land has ever known!"', bx + 16, by + 80);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('Press E to continue', bx + 16, by + bh - 24);
+        ctx.fillText(`${kl('E')} to continue`, bx + 16, by + bh - 24);
     } else if (campLeaderDialog.stage === 'rematch_ask') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
@@ -1162,7 +1162,7 @@ function drawCampLeaderDialog() {
             } else { ctx.fillStyle = '#ccc'; ctx.fillText('  ' + choices[i], bx + 16, iy); }
         }
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('W/S to choose, E to select', bx + 16, by + bh - 24);
+        ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + 16, by + bh - 24);
     } else if (campLeaderDialog.stage === 'greeting') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
@@ -1171,7 +1171,7 @@ function drawCampLeaderDialog() {
         ctx.fillText('"A large orc war party approaches -"', bx + 16, by + 60);
         ctx.fillText('"we need your help to defend the castle!"', bx + 16, by + 80);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('Press E to continue', bx + 16, by + bh - 24);
+        ctx.fillText(`${kl('E')} to continue`, bx + 16, by + bh - 24);
     } else if (campLeaderDialog.stage === 'battle_start') {
         ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#FF4444';
         ctx.textAlign = 'center';
@@ -1181,7 +1181,7 @@ function drawCampLeaderDialog() {
         ctx.font = '13px monospace'; ctx.fillStyle = '#ccc';
         ctx.fillText('Orcs approach the castle gate!', bx + bw / 2, by + 90);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('Press E to begin', bx + bw / 2, by + bh - 24);
+        ctx.fillText(`${kl('E')} to begin`, bx + bw / 2, by + bh - 24);
     } else if (campLeaderDialog.stage === 'victory') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
@@ -1189,10 +1189,10 @@ function drawCampLeaderDialog() {
         ctx.fillText('"You saved the castle, Your Majesty!"', bx + 16, by + 40);
         ctx.fillText('"Take this enchanted shield as thanks."', bx + 16, by + 60);
         ctx.fillStyle = '#8888FF';
-        ctx.fillText('"Press B to raise it - it will protect"', bx + 16, by + 80);
+        ctx.fillText(`"${kl('B')} to raise it - it will protect"`, bx + 16, by + 80);
         ctx.fillText('"you from all harm for 2 seconds."', bx + 16, by + 100);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('Press E to accept', bx + 16, by + bh - 24);
+        ctx.fillText(`${kl('E')} to accept`, bx + 16, by + bh - 24);
     } else if (campLeaderDialog.stage === 'done') {
         ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#C0C0C0';
         ctx.fillText('Camp Leader:', bx + 16, by + 14);
@@ -1200,7 +1200,7 @@ function drawCampLeaderDialog() {
         ctx.fillText('"The shield will serve you well,"', bx + 16, by + 40);
         ctx.fillText('"Your Majesty. Safe travels!"', bx + 16, by + 60);
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-        ctx.fillText('Press E to close', bx + 16, by + bh - 24);
+        ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
     }
 }
 

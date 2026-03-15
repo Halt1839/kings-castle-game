@@ -1,3 +1,5 @@
+const GAME_VERSION = 'v.6';
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
@@ -49,6 +51,33 @@ let playerWalking = false;
 let playerWalkPhase = 0;
 let swordSwingTime = 0;
 const SWORD_SWING_DURATION = 300; // ms
+
+// ── Key labels (adapts to touch vs keyboard) ────────────────
+// isTouchDevice is defined in touch.js; may not exist yet at load time, so check dynamically
+const KEY_LABELS = {
+    E: { key: 'E', touch: 'ACT' },
+    H: { key: 'H', touch: 'HIT' },
+    B: { key: 'B', touch: 'BLK' },
+    F: { key: 'F', touch: 'HEAL' },
+    nav: { key: 'W/S', touch: 'Joystick' },
+};
+function kl(action) {
+    const t = typeof isTouchDevice !== 'undefined' && isTouchDevice;
+    const entry = KEY_LABELS[action];
+    return entry ? (t ? entry.touch : entry.key) : action;
+}
+
+// ── Version display ─────────────────────────────────────────
+function drawVersion() {
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText(GAME_VERSION, 4, 2);
+    ctx.restore();
+}
 
 // Shield state — declared early so damage checks can reference it
 let shieldActive = false;

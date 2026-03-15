@@ -164,6 +164,7 @@ function gameLoop(now) {
                 menuScreen = 'main'; menuSelection = 0;
             }
         } else { ePressed = false; }
+        drawVersion();
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -181,6 +182,7 @@ function gameLoop(now) {
                 gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
             }
         } else { ePressed = false; }
+        drawVersion();
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -201,6 +203,7 @@ function gameLoop(now) {
                 gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
             }
         } else { ePressed = false; }
+        drawVersion();
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -466,45 +469,45 @@ function gameLoop(now) {
         if (currentSword === 'legendary') other = "King's Sword (3 dmg)";
         else if (currentSword === 'kings' && dragonSwordUnlocked) other = 'Dragon Sword (5 dmg)';
         else other = 'Legendary Sword (2 dmg)';
-        drawPrompt(`Press E to switch to ${other}`);
+        drawPrompt(`${kl('E')} to switch to ${other}`);
     } else if (isNearWeaponryBuildSite()) {
-        drawPrompt(`Press E to build Weaponry (20 gold) [${goldCount} gold]`);
+        drawPrompt(`${kl('E')} to build Weaponry (20 gold) [${goldCount} gold]`);
     } else if (isNearGuestRoomBuildSite()) {
-        drawPrompt(`Press E to build Guest Room (30 gold) [${goldCount} gold]`);
+        drawPrompt(`${kl('E')} to build Guest Room (30 gold) [${goldCount} gold]`);
     } else if (isNearGold()) {
-        drawPrompt('Press E to pick up the gold block');
+        drawPrompt(`${kl('E')} to pick up the gold block`);
     } else if (isNearDragon()) {
-        drawPrompt('Press H to attack the dragon!');
+        drawPrompt(`${kl('H')} to attack the dragon!`);
     } else if (isNearTroll()) {
-        drawPrompt('Press H to attack the troll!');
+        drawPrompt(`${kl('H')} to attack the troll!`);
     } else if (isNearAnyOrc()) {
-        drawPrompt('Press H to attack the orc!');
+        drawPrompt(`${kl('H')} to attack the orc!`);
     } else if (isNearCampLeader() && !orcSiege.active) {
-        drawPrompt('Press E to talk to the Camp Leader');
+        drawPrompt(`${kl('E')} to talk to the Camp Leader`);
     } else if (isNearSeaSnake()) {
-        drawPrompt('Press H to attack the sea snake!');
+        drawPrompt(`${kl('H')} to attack the sea snake!`);
     } else if (isNearBoat()) {
-        drawPrompt('Press E to board the boat');
+        drawPrompt(`${kl('E')} to board the boat`);
     } else if (isNearSpider()) {
-        drawPrompt('Press H to attack the spider!');
+        drawPrompt(`${kl('H')} to attack the spider!`);
     } else if (isNearWizard()) {
-        drawPrompt('Press E to talk to the Wizard');
+        drawPrompt(`${kl('E')} to talk to the Wizard`);
     } else if (isNearMessenger()) {
-        drawPrompt('Press E to read the message');
+        drawPrompt(`${kl('E')} to read the message`);
     } else if (isNearSword()) {
-        drawPrompt('Press E to pull the sword from the bridge');
+        drawPrompt(`${kl('E')} to pull the sword from the bridge`);
     } else if (isNearCook()) {
         if (cookingState.active && !cookingState.done) drawCookBusyPrompt();
-        else if (cookingState.done && !cookingState.doneAcknowledged) drawPrompt(`Press E to eat ${cookingState.meal} & ${cookingState.dessert}`);
-        else drawPrompt('Press E to talk to Cook');
+        else if (cookingState.done && !cookingState.doneAcknowledged) drawPrompt(`${kl('E')} to eat ${cookingState.meal} & ${cookingState.dessert}`);
+        else drawPrompt(`${kl('E')} to talk to Cook`);
     } else if (isNearButler()) {
         if (butlerState.fetching) drawPrompt('Butler: "Fetching your meal..."');
-        else drawPrompt('Press E to talk to Butler');
+        else drawPrompt(`${kl('E')} to talk to Butler`);
     } else {
         const nearby = getNearbyInteraction();
         if (nearby) {
             if (nearby.name === 'toilet' && bathroom.needsToGo) {
-                drawPrompt('Press E to use the toilet (URGENT!)');
+                drawPrompt(`${kl('E')} to use the toilet (URGENT!)`);
             } else {
                 drawPrompt(nearby.prompt);
             }
@@ -526,6 +529,7 @@ function gameLoop(now) {
         saveGame(currentSlot);
     }
 
+    drawVersion();
     requestAnimationFrame(gameLoop);
 }
 

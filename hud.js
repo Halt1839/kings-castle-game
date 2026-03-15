@@ -94,14 +94,14 @@ function drawHUD() {
         if (shieldActive) {
             const remaining = Math.max(0, SHIELD_DURATION - (gameTime - shieldStartTime));
             ctx.fillStyle = '#4488FF';
-            ctx.fillText(`Shield Active ${(remaining / 1000).toFixed(1)}s`, 16, canvas.height - 110 - touchOffsetL);
+            ctx.fillText(`[${kl('B')}] Shield Active ${(remaining / 1000).toFixed(1)}s`, 16, canvas.height - 110 - touchOffsetL);
         } else if (shieldCdLeft <= 0) {
             ctx.fillStyle = '#4488FF';
-            ctx.fillText('Shield Ready', 16, canvas.height - 110 - touchOffsetL);
+            ctx.fillText(`[${kl('B')}] Shield Ready`, 16, canvas.height - 110 - touchOffsetL);
         } else {
             const secs = Math.ceil(shieldCdLeft / 1000);
             ctx.fillStyle = '#666';
-            ctx.fillText(`Shield ${secs}s`, 16, canvas.height - 110 - touchOffsetL);
+            ctx.fillText(`[${kl('B')}] Shield ${secs}s`, 16, canvas.height - 110 - touchOffsetL);
         }
     }
 
@@ -111,12 +111,12 @@ function drawHUD() {
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         if (cooldownLeft <= 0) {
             ctx.fillStyle = '#8A2BE2';
-            ctx.fillText('Heal Ready', 16, canvas.height - 100 - touchOffsetL);
+            ctx.fillText(`[${kl('F')}] Heal Ready`, 16, canvas.height - 100 - touchOffsetL);
         } else {
             const secs = Math.ceil(cooldownLeft / 1000);
             const mins = Math.floor(secs / 60), s = secs % 60;
             ctx.fillStyle = '#666';
-            ctx.fillText(`Heal ${mins}:${s.toString().padStart(2, '0')}`, 16, canvas.height - 100 - touchOffsetL);
+            ctx.fillText(`[${kl('F')}] Heal ${mins}:${s.toString().padStart(2, '0')}`, 16, canvas.height - 100 - touchOffsetL);
         }
     }
 
@@ -210,7 +210,7 @@ function drawDeathScreen() {
         }
     }
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-    ctx.fillText('W/S to choose, E to select', bx + bw / 2, by + bh - 24);
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw / 2, by + bh - 24);
 }
 
 // ── Shop Button & Menu ─────────────────────────────────────
@@ -275,7 +275,7 @@ function drawShopMenu() {
     }
 
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-    ctx.fillText('W/S to choose, E to buy, Esc to close', bx + bw/2, by + bh - 20);
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to buy`, bx + bw/2, by + bh - 20);
 }
 
 // ── Pause Button ────────────────────────────────────────────
@@ -317,5 +317,5 @@ function drawPauseMenu() {
         }
     }
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-    ctx.fillText('W/S to choose, E to select', bx + bw/2, by + bh - 24);
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
 }
