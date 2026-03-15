@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v.8';
+const GAME_VERSION = 'v.9';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');

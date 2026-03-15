@@ -1085,7 +1085,9 @@ const campLeaderDialog = { active: false, stage: null, selectedIndex: 0 };
 
 function openCampLeaderDialog() {
     campLeaderDialog.active = true;
-    campLeaderDialog.location = nearWhichCampLeader() || 'camp';
+    // Determine location: if player row >= 100, they're at the camp; otherwise castle
+    const playerRow = Math.floor((player.y + player.height / 2) / T);
+    campLeaderDialog.location = playerRow >= 100 ? 'camp' : 'castle';
     if (dragonKills > 0 && npcCongrats.campLeader < dragonKills) {
         campLeaderDialog.stage = 'congrats';
     } else if (!orcSiege.complete && !orcSiege.active) {
@@ -1227,22 +1229,25 @@ const guardCombat = {
 function spawnOrcs(location) {
     orcs = [];
     // Castle: spawn at map edges near castle gate (rows 29-33)
-    // Camp: spawn at walkable edges of camp area (cols 3 and 26, rows 113-118)
+    // Camp: spawn inside camp area on PATH tiles (rows 114-116, cols 6/23)
     const isCamp = location === 'camp';
-    const baseRow = isCamp ? 113 : 29;
-    const rowRange = isCamp ? 6 : 5;
     const spawnSides = [-1, 1, -1]; // alternate left/right
     for (let i = 0; i < 3; i++) {
-        const row = baseRow + Math.floor(Math.random() * rowRange);
         const fromLeft = spawnSides[i] < 0;
-        // Camp: spawn at walkable camp edges (col 3 / col 26)
-        // Castle: spawn at map edges (col 0 / last col)
-        const spawnX = isCamp
-            ? (fromLeft ? 3 * T : 26 * T)
-            : (fromLeft ? 0 : (MAP_COLS - 1) * T);
+        let spawnX, spawnY;
+        if (isCamp) {
+            // Spawn well inside camp on PATH tiles, away from tents and edges
+            const row = 114 + Math.floor(Math.random() * 3); // rows 114-116
+            spawnX = (fromLeft ? 6 : 23) * T;
+            spawnY = row * T;
+        } else {
+            const row = 29 + Math.floor(Math.random() * 5);
+            spawnX = fromLeft ? 0 : (MAP_COLS - 1) * T;
+            spawnY = row * T + Math.random() * T;
+        }
         orcs.push({
             x: spawnX,
-            y: row * T + Math.random() * T,
+            y: spawnY,
             width: 20, height: 20,
             hp: 10, maxHp: 10, alive: true,
             lastAttack: 0, attackCooldown: 1500, damage: 1, speed: 70,
@@ -1294,11 +1299,12 @@ function updateOrcs(dt) {
         const dist = Math.hypot(dx, dy);
         if (dist > 4) {
             if (dist > PATHFIND_THRESHOLD) {
-                // Recompute path periodically
-                if (!orc.path || orc.pathIndex >= orc.path.length || gameTime - orc.pathTime > 1000) {
+                // Recompute path periodically (longer interval if no path found to avoid spam)
+                const pathInterval = orc.path ? 1000 : 3000;
+                if (!orc.path || orc.pathIndex >= orc.path.length || gameTime - orc.pathTime > pathInterval) {
                     const sc = Math.floor(ocx / T), sr = Math.floor(ocy / T);
                     const gc = Math.floor(pcx / T), gr = Math.floor(pcy / T);
-                    orc.path = findPath(sc, sr, gc, gr);
+                    orc.path = findPath(sc, sr, gc, gr, 500);
                     orc.pathIndex = 0;
                     orc.pathTime = gameTime;
                 }
