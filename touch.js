@@ -205,6 +205,18 @@ function drawDpadArrow(rect, direction, pressed) {
 }
 
 function drawTouchControls() {
+    // Debug: always draw a bright test square to verify this function runs
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#FF0000';
+    ctx.fillRect(canvas.width / 2 - 25, canvas.height - 60, 50, 50);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TCH', canvas.width / 2, canvas.height - 35);
+    ctx.restore();
+
     if (!isTouchDevice) return;
 
     const dpad = getDpadLayout();
