@@ -128,6 +128,15 @@ function isNearCampLeader() {
     return false;
 }
 
+// Returns 'camp' or 'castle' depending on which camp leader the player is near
+function nearWhichCampLeader() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    if (Math.hypot(pcx - (campLeader.x + 8), pcy - (campLeader.y + 8)) < T * 2) return 'camp';
+    if (typeof guestRoomBuilt !== 'undefined' && guestRoomBuilt &&
+        Math.hypot(pcx - (guestCampLeader.x + 8), pcy - (guestCampLeader.y + 8)) < T * 2) return 'castle';
+    return null;
+}
+
 function isNearAnyOrc() {
     if (typeof orcs === 'undefined') return false;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;

@@ -1076,6 +1076,7 @@ const orcSiege = {
     active: false,
     complete: false,
     shieldGiven: false,
+    location: 'castle', // 'castle' or 'camp' — where the current fight is happening
 };
 
 let orcs = [];
@@ -1084,6 +1085,7 @@ const campLeaderDialog = { active: false, stage: null, selectedIndex: 0 };
 
 function openCampLeaderDialog() {
     campLeaderDialog.active = true;
+    campLeaderDialog.location = nearWhichCampLeader() || 'camp';
     if (dragonKills > 0 && npcCongrats.campLeader < dragonKills) {
         campLeaderDialog.stage = 'congrats';
     } else if (!orcSiege.complete && !orcSiege.active) {
@@ -1108,8 +1110,10 @@ function advanceCampLeaderDialog() {
     } else if (campLeaderDialog.stage === 'battle_start') {
         campLeaderDialog.active = false; campLeaderDialog.stage = null;
         orcSiege.active = true; orcSiege.complete = false;
-        spawnOrcs();
-        addNotification('Orcs are attacking the castle!', 4000, 'rgba(255,100,100,1)', 'rgba(80,0,0,0.9)');
+        orcSiege.location = campLeaderDialog.location;
+        spawnOrcs(campLeaderDialog.location);
+        const locName = campLeaderDialog.location === 'camp' ? 'camp' : 'castle';
+        addNotification(`Orcs are attacking the ${locName}!`, 4000, 'rgba(255,100,100,1)', 'rgba(80,0,0,0.9)');
     } else if (campLeaderDialog.stage === 'victory') {
         campLeaderDialog.active = false; campLeaderDialog.stage = null;
         orcSiege.shieldGiven = true;
@@ -1220,12 +1224,16 @@ const guardCombat = {
     guard2Path: null, guard2PathIndex: 0, guard2PathTime: 0,
 };
 
-function spawnOrcs() {
+function spawnOrcs(location) {
     orcs = [];
-    // Spawn 3 orcs around the castle gate area (row 29-33)
+    // Castle: spawn around castle gate (rows 29-33)
+    // Camp: spawn around the camp area (rows 113-118)
+    const isCamp = location === 'camp';
+    const baseRow = isCamp ? 113 : 29;
+    const rowRange = 5;
     const spawnSides = [-1, 1, -1]; // alternate left/right
     for (let i = 0; i < 3; i++) {
-        const row = 29 + Math.floor(Math.random() * 5);
+        const row = baseRow + Math.floor(Math.random() * rowRange);
         const fromLeft = spawnSides[i] < 0;
         orcs.push({
             x: fromLeft ? 0 : (MAP_COLS - 1) * T,
@@ -1237,14 +1245,16 @@ function spawnOrcs() {
             path: null, pathIndex: 0, pathTime: 0,
         });
     }
-    // Activate guards — move them to castle gate to defend
-    guardCombat.active = true;
-    guardCombat.guard1Target = null;
-    guardCombat.guard2Target = null;
-    guardCombat.attackCooldown1 = 0;
-    guardCombat.attackCooldown2 = 0;
-    guardCombat.guard1Path = null; guardCombat.guard1PathIndex = 0; guardCombat.guard1PathTime = 0;
-    guardCombat.guard2Path = null; guardCombat.guard2PathIndex = 0; guardCombat.guard2PathTime = 0;
+    // Only activate castle guards when fighting at the castle
+    if (!isCamp) {
+        guardCombat.active = true;
+        guardCombat.guard1Target = null;
+        guardCombat.guard2Target = null;
+        guardCombat.attackCooldown1 = 0;
+        guardCombat.attackCooldown2 = 0;
+        guardCombat.guard1Path = null; guardCombat.guard1PathIndex = 0; guardCombat.guard1PathTime = 0;
+        guardCombat.guard2Path = null; guardCombat.guard2PathIndex = 0; guardCombat.guard2PathTime = 0;
+    }
 }
 
 function updateOrcs(dt) {
