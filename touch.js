@@ -187,18 +187,25 @@ function drawDpadArrow(rect, direction, pressed) {
 
 function drawTouchControls() {
     if (!isTouchDevice) return;
-    // Don't draw during full-screen overlays (menu/pause/dead draw their own UI)
-    if (gameState !== 'playing') return;
 
     const dpad = getDpadLayout();
-    drawDpadArrow(dpad.up, 'up', touchState.up);
-    drawDpadArrow(dpad.down, 'down', touchState.down);
-    drawDpadArrow(dpad.left, 'left', touchState.left);
-    drawDpadArrow(dpad.right, 'right', touchState.right);
-
     const actions = getActionLayout();
-    drawTouchButton(actions.btnE, 'ACT', false, '255,215,0');
-    drawTouchButton(actions.btnH, 'HIT', false, '255,80,80');
-    drawTouchButton(actions.btnB, 'BLK', false, '68,136,255');
-    drawTouchButton(actions.btnF, 'HEAL', false, '138,43,226');
+
+    if (gameState === 'playing') {
+        // Full controls during gameplay
+        drawDpadArrow(dpad.up, 'up', touchState.up);
+        drawDpadArrow(dpad.down, 'down', touchState.down);
+        drawDpadArrow(dpad.left, 'left', touchState.left);
+        drawDpadArrow(dpad.right, 'right', touchState.right);
+
+        drawTouchButton(actions.btnE, 'ACT', false, '255,215,0');
+        drawTouchButton(actions.btnH, 'HIT', false, '255,80,80');
+        drawTouchButton(actions.btnB, 'BLK', false, '68,136,255');
+        drawTouchButton(actions.btnF, 'HEAL', false, '138,43,226');
+    } else {
+        // Menu/pause/dead: just up/down + ACT for navigation
+        drawDpadArrow(dpad.up, 'up', touchState.up);
+        drawDpadArrow(dpad.down, 'down', touchState.down);
+        drawTouchButton(actions.btnE, 'ACT', false, '255,215,0');
+    }
 }

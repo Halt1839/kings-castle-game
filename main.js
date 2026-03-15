@@ -130,6 +130,7 @@ function gameLoop(now) {
     // ── MENU ──
     if (gameState === 'menu') {
         drawMainMenu();
+        drawTouchControls();
         if (ePressed) {
             ePressed = false;
             if (menuScreen === 'main') {
@@ -170,6 +171,7 @@ function gameLoop(now) {
     // ── PAUSED ──
     if (gameState === 'paused') {
         drawPauseMenu();
+        drawTouchControls();
         if (ePressed) {
             ePressed = false;
             if (pauseSelection === 0) {
@@ -186,6 +188,7 @@ function gameLoop(now) {
     // ── DEAD ──
     if (gameState === 'dead') {
         drawDeathScreen();
+        drawTouchControls();
         if (ePressed) {
             ePressed = false;
             if (deathSelection === 0) {
