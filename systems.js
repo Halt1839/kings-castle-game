@@ -1226,17 +1226,22 @@ const guardCombat = {
 
 function spawnOrcs(location) {
     orcs = [];
-    // Castle: spawn around castle gate (rows 29-33)
-    // Camp: spawn around the camp area (rows 113-118)
+    // Castle: spawn at map edges near castle gate (rows 29-33)
+    // Camp: spawn at walkable edges of camp area (cols 3 and 26, rows 113-118)
     const isCamp = location === 'camp';
     const baseRow = isCamp ? 113 : 29;
-    const rowRange = 5;
+    const rowRange = isCamp ? 6 : 5;
     const spawnSides = [-1, 1, -1]; // alternate left/right
     for (let i = 0; i < 3; i++) {
         const row = baseRow + Math.floor(Math.random() * rowRange);
         const fromLeft = spawnSides[i] < 0;
+        // Camp: spawn at walkable camp edges (col 3 / col 26)
+        // Castle: spawn at map edges (col 0 / last col)
+        const spawnX = isCamp
+            ? (fromLeft ? 3 * T : 26 * T)
+            : (fromLeft ? 0 : (MAP_COLS - 1) * T);
         orcs.push({
-            x: fromLeft ? 0 : (MAP_COLS - 1) * T,
+            x: spawnX,
             y: row * T + Math.random() * T,
             width: 20, height: 20,
             hp: 10, maxHp: 10, alive: true,
