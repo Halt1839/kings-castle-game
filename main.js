@@ -279,14 +279,17 @@ function gameLoop(now) {
         return;
     }
 
-    // Auto-exit boat when stepping on non-water/non-dock tile
+    // Auto-exit boat only on dock
     if (inBoat) {
         const centerCol = Math.floor((player.x + player.width / 2) / T);
         const centerRow = Math.floor((player.y + player.height / 2) / T);
         const tile = map[centerRow][centerCol];
-        if (tile !== WATER && tile !== DOCK) {
+        if (tile === DOCK) {
             inBoat = false;
             addNotification('You step off the boat.', 1500, 'rgba(100,200,255,1)', 'rgba(0,30,60,0.8)');
+        } else if (tile === SAND) {
+            // Push player back to water
+            addNotification('Try landing on the dock', 1500, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.8)');
         }
     }
 
