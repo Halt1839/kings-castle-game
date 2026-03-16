@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v.13';
+const GAME_VERSION = 'v.14';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -42,6 +42,7 @@ let gameTime = 0;
 
 // Boat state — declared early so entities.js can reference in isSolid
 let inBoat = false;
+let boatBoardTime = 0;
 let boatSandWarnTime = 0;
 
 // Death counter

@@ -997,6 +997,7 @@ const seaSnake = {
 
 function boardBoat() {
     inBoat = true;
+    boatBoardTime = gameTime;
     if (seaSnake.alive && !seaSnake.active) {
         seaSnake.active = true;
     }

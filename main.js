@@ -280,7 +280,7 @@ function gameLoop(now) {
     }
 
     // Auto-exit boat only on dock; warn on sand
-    if (inBoat) {
+    if (inBoat && gameTime - boatBoardTime > 500) {
         const centerCol = Math.floor((player.x + player.width / 2) / T);
         const centerRow = Math.floor((player.y + player.height / 2) / T);
         const tile = map[centerRow][centerCol];
