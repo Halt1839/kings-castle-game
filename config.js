@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v.15';
+const GAME_VERSION = 'v.16';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
