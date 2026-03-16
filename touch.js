@@ -115,7 +115,13 @@ function handleTouchStart(e) {
         }
 
         // Action buttons (one-shot)
-        if (touchHitTest(tx, ty, actions.btnE)) ePressed = true;
+        if (touchHitTest(tx, ty, actions.btnE)) {
+            ePressed = true;
+            if (shopOpen) {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
+                setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e', bubbles: true })), 50);
+            }
+        }
         if (touchHitTest(tx, ty, actions.btnH)) hPressed = true;
         if (touchHitTest(tx, ty, actions.btnB)) bPressed = true;
         if (touchHitTest(tx, ty, actions.btnF)) fPressed = true;
