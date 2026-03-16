@@ -72,7 +72,8 @@ function isSolid(px, py, pw, ph) {
         const tile = map[row][col];
         if (tile === VOID) return true;
         if (inBoat && tile === WATER) continue;
-        if (inBoat && tile === SAND) return true;
+        if (inBoat && tile === SAND) continue;
+        if (inBoat && tile === DOCK) continue;
         if (SOLID.has(tile)) return true;
         // Progression gates (disabled after first dragon kill)
         if (typeof dragonKills === 'undefined' || dragonKills === 0) {
