@@ -287,6 +287,9 @@ function gameLoop(now) {
         if (tile === DOCK) {
             inBoat = false;
             boatSandWarnTime = 0;
+            // Teleport one tile inland so player doesn't overlap water
+            if (centerRow <= 91) player.y = (centerRow - 1) * T;
+            else player.y = (centerRow + 1) * T;
             addNotification('You step off the boat.', 1500, 'rgba(100,200,255,1)', 'rgba(0,30,60,0.8)');
         } else if (tile === SAND && gameTime - boatSandWarnTime > 2000) {
             boatSandWarnTime = gameTime;
