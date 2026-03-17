@@ -791,12 +791,18 @@ function respawnMonsters() {
 
 function switchSword() {
     if (!kingSwordUnlocked) return;
-    if (currentSword === 'legendary') {
+    if (currentSword === 'admin') {
+        currentSword = 'legendary'; swordDamage = 2;
+        addNotification('Switched to Legendary Sword (2 dmg)', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
+    } else if (currentSword === 'legendary') {
         currentSword = 'kings'; swordDamage = 3;
         addNotification("Switched to King's Sword (3 dmg)", 2000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
     } else if (currentSword === 'kings' && dragonSwordUnlocked) {
         currentSword = 'dragon'; swordDamage = 5;
         addNotification('Switched to Dragon Sword (5 dmg)', 2000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)');
+    } else if ((currentSword === 'kings' || currentSword === 'dragon') && adminSwordEquipped) {
+        currentSword = 'admin'; swordDamage = 10;
+        addNotification('Switched to Admin Sword (10 dmg)', 2000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.9)');
     } else {
         currentSword = 'legendary'; swordDamage = 2;
         addNotification('Switched to Legendary Sword (2 dmg)', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');

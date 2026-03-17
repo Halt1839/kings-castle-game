@@ -117,7 +117,7 @@ function handleTouchStart(e) {
         // Action buttons (one-shot)
         if (touchHitTest(tx, ty, actions.btnE)) {
             ePressed = true;
-            if (shopOpen) {
+            if (shopOpen || adminOpen) {
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
                 setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e', bubbles: true })), 50);
             }
@@ -139,6 +139,18 @@ function handleTouchStart(e) {
             if (gameState === 'playing' && !shopOpen) {
                 shopOpen = true; shopSelection = 0;
             }
+        }
+
+        // Tap on admin button area
+        if (touchHitTest(tx, ty, adminBtn)) {
+            if (gameState === 'playing' && !shopOpen && !adminOpen) {
+                tryAdminLogin();
+            }
+        }
+
+        // Tap on admin close button
+        if (adminOpen && touchHitTest(tx, ty, adminCloseBtn)) {
+            adminOpen = false;
         }
 
         // Tap on shop close button

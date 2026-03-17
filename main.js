@@ -48,6 +48,21 @@ window.addEventListener('keydown', (e) => {
         return;
     }
 
+    // Admin panel navigation
+    if (adminOpen) {
+        const items = getAdminItems();
+        if (e.key === 'Escape') { adminOpen = false; }
+        else {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') adminSelection = (adminSelection - 1 + items.length) % items.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') adminSelection = (adminSelection + 1) % items.length;
+            if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+                items[adminSelection].action();
+                ePressed = false;
+            }
+        }
+        return;
+    }
+
     // Shop navigation
     if (shopOpen) {
         const items = getShopItems();
@@ -106,7 +121,13 @@ window.addEventListener('keyup', (e) => keys.delete(e.key));
 canvas.addEventListener('click', (e) => {
     const mx = e.clientX, my = e.clientY;
     if (gameState === 'playing') {
-        if (shopOpen) return; // ignore clicks behind shop
+        if (adminOpen || shopOpen) return; // ignore clicks behind overlays
+        // Admin button
+        if (mx >= adminBtn.x && mx <= adminBtn.x + adminBtn.w &&
+            my >= adminBtn.y && my <= adminBtn.y + adminBtn.h) {
+            tryAdminLogin();
+            return;
+        }
         if (mx >= pauseBtn.x && mx <= pauseBtn.x + pauseBtn.w &&
             my >= pauseBtn.y && my <= pauseBtn.y + pauseBtn.h) {
             gameState = 'paused'; pauseSelection = 0;
@@ -270,6 +291,7 @@ function gameLoop(now) {
     updateShield();
 
     // Check for death
+    if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
         deathCount++;
         deathSelection = 0;
@@ -524,10 +546,12 @@ function gameLoop(now) {
     drawHUD();
     drawQuestTasks();
     drawPauseButton();
+    drawAdminButton();
     drawShopButton();
     drawNotifications();
 
-    if (shopOpen) drawShopMenu();
+    if (adminOpen) drawAdminPanel();
+    else if (shopOpen) drawShopMenu();
 
     drawTouchControls();
 
