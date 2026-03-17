@@ -380,6 +380,14 @@ function getAdminItems() {
             player.speed = n;
             addNotification('Speed set to ' + n, 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
+        { name: 'Set Gold', action: () => {
+            const val = prompt('Enter gold amount:');
+            if (val === null) return;
+            const n = Number(val);
+            if (isNaN(n) || n < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            goldCount = Math.floor(n);
+            addNotification('Gold set to ' + goldCount, 1500, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
+        }},
         { name: adminGhostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF', action: () => {
             adminGhostMode = !adminGhostMode;
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
