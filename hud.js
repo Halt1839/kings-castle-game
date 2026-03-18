@@ -290,25 +290,6 @@ function drawShopMenu() {
     ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to buy`, bx + bw/2, by + bh - 20);
 }
 
-// ── Teleport Button ─────────────────────────────────────────
-
-const teleportBtn = { x: 100, y: 12, w: 80, h: 32 };
-
-function drawTeleportButton() {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(teleportBtn.x, teleportBtn.y, teleportBtn.w, teleportBtn.h);
-    ctx.strokeStyle = '#44AAFF'; ctx.lineWidth = 1; ctx.strokeRect(teleportBtn.x, teleportBtn.y, teleportBtn.w, teleportBtn.h);
-    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#44AAFF'; ctx.fillText('Teleport', teleportBtn.x + teleportBtn.w/2, teleportBtn.y + teleportBtn.h/2);
-}
-
-function teleportToCastleGates() {
-    if (activeAction || dialog.active || butlerDialog.active || messengerDialog.active || wizardDialog.active || campLeaderDialog.active || shopOpen || adminOpen) return;
-    if (inBoat) inBoat = false;
-    player.x = 14.5 * T;
-    player.y = 29 * T;
-    addNotification('Teleported to the castle gates!', 2000, 'rgba(68,170,255,1)', 'rgba(0,20,60,0.8)');
-}
-
 // ── Pause Button ────────────────────────────────────────────
 
 const pauseBtn = { x: 0, y: 0, w: 80, h: 32 };
@@ -410,6 +391,13 @@ function getAdminItems() {
         { name: adminGhostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF', action: () => {
             adminGhostMode = !adminGhostMode;
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
+        }},
+        { name: 'Teleport: Castle Gates', action: () => {
+            if (inBoat) inBoat = false;
+            player.x = 14.5 * T;
+            player.y = 29 * T;
+            adminOpen = false;
+            addNotification('Teleported to the castle gates!', 2000, 'rgba(68,170,255,1)', 'rgba(0,20,60,0.8)');
         }},
         { name: 'Close', action: () => { adminOpen = false; } },
     ];

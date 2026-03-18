@@ -137,11 +137,6 @@ canvas.addEventListener('click', (e) => {
             my >= shopBtn.y && my <= shopBtn.y + shopBtn.h) {
             shopOpen = true; shopSelection = 0;
         }
-        // Teleport button
-        if (mx >= teleportBtn.x && mx <= teleportBtn.x + teleportBtn.w &&
-            my >= teleportBtn.y && my <= teleportBtn.y + teleportBtn.h) {
-            teleportToCastleGates();
-        }
     }
 });
 
@@ -550,7 +545,6 @@ function gameLoop(now) {
 
     drawHUD();
     drawQuestTasks();
-    drawTeleportButton();
     drawPauseButton();
     drawAdminButton();
     drawShopButton();

@@ -134,13 +134,6 @@ function handleTouchStart(e) {
             }
         }
 
-        // Tap on teleport button area
-        if (touchHitTest(tx, ty, teleportBtn)) {
-            if (gameState === 'playing' && !shopOpen && !adminOpen) {
-                teleportToCastleGates();
-            }
-        }
-
         // Tap on shop button area
         if (dragonKills > 0 && touchHitTest(tx, ty, shopBtn)) {
             if (gameState === 'playing' && !shopOpen) {
