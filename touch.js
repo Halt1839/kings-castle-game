@@ -38,6 +38,7 @@ function getActionLayout() {
     return {
         btnE: { x: baseX, y: baseY, w: BTN_SIZE * 2 + BTN_GAP, h: BTN_SIZE },
         btnH: { x: baseX + BTN_SIZE * 2 + BTN_GAP * 2, y: baseY, w: BTN_SIZE, h: BTN_SIZE },
+        btnV: { x: baseX + BTN_SIZE * 2 + BTN_GAP * 2, y: baseY - BTN_SIZE - BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
         btnB: { x: baseX, y: baseY + BTN_SIZE + BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
         btnF: { x: baseX + BTN_SIZE + BTN_GAP, y: baseY + BTN_SIZE + BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
     };
@@ -125,6 +126,7 @@ function handleTouchStart(e) {
         if (touchHitTest(tx, ty, actions.btnH)) hPressed = true;
         if (touchHitTest(tx, ty, actions.btnB)) bPressed = true;
         if (touchHitTest(tx, ty, actions.btnF)) fPressed = true;
+        if (voidStarUnlocked && touchHitTest(tx, ty, actions.btnV)) vPressed = true;
 
         // Tap on pause button area
         if (touchHitTest(tx, ty, pauseBtn)) {
@@ -252,6 +254,7 @@ function drawTouchControls() {
         drawJoystick();
         drawTouchButton(actions.btnE, 'ACT', false, '255,215,0');
         drawTouchButton(actions.btnH, 'HIT', false, '255,80,80');
+        if (voidStarUnlocked) drawTouchButton(actions.btnV, 'VOID', false, '180,100,255');
         drawTouchButton(actions.btnB, 'BLK', false, '68,136,255');
         drawTouchButton(actions.btnF, 'HEAL', false, '138,43,226');
     } else {
