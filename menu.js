@@ -53,6 +53,8 @@ function saveGame(slot) {
         npcCongrats: { ...npcCongrats },
         hungerMax: hunger.max,
         healthMax: health.max,
+        voidStarUnlocked,
+        lastVoidStarTime,
         deathCount,
         gameTime,
         savedAt: new Date().toLocaleString(),
@@ -116,6 +118,9 @@ function loadGame(slot) {
     if (s.npcCongrats) { npcCongrats.cook = s.npcCongrats.cook || 0; npcCongrats.butler = s.npcCongrats.butler || 0; npcCongrats.wizard = s.npcCongrats.wizard || 0; npcCongrats.campLeader = s.npcCongrats.campLeader || 0; }
     if (s.hungerMax !== undefined) hunger.max = s.hungerMax;
     if (s.healthMax !== undefined) health.max = s.healthMax;
+    if (s.voidStarUnlocked !== undefined) voidStarUnlocked = s.voidStarUnlocked;
+    if (s.lastVoidStarTime !== undefined) lastVoidStarTime = s.lastVoidStarTime;
+    voidStarActive = false;
     if (s.deathCount !== undefined) deathCount = s.deathCount;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
@@ -173,6 +178,7 @@ function newGame(slot) {
     weaponryBuilt = false; guestRoomBuilt = false; dragonKills = 0; dragonRespawnTime = -Infinity;
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     hunger.max = 10; health.max = 10;
+    voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
     gameTime = 0;

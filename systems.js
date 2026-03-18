@@ -904,15 +904,17 @@ function hitSpider() {
     if (pRow < 44 || pRow > 89) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    spider.hp -= swordDamage;
-    addNotification(`Hit! -${swordDamage} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    const dmg = swordDamage * getVoidMultiplier();
+    spider.hp -= dmg;
+    addNotification(`Hit! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (spider.hp <= 0) {
         spider.hp = 0;
         spider.alive = false;
         spiderDeathTime = gameTime;
         spider.maxHp += 10;
-        goldCount += 3;
-        addNotification('+3 Gold', 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gld = 3 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
         // Drop gold block at spider position
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
         const goldRow = Math.floor((spider.y + spider.height / 2) / T);
@@ -1060,15 +1062,17 @@ function hitSeaSnake() {
     if (pRow < 90 || pRow > 110) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    seaSnake.hp -= swordDamage;
-    addNotification(`Hit! -${swordDamage} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    const dmg = swordDamage * getVoidMultiplier();
+    seaSnake.hp -= dmg;
+    addNotification(`Hit! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (seaSnake.hp <= 0) {
         seaSnake.hp = 0;
         seaSnake.alive = false;
         seaSnakeDeathTime = gameTime;
         seaSnake.maxHp += 10;
-        goldCount += 5;
-        addNotification('+5 Gold', 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gld = 5 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
@@ -1437,13 +1441,15 @@ function hitNearestOrc() {
     }
     if (!nearest) return;
     playerAttackCooldown = gameTime;
-    nearest.hp -= swordDamage;
-    addNotification(`Hit orc! -${swordDamage} HP`, 600, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    const dmg = swordDamage * getVoidMultiplier();
+    nearest.hp -= dmg;
+    addNotification(`Hit orc! -${dmg} HP`, 600, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (nearest.hp <= 0) {
         nearest.hp = 0;
         nearest.alive = false;
-        goldCount += 2;
-        addNotification('+2 Gold', 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gld = 2 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
     }
 }
 
@@ -1546,15 +1552,17 @@ function hitTroll() {
     if (pRow < 148 || pRow > 156) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    troll.hp -= swordDamage;
-    addNotification(`Hit troll! -${swordDamage} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    const dmg = swordDamage * getVoidMultiplier();
+    troll.hp -= dmg;
+    addNotification(`Hit troll! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (troll.hp <= 0) {
         troll.hp = 0;
         troll.alive = false;
         trollDeathTime = gameTime;
         troll.maxHp += 10;
-        goldCount += 8;
-        addNotification('+8 Gold', 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gld = 8 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
@@ -1750,14 +1758,16 @@ function hitDragon() {
     if (pRow < 167 || pRow > 193) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    dragon.hp -= swordDamage;
-    addNotification(`Hit dragon! -${swordDamage} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    const dmg = swordDamage * getVoidMultiplier();
+    dragon.hp -= dmg;
+    addNotification(`Hit dragon! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (dragon.hp <= 0) {
         dragon.hp = 0;
         dragon.alive = false;
         dragonKills++;
-        goldCount += 15;
-        addNotification('+15 Gold', 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gld = 15 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
         dragon.maxHp += 30;
         dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
         if (dragonKills === 1) {
@@ -1771,6 +1781,41 @@ function hitDragon() {
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
+    }
+}
+
+// ── Void Star ──────────────────────────────────────────────
+
+let voidStarUnlocked = false;
+let voidStarActive = false;
+let voidStarStartTime = 0;
+let lastVoidStarTime = -Infinity;
+const VOID_STAR_DURATION = 15000; // 15 seconds active
+const VOID_STAR_COOLDOWN = 180000; // 3 minutes
+
+function getVoidMultiplier() {
+    return voidStarActive ? 4 : 1;
+}
+
+function useVoidStar() {
+    if (!voidStarUnlocked) return;
+    if (voidStarActive) return;
+    if (gameTime - lastVoidStarTime < VOID_STAR_COOLDOWN) {
+        const remaining = Math.ceil((VOID_STAR_COOLDOWN - (gameTime - lastVoidStarTime)) / 1000);
+        const mins = Math.floor(remaining / 60), secs = remaining % 60;
+        addNotification(`Void Star on cooldown: ${mins}:${secs.toString().padStart(2, '0')}`, 2000, 'rgba(200,200,200,1)', 'rgba(40,40,40,0.8)');
+        return;
+    }
+    voidStarActive = true;
+    voidStarStartTime = gameTime;
+    lastVoidStarTime = gameTime;
+    addNotification('Void Star activated! 4x buff for 15s!', 3000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)');
+}
+
+function updateVoidStar() {
+    if (voidStarActive && gameTime - voidStarStartTime >= VOID_STAR_DURATION) {
+        voidStarActive = false;
+        addNotification('Void Star faded.', 2000, 'rgba(150,100,200,1)', 'rgba(30,0,40,0.8)');
     }
 }
 

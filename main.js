@@ -5,6 +5,7 @@ let ePressed = false;
 let hPressed = false;
 let fPressed = false;
 let bPressed = false;
+let vPressed = false;
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.key);
@@ -12,6 +13,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'h' || e.key === 'H') hPressed = true;
     if (e.key === 'f' || e.key === 'F') fPressed = true;
     if (e.key === 'b' || e.key === 'B') bPressed = true;
+    if (e.key === 'v' || e.key === 'V') vPressed = true;
 
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
 
@@ -294,6 +296,9 @@ function gameLoop(now) {
     // Update shield
     updateShield();
 
+    // Update void star
+    updateVoidStar();
+
     // Check for death
     if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
@@ -352,6 +357,12 @@ function gameLoop(now) {
     if (bPressed) {
         if (shieldUnlocked) useShield();
         bPressed = false;
+    }
+
+    // Handle V press (void star)
+    if (vPressed) {
+        if (voidStarUnlocked) useVoidStar();
+        vPressed = false;
     }
 
     // Handle E press
@@ -438,8 +449,9 @@ function gameLoop(now) {
         if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A') || touchState.left) dx -= 1;
         if (keys.has('ArrowRight') || keys.has('d') || keys.has('D') || touchState.right) dx += 1;
         if (dx !== 0 && dy !== 0) { const len = Math.SQRT2; dx /= len; dy /= len; }
-        const newX = player.x + dx * player.speed * dt;
-        const newY = player.y + dy * player.speed * dt;
+        const spd = player.speed * getVoidMultiplier();
+        const newX = player.x + dx * spd * dt;
+        const newY = player.y + dy * spd * dt;
         if (!isSolid(newX, player.y, player.width, player.height)) player.x = newX;
         if (!isSolid(player.x, newY, player.width, player.height)) player.y = newY;
         playerWalking = (dx !== 0 || dy !== 0);

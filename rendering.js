@@ -324,9 +324,11 @@ function drawKing(ox, oy) {
     ctx.fillStyle = '#f5c6a0'; ctx.beginPath(); ctx.arc(cx, bodyY+6, 5, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#333'; ctx.fillRect(cx-3, bodyY+5, 2, 2); ctx.fillRect(cx+1, bodyY+5, 2, 2);
     // Crown
-    ctx.fillStyle = '#FFD700'; ctx.fillRect(sx+3, bodyY-1, 10, 4);
+    ctx.fillStyle = (typeof voidStarActive !== 'undefined' && voidStarActive) ? '#4B0082' : '#FFD700';
+    ctx.fillRect(sx+3, bodyY-1, 10, 4);
     ctx.fillRect(sx+3, bodyY-4, 2, 3); ctx.fillRect(sx+7, bodyY-5, 2, 4); ctx.fillRect(sx+11, bodyY-4, 2, 3);
-    ctx.fillStyle = '#FF0000'; ctx.fillRect(sx+7, bodyY-1, 2, 2);
+    ctx.fillStyle = (typeof voidStarActive !== 'undefined' && voidStarActive) ? '#C88FFF' : '#FF0000';
+    ctx.fillRect(sx+7, bodyY-1, 2, 2);
     // Arms
     ctx.fillStyle = '#f5c6a0'; ctx.fillRect(sx, bodyY+9, 3, 6); ctx.fillRect(sx+13, bodyY+9, 3, 6);
     // Legs (animated when walking)

@@ -120,6 +120,26 @@ function drawHUD() {
         }
     }
 
+    // Void Star indicator
+    if (voidStarUnlocked) {
+        const voidCdLeft = Math.max(0, VOID_STAR_COOLDOWN - (gameTime - lastVoidStarTime));
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        if (voidStarActive) {
+            const remaining = Math.max(0, VOID_STAR_DURATION - (gameTime - voidStarStartTime));
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 200);
+            ctx.fillStyle = `rgba(180,100,255,${pulse})`;
+            ctx.fillText(`[V] Void Star ${(remaining / 1000).toFixed(1)}s`, 16, canvas.height - 120 - touchOffsetL);
+        } else if (voidCdLeft <= 0) {
+            ctx.fillStyle = '#B464FF';
+            ctx.fillText('[V] Void Star Ready', 16, canvas.height - 120 - touchOffsetL);
+        } else {
+            const secs = Math.ceil(voidCdLeft / 1000);
+            const mins = Math.floor(secs / 60), s = secs % 60;
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[V] Void Star ${mins}:${s.toString().padStart(2, '0')}`, 16, canvas.height - 120 - touchOffsetL);
+        }
+    }
+
     // Dragon respawn timer
     if (typeof dragonRespawnTime !== 'undefined' && dragonRespawnTime > 0 && !dragon.alive) {
         const remaining = Math.max(0, Math.ceil((dragonRespawnTime - gameTime) / 1000));
@@ -233,6 +253,7 @@ function getShopItems() {
     if (!weaponryBuilt) items.push({ name: 'Weaponry', cost: 20, action: () => buildWeaponryRoom() });
     if (!guestRoomBuilt) items.push({ name: 'Guest Room', cost: 30, action: () => buildGuestRoom() });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
+    if (!voidStarUnlocked) items.push({ name: 'Void Star (4x buff)', cost: 2500, action: () => { goldCount -= 2500; voidStarUnlocked = true; addNotification('Void Star unlocked! Press V to activate!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)'); } });
     return items;
 }
 
