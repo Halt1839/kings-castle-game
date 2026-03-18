@@ -1790,7 +1790,7 @@ let voidStarUnlocked = false;
 let voidStarActive = false;
 let voidStarStartTime = 0;
 let lastVoidStarTime = -Infinity;
-const VOID_STAR_DURATION = 15000; // 15 seconds active
+const VOID_STAR_DURATION = 60000; // 1 minute active
 const VOID_STAR_COOLDOWN = 180000; // 3 minutes
 
 function getVoidMultiplier() {
@@ -1809,7 +1809,7 @@ function useVoidStar() {
     voidStarActive = true;
     voidStarStartTime = gameTime;
     lastVoidStarTime = gameTime;
-    addNotification('Void Star activated! 4x buff for 15s!', 3000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)');
+    addNotification('Void Star activated! 4x buff for 1 min!', 3000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)');
 }
 
 function updateVoidStar() {
