@@ -45,7 +45,7 @@ const guestCampLeader = { x: 27 * T + 8, y: 8 * T + 8, width: 16, height: 16 };
 const voidSentinel = {
     x: 14 * T, y: 220 * T,
     width: 16, height: 16,
-    hp: 10000, maxHp: 10000,
+    hp: 2500, maxHp: 2500,
     alive: true,
     aggro: false, // idle until attacked
     lastAttack: 0,

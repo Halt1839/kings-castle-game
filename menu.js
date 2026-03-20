@@ -200,7 +200,7 @@ function newGame(slot) {
     notifications = [];
     deathCount = 0;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
-    voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 10000; voidSentinel.maxHp = 10000;
+    voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
     voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity; voidSentinel.dashHit = false;
     voidSentinelDeathTime = -Infinity;

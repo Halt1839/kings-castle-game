@@ -1956,7 +1956,7 @@ function hitVoidSentinel() {
         voidSentinel.alive = false;
         voidSentinel.aggro = false;
         voidSentinelDeathTime = gameTime;
-        voidSentinel.maxHp = 10000;
+        voidSentinel.maxHp = 2500;
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
