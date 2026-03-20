@@ -51,31 +51,31 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = inCastle ? dc().throne2 : '#DAA520'; ctx.fillRect(x+6, y, T-12, 6);
             ctx.fillStyle = inCastle ? dc().throne3 : '#FFD700'; ctx.fillRect(x+T/2-2, y+1, 4, 4); break;
         case BED_HEAD:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#3d2010'; ctx.fillRect(x+1, y+1, T-2, T-2);
             ctx.fillStyle = '#5a3520'; ctx.fillRect(x+3, y+3, T-6, T-6);
             ctx.fillStyle = '#DAA520'; ctx.fillRect(x+T/2-3, y+4, 6, 3); break;
         case PILLOW:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#8B0000'; ctx.fillRect(x+1, y+1, T-2, T-2);
             ctx.fillStyle = '#F5F5DC'; ctx.fillRect(x+4, y+6, T-8, T-12);
             ctx.fillStyle = '#EDEDD5'; ctx.fillRect(x+6, y+8, T-12, T-16); break;
         case BED_FOOT:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#8B0000'; ctx.fillRect(x+1, y+1, T-2, T-4);
             ctx.fillStyle = '#6B0000'; ctx.fillRect(x+3, y+2, T-6, 4);
             ctx.fillStyle = '#3d2010'; ctx.fillRect(x+1, y+T-4, T-2, 3); break;
         case NIGHTSTAND:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#5a3520'; ctx.fillRect(x+4, y+4, T-8, T-8);
             ctx.fillStyle = '#3d2010'; ctx.fillRect(x+4, y+T/2-1, T-8, 2);
             ctx.fillStyle = '#F5F5DC'; ctx.fillRect(x+T/2-2, y+1, 4, 6);
             ctx.fillStyle = '#FF8C00'; ctx.fillRect(x+T/2-1, y-1, 2, 3); break;
         case TABLE:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#8B5E3C'; ctx.fillRect(x+2, y+2, T-4, T-4); break;
         case STOVE:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#444'; ctx.fillRect(x+2, y+2, T-4, T-4);
             ctx.fillStyle = '#FF4500'; ctx.fillRect(x+8, y+8, T-16, T-16); break;
         case CARPET:
@@ -83,15 +83,15 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = inCastle ? dc().carpet2 : '#DAA520'; ctx.fillRect(x+2, y, T-4, T);
             ctx.fillStyle = inCastle ? dc().carpet3 : '#8B0000'; ctx.fillRect(x+5, y, T-10, T); break;
         case RUG:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#4a2560'; ctx.fillRect(x+1, y+1, T-2, T-2);
             ctx.fillStyle = '#6a3580'; ctx.fillRect(x+4, y+4, T-8, T-8); break;
         case BARREL:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#8B5E3C'; ctx.beginPath(); ctx.arc(x+T/2, y+T/2, T/2-4, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#5c3a1e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x+T/2, y+T/2, T/2-4, 0, Math.PI*2); ctx.stroke(); break;
         case SHELF:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#654321'; ctx.fillRect(x+2, y+6, T-4, 4); ctx.fillRect(x+2, y+18, T-4, 4);
             ctx.fillStyle = '#a03030'; ctx.fillRect(x+4, y+2, 5, 4);
             ctx.fillStyle = '#3050a0'; ctx.fillRect(x+11, y+2, 5, 4);
@@ -108,7 +108,7 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#FF8C00'; ctx.beginPath(); ctx.arc(x+T/2, y+10, 5, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(x+T/2, y+10, 3, 0, Math.PI*2); ctx.fill(); break;
         case CHAIR:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#654321'; ctx.fillRect(x+8, y+8, T-16, T-16); ctx.fillRect(x+6, y+4, T-12, 6); break;
         case TOILET:
             ctx.fillStyle = '#b0c4d8'; ctx.fillRect(x, y, T, T);
