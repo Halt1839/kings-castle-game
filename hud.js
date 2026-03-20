@@ -120,23 +120,25 @@ function drawHUD() {
         }
     }
 
-    // Void Rush / Void Star indicator
+    // Void Rush indicator (shown when voidstar sword equipped)
     if (currentSword === 'voidstar' && voidStarSwordUnlocked) {
         const rushCdLeft = Math.max(0, voidRush.cooldown - (gameTime - voidRush.lastUseTime));
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         if (voidRush.state !== 'idle') {
             const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 150);
             ctx.fillStyle = `rgba(200,140,255,${pulse})`;
-            ctx.fillText('[V] Void Rush Active', 16, canvas.height - 120 - touchOffsetL);
+            ctx.fillText('[R] Void Rush Active', 16, canvas.height - 140 - touchOffsetL);
         } else if (rushCdLeft <= 0) {
             ctx.fillStyle = '#C88FFF';
-            ctx.fillText('[V] Void Rush Ready', 16, canvas.height - 120 - touchOffsetL);
+            ctx.fillText('[R] Void Rush Ready', 16, canvas.height - 140 - touchOffsetL);
         } else {
             const secs = Math.ceil(rushCdLeft / 1000);
             ctx.fillStyle = '#666';
-            ctx.fillText(`[V] Void Rush ${secs}s`, 16, canvas.height - 120 - touchOffsetL);
+            ctx.fillText(`[R] Void Rush ${secs}s`, 16, canvas.height - 140 - touchOffsetL);
         }
-    } else if (voidStarUnlocked) {
+    }
+    // Void Star buff indicator
+    if (voidStarUnlocked) {
         const voidCdLeft = Math.max(0, VOID_STAR_COOLDOWN - (gameTime - lastVoidStarTime));
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         if (voidStarActive) {

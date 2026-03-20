@@ -6,6 +6,7 @@ let hPressed = false;
 let fPressed = false;
 let bPressed = false;
 let vPressed = false;
+let rPressed = false;
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.key);
@@ -14,6 +15,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'f' || e.key === 'F') fPressed = true;
     if (e.key === 'b' || e.key === 'B') bPressed = true;
     if (e.key === 'v' || e.key === 'V') vPressed = true;
+    if (e.key === 'r' || e.key === 'R') rPressed = true;
 
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
 
@@ -367,11 +369,16 @@ function gameLoop(now) {
         bPressed = false;
     }
 
-    // Handle V press (void rush if voidstar sword equipped, else void star buff)
+    // Handle V press (void star buff)
     if (vPressed) {
-        if (currentSword === 'voidstar' && voidStarSwordUnlocked) useVoidRush();
-        else if (voidStarUnlocked) useVoidStar();
+        if (voidStarUnlocked) useVoidStar();
         vPressed = false;
+    }
+
+    // Handle R press (void rush)
+    if (rPressed) {
+        if (currentSword === 'voidstar' && voidStarSwordUnlocked) useVoidRush();
+        rPressed = false;
     }
 
     // Handle E press

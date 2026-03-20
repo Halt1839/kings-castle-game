@@ -62,7 +62,7 @@ const voidSentinel = {
     dashTargetX: 0,
     dashTargetY: 0,
     dashSpeed: 500,
-    dashHit: false, // track if current dash already hit player
+    dashHit: false,
 };
 let voidSentinelDeathTime = -Infinity;
 

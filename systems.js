@@ -1965,7 +1965,7 @@ function hitVoidSentinel() {
             voidStarSwordUnlocked = true;
             currentSword = 'voidstar'; swordDamage = 7;
             addNotification('Void Star sword acquired! 7 dmg + Void Rush!', 6000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
-            addNotification('Press V to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
+            addNotification('Press R to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
         }
     }
 }
@@ -1980,7 +1980,7 @@ const voidRush = {
     targetX: 0,
     targetY: 0,
     dashSpeed: 500,
-    hit: false,
+    hitSet: new Set(), // tracks which enemies were hit during current dash
 };
 
 function useVoidRush() {
@@ -2013,7 +2013,7 @@ function useVoidRush() {
     voidRush.windupStart = gameTime;
     voidRush.targetX = tx;
     voidRush.targetY = ty;
-    voidRush.hit = false;
+    voidRush.hitSet = new Set();
 }
 
 function updateVoidRush(dt) {
@@ -2033,20 +2033,17 @@ function updateVoidRush(dt) {
         if (dist > 6) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
-            // Deal damage to nearby enemies during dash
-            if (!voidRush.hit) {
-                const dmg = 20;
-                if (voidRushHitEnemies(dmg)) voidRush.hit = true;
-            }
+            // Hit ALL enemies along the line of fire
+            voidRushHitEnemies(20);
         } else {
             // Reached target — start second windup, retarget nearest enemy
             voidRush.state = 'windup2';
             voidRush.windupStart = gameTime;
-            voidRush.hit = false;
+            voidRush.hitSet = new Set(); // reset hit tracking for second dash
             // Retarget
             let tx2 = null, ty2 = null, bestDist2 = Infinity;
             const px2 = player.x + player.width / 2, py2 = player.y + player.height / 2;
-            function checkTarget2(ex, ey, alive) {
+            function checkTarget2(ex, ey, alive, id) {
                 if (!alive) return;
                 const d = Math.hypot(ex - px2, ey - py2);
                 if (d < bestDist2) { bestDist2 = d; tx2 = ex; ty2 = ey; }
@@ -2076,10 +2073,7 @@ function updateVoidRush(dt) {
         if (dist > 6) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
-            if (!voidRush.hit) {
-                const dmg = 30; // 20 + 10 extra
-                if (voidRushHitEnemies(dmg)) voidRush.hit = true;
-            }
+            voidRushHitEnemies(30); // 20 + 10 extra
         } else {
             voidRush.state = 'idle';
             voidRush.lastUseTime = gameTime;
@@ -2088,25 +2082,25 @@ function updateVoidRush(dt) {
     }
 }
 
+// Hits any enemy near the player during dash — each enemy only hit once per dash
 function voidRushHitEnemies(dmg) {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
-    let hit = false;
-    function tryHit(enemy, range) {
+    function tryHit(enemy, range, id) {
+        if (voidRush.hitSet.has(id)) return; // already hit this dash
         const ecx = enemy.x + enemy.width / 2, ecy = enemy.y + enemy.height / 2;
         if (Math.hypot(pcx - ecx, pcy - ecy) < T * range) {
+            voidRush.hitSet.add(id);
             enemy.hp -= dmg;
             addNotification(`Void Rush! -${dmg} HP`, 1000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
             if (enemy.hp <= 0) enemy.hp = 0;
-            hit = true;
         }
     }
-    if (inArena && voidSentinel.alive) tryHit(voidSentinel, 1.8);
-    if (spider.alive && spider.active) tryHit(spider, 1.5);
-    if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) tryHit(seaSnake, 1.5);
-    if (troll.alive) tryHit(troll, 1.5);
-    if (dragon.alive) tryHit(dragon, 1.8);
-    if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) tryHit(orc, 1.5); }
-    return hit;
+    if (inArena && voidSentinel.alive) tryHit(voidSentinel, 1.8, 'sentinel');
+    if (spider.alive && spider.active) tryHit(spider, 1.5, 'spider');
+    if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) tryHit(seaSnake, 1.5, 'seasnake');
+    if (troll.alive) tryHit(troll, 1.5, 'troll');
+    if (dragon.alive) tryHit(dragon, 1.8, 'dragon');
+    if (typeof orcs !== 'undefined') for (let i = 0; i < orcs.length; i++) { if (orcs[i].alive) tryHit(orcs[i], 1.5, 'orc' + i); }
 }
 
 // ── Void Star ──────────────────────────────────────────────

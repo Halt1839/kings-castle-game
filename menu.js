@@ -195,7 +195,7 @@ function newGame(slot) {
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     hunger.max = 10; health.max = 10;
     voidStarSwordUnlocked = false;
-    voidRush.state = 'idle'; voidRush.lastUseTime = -Infinity; voidRush.hit = false;
+    voidRush.state = 'idle'; voidRush.lastUseTime = -Infinity; voidRush.hitSet = new Set();
     voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
