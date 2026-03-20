@@ -1,28 +1,55 @@
+// ── Design Theme Colors ─────────────────────────────────────
+
+const DESIGN_COLORS = {
+    default: { wall1: '#6b6b7b', wall2: '#5b5b6b', wallStroke: '#4a4a5a',
+               floor1: '#c8b078', floorStroke: '#b8a068',
+               door1: '#8B6914', door2: '#a07818',
+               carpet1: '#8B0000', carpet2: '#DAA520', carpet3: '#8B0000',
+               throne1: '#8B0000', throne2: '#DAA520', throne3: '#FFD700' },
+    gold:    { wall1: '#8a7a3a', wall2: '#7a6a2a', wallStroke: '#6a5a1a',
+               floor1: '#e8d088', floorStroke: '#d8c068',
+               door1: '#DAA520', door2: '#FFD700',
+               carpet1: '#FFD700', carpet2: '#FFF8DC', carpet3: '#FFD700',
+               throne1: '#DAA520', throne2: '#FFD700', throne3: '#FFF8DC' },
+    void:    { wall1: '#3a2a5e', wall2: '#2a1a4e', wallStroke: '#1a0a3e',
+               floor1: '#5a4a7a', floorStroke: '#4a3a6a',
+               door1: '#4a2a6e', door2: '#6a4a8e',
+               carpet1: '#2a0a4e', carpet2: '#8a5abf', carpet3: '#2a0a4e',
+               throne1: '#4a1a7e', throne2: '#C88FFF', throne3: '#E0C0FF' },
+};
+
+function dc() {
+    const d = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
+    return DESIGN_COLORS[d] || DESIGN_COLORS.default;
+}
+
 // ── Tile Drawing ────────────────────────────────────────────
 
 function drawTile(col, row, ox, oy) {
     const x = col * T - ox, y = row * T - oy;
     const tile = map[row][col];
+    // Apply design theme only inside castle (rows 1-28)
+    const inCastle = row >= 1 && row <= 28;
     switch (tile) {
         case VOID: ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x, y, T, T); break;
         case FLOOR:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
-            ctx.strokeStyle = '#b8a068'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T); break;
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.strokeStyle = inCastle ? dc().floorStroke : '#b8a068'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T); break;
         case BATH_FLOOR:
             ctx.fillStyle = '#b0c4d8'; ctx.fillRect(x, y, T, T);
             ctx.strokeStyle = '#98b0c0'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T); break;
         case WALL:
-            ctx.fillStyle = '#6b6b7b'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#5b5b6b'; ctx.fillRect(x + 1, y + 1, T/2-2, T/2-2); ctx.fillRect(x+T/2, y+T/2, T/2-1, T/2-1);
-            ctx.strokeStyle = '#4a4a5a'; ctx.lineWidth = 1; ctx.strokeRect(x, y, T, T); break;
+            ctx.fillStyle = inCastle ? dc().wall1 : '#6b6b7b'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().wall2 : '#5b5b6b'; ctx.fillRect(x + 1, y + 1, T/2-2, T/2-2); ctx.fillRect(x+T/2, y+T/2, T/2-1, T/2-1);
+            ctx.strokeStyle = inCastle ? dc().wallStroke : '#4a4a5a'; ctx.lineWidth = 1; ctx.strokeRect(x, y, T, T); break;
         case DOOR:
-            ctx.fillStyle = '#8B6914'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#a07818'; ctx.fillRect(x+4, y+2, T-8, T-4); break;
+            ctx.fillStyle = inCastle ? dc().door1 : '#8B6914'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().door2 : '#a07818'; ctx.fillRect(x+4, y+2, T-8, T-4); break;
         case THRONE:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#8B0000'; ctx.fillRect(x+4, y+2, T-8, T-4);
-            ctx.fillStyle = '#DAA520'; ctx.fillRect(x+6, y, T-12, 6);
-            ctx.fillStyle = '#FFD700'; ctx.fillRect(x+T/2-2, y+1, 4, 4); break;
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().throne1 : '#8B0000'; ctx.fillRect(x+4, y+2, T-8, T-4);
+            ctx.fillStyle = inCastle ? dc().throne2 : '#DAA520'; ctx.fillRect(x+6, y, T-12, 6);
+            ctx.fillStyle = inCastle ? dc().throne3 : '#FFD700'; ctx.fillRect(x+T/2-2, y+1, 4, 4); break;
         case BED_HEAD:
             ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#3d2010'; ctx.fillRect(x+1, y+1, T-2, T-2);
@@ -52,9 +79,9 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#444'; ctx.fillRect(x+2, y+2, T-4, T-4);
             ctx.fillStyle = '#FF4500'; ctx.fillRect(x+8, y+8, T-16, T-16); break;
         case CARPET:
-            ctx.fillStyle = '#8B0000'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#DAA520'; ctx.fillRect(x+2, y, T-4, T);
-            ctx.fillStyle = '#8B0000'; ctx.fillRect(x+5, y, T-10, T); break;
+            ctx.fillStyle = inCastle ? dc().carpet1 : '#8B0000'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().carpet2 : '#DAA520'; ctx.fillRect(x+2, y, T-4, T);
+            ctx.fillStyle = inCastle ? dc().carpet3 : '#8B0000'; ctx.fillRect(x+5, y, T-10, T); break;
         case RUG:
             ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#4a2560'; ctx.fillRect(x+1, y+1, T-2, T-2);
@@ -70,13 +97,13 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#3050a0'; ctx.fillRect(x+11, y+2, 5, 4);
             ctx.fillStyle = '#40a040'; ctx.fillRect(x+6, y+14, 6, 4); break;
         case WINDOW_TILE:
-            ctx.fillStyle = '#6b6b7b'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().wall1 : '#6b6b7b'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#87CEEB'; ctx.fillRect(x+6, y+4, T-12, T-8);
             ctx.strokeStyle = '#654321'; ctx.lineWidth = 2; ctx.strokeRect(x+6, y+4, T-12, T-8);
             ctx.beginPath(); ctx.moveTo(x+T/2, y+4); ctx.lineTo(x+T/2, y+T-4); ctx.stroke(); break;
         case TORCH:
-            ctx.fillStyle = '#c8b078'; ctx.fillRect(x, y, T, T);
-            ctx.strokeStyle = '#b8a068'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
+            ctx.fillStyle = inCastle ? dc().floor1 : '#c8b078'; ctx.fillRect(x, y, T, T);
+            ctx.strokeStyle = inCastle ? dc().floorStroke : '#b8a068'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
             ctx.fillStyle = '#555'; ctx.fillRect(x+13, y+12, 6, 4);
             ctx.fillStyle = '#FF8C00'; ctx.beginPath(); ctx.arc(x+T/2, y+10, 5, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(x+T/2, y+10, 3, 0, Math.PI*2); ctx.fill(); break;
@@ -299,6 +326,17 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = `rgba(255,255,200,${gs})`;
             ctx.beginPath(); ctx.arc(x+T/2, y+T/2, 2, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#B8860B'; ctx.lineWidth = 1; ctx.strokeRect(x+6, y+6, T-12, T-12);
+            break;
+        case DESIGN_RACK:
+            ctx.fillStyle = dc().floor1; ctx.fillRect(x, y, T, T);
+            ctx.strokeStyle = dc().floorStroke; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
+            // Rack frame
+            ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 4, y + 2, T - 8, T - 4);
+            ctx.fillStyle = '#6a4a2a'; ctx.fillRect(x + 6, y + 4, T - 12, T - 8);
+            // Color swatches
+            ctx.fillStyle = '#FFD700'; ctx.fillRect(x + 8, y + 6, 6, 8);
+            ctx.fillStyle = '#6a3abf'; ctx.fillRect(x + 18, y + 6, 6, 8);
+            ctx.fillStyle = '#c8b078'; ctx.fillRect(x + 13, y + 18, 6, 6);
             break;
         case ARENA_FLOOR:
             ctx.fillStyle = '#4a4a5a'; ctx.fillRect(x, y, T, T);

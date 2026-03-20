@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v2.6';
+const GAME_VERSION = 'v2.7';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
@@ -41,7 +41,7 @@ const PATH = 27;
 const TREE = 28, HUT_WALL = 29, HUT_FLOOR = 30, GOLD_BLOCK = 31;
 const SAND = 32, DOCK = 33, TENT = 34, CAMPFIRE = 35;
 const MOUNTAIN = 36, MOUNTAIN_PATH = 37, CAVE_WALL = 38, CAVE_FLOOR = 39, CAVE_DOOR = 40;
-const PEAK_FLOOR = 41, WEAPON_RACK = 42;
+const PEAK_FLOOR = 41, WEAPON_RACK = 42, DESIGN_RACK = 44;
 
 // Game time (pausable) — declared early so notifications & systems can use it
 let gameTime = 0;

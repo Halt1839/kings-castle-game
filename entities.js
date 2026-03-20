@@ -72,7 +72,7 @@ const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
 
 let swordPickedUp = false;
 
-const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK]);
+const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK, DESIGN_RACK]);
 
 // Secret passage tiles (col 12, rows 42-43) — walkable grass
 function isSecretPassageTile(row, col) {

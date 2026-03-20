@@ -772,6 +772,10 @@ let kingSwordUnlocked = false;
 let dragonSwordUnlocked = false;
 let voidStarSwordUnlocked = false;
 let weaponryBuilt = false;
+let designRoomBuilt = false;
+let currentDesign = 'default'; // 'default', 'gold', 'void'
+let goldDesignUnlocked = false;
+let voidDesignUnlocked = false;
 let guestRoomBuilt = false;
 let dragonKills = 0;
 let dragonRespawnTime = -Infinity;
@@ -879,6 +883,62 @@ function isNearWeaponRack() {
             if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS && map[r][c] === WEAPON_RACK) return true;
         }
     return false;
+}
+
+function buildDesignRoom(free) {
+    if (designRoomBuilt && !free) return;
+    if (!free && goldCount < 100) return;
+    if (!free) goldCount -= 100;
+    designRoomBuilt = true;
+    // Open corridor west wall at rows 24-25
+    map[24][12] = DOOR; map[25][12] = DOOR;
+    // Room: rows 22-27, cols 9-12
+    for (let r = 22; r <= 27; r++)
+        for (let c = 9; c <= 12; c++) map[r][c] = FLOOR;
+    for (let c = 9; c <= 12; c++) { map[22][c] = WALL; map[27][c] = WALL; }
+    for (let r = 22; r <= 27; r++) map[r][9] = WALL;
+    map[22][12] = WALL; map[23][12] = WALL; map[26][12] = WALL; map[27][12] = WALL;
+    map[24][12] = DOOR; map[25][12] = DOOR;
+    // Design racks
+    map[23][10] = DESIGN_RACK; map[25][10] = DESIGN_RACK;
+    // Torch
+    map[22][11] = TORCH;
+    if (!free) addNotification('Design Room built! Switch castle themes.', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
+}
+
+function isNearDesignRack() {
+    if (!designRoomBuilt) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const col = Math.floor(pcx / T), row = Math.floor(pcy / T);
+    for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+            const r = row + dr, c = col + dc;
+            if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS && map[r][c] === DESIGN_RACK) return true;
+        }
+    return false;
+}
+
+function isNearDesignRoomBuildSite() {
+    if (designRoomBuilt || dragonKills === 0) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const col = Math.floor(pcx / T), row = Math.floor(pcy / T);
+    return row >= 23 && row <= 26 && col >= 12 && col <= 13;
+}
+
+function switchDesign() {
+    if (currentDesign === 'default' && goldDesignUnlocked) {
+        currentDesign = 'gold';
+        addNotification('Switched to Gold design!', 2000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
+    } else if (currentDesign === 'default' && voidDesignUnlocked) {
+        currentDesign = 'void';
+        addNotification('Switched to Void design!', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    } else if (currentDesign === 'gold' && voidDesignUnlocked) {
+        currentDesign = 'void';
+        addNotification('Switched to Void design!', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    } else {
+        currentDesign = 'default';
+        addNotification('Switched to Default design!', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
+    }
 }
 
 function isNearWeaponryBuildSite() {
@@ -1782,6 +1842,10 @@ function hitDragon() {
             addNotification("King's Sword unlocked! 3 damage per hit!", 6000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
             addNotification('Build new rooms at the castle with gold!', 5000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
         }
+        if (!goldDesignUnlocked) {
+            goldDesignUnlocked = true;
+            addNotification('Gold design unlocked!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
+        }
         respawnMonsters();
         questTasks.dragonDefeated = true;
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
@@ -1966,6 +2030,10 @@ function hitVoidSentinel() {
             currentSword = 'voidstar'; swordDamage = 7;
             addNotification('Void Star sword acquired! 7 dmg + Void Rush!', 6000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
             addNotification('Press R to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
+        }
+        if (!voidDesignUnlocked) {
+            voidDesignUnlocked = true;
+            addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
         }
     }
 }

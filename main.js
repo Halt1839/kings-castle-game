@@ -424,6 +424,11 @@ function gameLoop(now) {
                 pickUpGold();
             } else if (nearWiz) {
                 openWizardDialog();
+            } else if (isNearDesignRack()) {
+                switchDesign();
+            } else if (isNearDesignRoomBuildSite()) {
+                if (goldCount >= 100) buildDesignRoom();
+                else addNotification(`Need 100 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
             } else if (isNearWeaponRack()) {
                 switchSword();
             } else if (isNearWeaponryBuildSite()) {
@@ -546,7 +551,13 @@ function gameLoop(now) {
     else if (wizardDialog.active) drawWizardDialog();
     else if (campLeaderDialog.active) drawCampLeaderDialog();
     else if (activeAction) drawActionMessage();
-    else if (isNearWeaponRack()) {
+    else if (isNearDesignRack()) {
+        const next = currentDesign === 'default' ? (goldDesignUnlocked ? 'Gold' : (voidDesignUnlocked ? 'Void' : 'Default')) :
+                     currentDesign === 'gold' ? (voidDesignUnlocked ? 'Void' : 'Default') : 'Default';
+        drawPrompt(`${kl('E')} to switch to ${next} design`);
+    } else if (isNearDesignRoomBuildSite()) {
+        drawPrompt(`${kl('E')} to build Design Room (100 gold) [${goldCount} gold]`);
+    } else if (isNearWeaponRack()) {
         let other;
         if (currentSword === 'legendary') other = "King's Sword (3 dmg)";
         else if (currentSword === 'kings' && dragonSwordUnlocked) other = 'Dragon Sword (5 dmg)';

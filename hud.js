@@ -207,8 +207,8 @@ function drawHUD() {
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
@@ -269,6 +269,7 @@ function getShopItems() {
     const items = [];
     if (!weaponryBuilt) items.push({ name: 'Weaponry', cost: 20, action: () => buildWeaponryRoom() });
     if (!guestRoomBuilt) items.push({ name: 'Guest Room', cost: 30, action: () => buildGuestRoom() });
+    if (!designRoomBuilt) items.push({ name: 'Design Room', cost: 100, action: () => buildDesignRoom() });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
     if (!voidStarUnlocked) items.push({ name: 'Void Star (4x buff)', cost: 2500, action: () => { goldCount -= 2500; voidStarUnlocked = true; addNotification('Void Star unlocked! Press V to activate!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)'); } });
     return items;

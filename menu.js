@@ -60,6 +60,10 @@ function saveGame(slot) {
         inArena,
         arenaReturnX,
         arenaReturnY,
+        designRoomBuilt,
+        currentDesign,
+        goldDesignUnlocked,
+        voidDesignUnlocked,
         voidSentinel: { x: voidSentinel.x, y: voidSentinel.y, hp: voidSentinel.hp, maxHp: voidSentinel.maxHp, alive: voidSentinel.alive, aggro: voidSentinel.aggro, deathTime: voidSentinelDeathTime },
         gameTime,
         savedAt: new Date().toLocaleString(),
@@ -118,6 +122,10 @@ function loadGame(slot) {
     if (s.weaponryBuilt !== undefined) { weaponryBuilt = false; if (s.weaponryBuilt) buildWeaponryRoom(true); }
     const savedGuestRoom = s.guestRoomBuilt !== undefined ? s.guestRoomBuilt : s.courtyardBuilt;
     if (savedGuestRoom !== undefined) { guestRoomBuilt = false; if (savedGuestRoom) buildGuestRoom(true); }
+    if (s.designRoomBuilt !== undefined) { designRoomBuilt = false; if (s.designRoomBuilt) buildDesignRoom(true); }
+    if (s.currentDesign !== undefined) currentDesign = s.currentDesign;
+    if (s.goldDesignUnlocked !== undefined) goldDesignUnlocked = s.goldDesignUnlocked;
+    if (s.voidDesignUnlocked !== undefined) voidDesignUnlocked = s.voidDesignUnlocked;
     if (s.dragonKills !== undefined) dragonKills = s.dragonKills;
     if (s.dragonRespawnTime !== undefined) dragonRespawnTime = s.dragonRespawnTime;
     if (s.npcCongrats) { npcCongrats.cook = s.npcCongrats.cook || 0; npcCongrats.butler = s.npcCongrats.butler || 0; npcCongrats.wizard = s.npcCongrats.wizard || 0; npcCongrats.campLeader = s.npcCongrats.campLeader || 0; }
@@ -191,7 +199,9 @@ function newGame(slot) {
     dragon.fireTimer = 0; dragon.windingUp = false; dragon.firing = false;
     dragon.stunned = false; dragon.stunUntil = 0;
     goldCount = 0; swordDamage = 2; currentSword = 'legendary'; kingSwordUnlocked = false; dragonSwordUnlocked = false;
-    weaponryBuilt = false; guestRoomBuilt = false; dragonKills = 0; dragonRespawnTime = -Infinity;
+    weaponryBuilt = false; guestRoomBuilt = false; designRoomBuilt = false;
+    currentDesign = 'default'; goldDesignUnlocked = false; voidDesignUnlocked = false;
+    dragonKills = 0; dragonRespawnTime = -Infinity;
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     hunger.max = 10; health.max = 10;
     voidStarSwordUnlocked = false;
