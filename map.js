@@ -265,5 +265,18 @@ function buildMap() {
         for (let c = 3; c <= 26; c++) map[r][c] = PEAK_FLOOR;
     // The passage from cave to peak is blocked (CAVE_WALL/MOUNTAIN)
     // until troll is defeated — openPeakPassage() carves it open
+
+    // ── Secret Arena (rows 210-230, in the void) ──
+    // Clear grass that was filled from row 111
+    for (let r = 200; r < MAP_ROWS; r++)
+        for (let c = 0; c < MAP_COLS; c++) map[r][c] = VOID;
+    // Arena border (cave walls)
+    for (let c = 3; c <= 26; c++) { map[210][c] = CAVE_WALL; map[230][c] = CAVE_WALL; }
+    for (let r = 210; r <= 230; r++) { map[r][3] = CAVE_WALL; map[r][26] = CAVE_WALL; }
+    // Arena floor
+    for (let r = 211; r <= 229; r++)
+        for (let c = 4; c <= 25; c++) map[r][c] = ARENA_FLOOR;
+    // Return teleport spot (marked with DOOR tile at arena entrance)
+    map[210][14] = DOOR; map[210][15] = DOOR;
 }
 buildMap();

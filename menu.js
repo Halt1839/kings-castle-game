@@ -53,9 +53,14 @@ function saveGame(slot) {
         npcCongrats: { ...npcCongrats },
         hungerMax: hunger.max,
         healthMax: health.max,
+        voidStarSwordUnlocked,
         voidStarUnlocked,
         lastVoidStarTime,
         deathCount,
+        inArena,
+        arenaReturnX,
+        arenaReturnY,
+        voidSentinel: { x: voidSentinel.x, y: voidSentinel.y, hp: voidSentinel.hp, maxHp: voidSentinel.maxHp, alive: voidSentinel.alive, aggro: voidSentinel.aggro, deathTime: voidSentinelDeathTime },
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -118,10 +123,21 @@ function loadGame(slot) {
     if (s.npcCongrats) { npcCongrats.cook = s.npcCongrats.cook || 0; npcCongrats.butler = s.npcCongrats.butler || 0; npcCongrats.wizard = s.npcCongrats.wizard || 0; npcCongrats.campLeader = s.npcCongrats.campLeader || 0; }
     if (s.hungerMax !== undefined) hunger.max = s.hungerMax;
     if (s.healthMax !== undefined) health.max = s.healthMax;
+    if (s.voidStarSwordUnlocked !== undefined) voidStarSwordUnlocked = s.voidStarSwordUnlocked;
     if (s.voidStarUnlocked !== undefined) voidStarUnlocked = s.voidStarUnlocked;
     if (s.lastVoidStarTime !== undefined) lastVoidStarTime = s.lastVoidStarTime;
     voidStarActive = false;
     if (s.deathCount !== undefined) deathCount = s.deathCount;
+    if (s.inArena !== undefined) inArena = s.inArena;
+    if (s.arenaReturnX !== undefined) arenaReturnX = s.arenaReturnX;
+    if (s.arenaReturnY !== undefined) arenaReturnY = s.arenaReturnY;
+    if (s.voidSentinel) {
+        voidSentinel.x = s.voidSentinel.x; voidSentinel.y = s.voidSentinel.y;
+        voidSentinel.hp = s.voidSentinel.hp; voidSentinel.alive = s.voidSentinel.alive;
+        voidSentinel.aggro = s.voidSentinel.aggro || false;
+        if (s.voidSentinel.maxHp) voidSentinel.maxHp = s.voidSentinel.maxHp;
+        if (s.voidSentinel.deathTime !== undefined) voidSentinelDeathTime = s.voidSentinel.deathTime;
+    }
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -178,9 +194,16 @@ function newGame(slot) {
     weaponryBuilt = false; guestRoomBuilt = false; dragonKills = 0; dragonRespawnTime = -Infinity;
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     hunger.max = 10; health.max = 10;
+    voidStarSwordUnlocked = false;
+    voidRush.state = 'idle'; voidRush.lastUseTime = -Infinity; voidRush.hit = false;
     voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
+    inArena = false; arenaReturnX = 0; arenaReturnY = 0;
+    voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 10000; voidSentinel.maxHp = 10000;
+    voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
+    voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity; voidSentinel.dashHit = false;
+    voidSentinelDeathTime = -Infinity;
     gameTime = 0;
     currentSlot = slot;
     buildMap();

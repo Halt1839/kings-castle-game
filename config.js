@@ -1,4 +1,10 @@
-const GAME_VERSION = 'v.25';
+const GAME_VERSION = 'v2.5';
+
+// Secret arena
+const ARENA_FLOOR = 43; // new tile type for arena floor
+let inArena = false;
+let arenaReturnX = 0;
+let arenaReturnY = 0;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -20,7 +26,7 @@ const LAST_SLOT_KEY = 'kingGame_lastSlot';
 // ── Castle Map ──────────────────────────────────────────────
 const T = 32;
 const MAP_COLS = 30;
-const MAP_ROWS = 200;
+const MAP_ROWS = 240;
 
 // Tile types
 const VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, THRONE = 4;

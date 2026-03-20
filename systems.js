@@ -767,9 +767,10 @@ const PLAYER_ATTACK_RATE = 400; // ms between player attacks
 // ── Gold & Sword System ────────────────────────────────────
 let goldCount = 0;
 let swordDamage = 2;
-let currentSword = 'legendary'; // 'legendary' (2 dmg), 'kings' (3 dmg), 'dragon' (5 dmg)
+let currentSword = 'legendary'; // 'legendary' (2 dmg), 'kings' (3 dmg), 'dragon' (5 dmg), 'voidstar' (7 dmg)
 let kingSwordUnlocked = false;
 let dragonSwordUnlocked = false;
+let voidStarSwordUnlocked = false;
 let weaponryBuilt = false;
 let guestRoomBuilt = false;
 let dragonKills = 0;
@@ -786,6 +787,8 @@ function respawnMonsters() {
     spider.hp = spider.maxHp; spider.alive = true; spider.active = true; spider.stunned = false; spider.stunUntil = 0;
     seaSnake.hp = seaSnake.maxHp; seaSnake.alive = true; seaSnake.active = false; seaSnake.stunned = false; seaSnake.stunUntil = 0;
     troll.hp = troll.maxHp; troll.alive = true; troll.stunned = false; troll.stunUntil = 0;
+    voidSentinel.hp = voidSentinel.maxHp; voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
+    voidSentinel.x = 14 * T; voidSentinel.y = 220 * T;
     if (!peakPassageOpen) openPeakPassage();
 }
 
@@ -800,7 +803,10 @@ function switchSword() {
     } else if (currentSword === 'kings' && dragonSwordUnlocked) {
         currentSword = 'dragon'; swordDamage = 5;
         addNotification('Switched to Dragon Sword (5 dmg)', 2000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)');
-    } else if ((currentSword === 'kings' || currentSword === 'dragon') && adminSwordEquipped) {
+    } else if ((currentSword === 'kings' || currentSword === 'dragon') && voidStarSwordUnlocked) {
+        currentSword = 'voidstar'; swordDamage = 7;
+        addNotification('Switched to Void Star (7 dmg)', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    } else if ((currentSword === 'kings' || currentSword === 'dragon' || currentSword === 'voidstar') && adminSwordEquipped) {
         currentSword = 'admin'; swordDamage = 10;
         addNotification('Switched to Admin Sword (10 dmg)', 2000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.9)');
     } else {
@@ -1782,6 +1788,325 @@ function hitDragon() {
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
     }
+}
+
+// ── Void Sentinel Combat System ─────────────────────────────
+
+function updateVoidSentinel(dt) {
+    // Respawn after death
+    if (!voidSentinel.alive && voidSentinelDeathTime > 0 && gameTime >= voidSentinelDeathTime + MOB_RESPAWN_DELAY) {
+        voidSentinel.hp = voidSentinel.maxHp; voidSentinel.alive = true;
+        voidSentinel.x = 14 * T; voidSentinel.y = 220 * T;
+        voidSentinel.aggro = false;
+        voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
+        voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity;
+        voidSentinelDeathTime = -Infinity;
+    }
+    if (!voidSentinel.alive) return;
+    if (!inArena) return;
+    if (!voidSentinel.aggro) return;
+
+    // Handle stun
+    if (voidSentinel.stunned) {
+        if (gameTime >= voidSentinel.stunUntil) voidSentinel.stunned = false;
+        return;
+    }
+
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const vcx = voidSentinel.x + voidSentinel.width / 2, vcy = voidSentinel.y + voidSentinel.height / 2;
+
+    // ── Dash ability ──
+    if (voidSentinel.dashState === 'idle') {
+        // Start windup if cooldown is ready
+        if (gameTime - voidSentinel.lastDashTime >= voidSentinel.dashCooldown) {
+            voidSentinel.dashState = 'windup1';
+            voidSentinel.dashWindupStart = gameTime;
+            // Lock onto player's current position
+            voidSentinel.dashTargetX = pcx;
+            voidSentinel.dashTargetY = pcy;
+            voidSentinel.dashHit = false;
+        }
+    }
+
+    if (voidSentinel.dashState === 'windup1') {
+        // 1 second windup — sentinel stands still
+        if (gameTime - voidSentinel.dashWindupStart >= 1000) {
+            voidSentinel.dashState = 'dashing1';
+        }
+        return; // don't move during windup
+    }
+
+    if (voidSentinel.dashState === 'dashing1') {
+        // Dash toward target at 500 speed
+        const dx = voidSentinel.dashTargetX - vcx;
+        const dy = voidSentinel.dashTargetY - vcy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 6) {
+            voidSentinel.x += (dx / dist) * voidSentinel.dashSpeed * dt;
+            voidSentinel.y += (dy / dist) * voidSentinel.dashSpeed * dt;
+            // Clamp inside arena
+            voidSentinel.x = Math.max(4 * T, Math.min(voidSentinel.x, 25 * T - voidSentinel.width));
+            voidSentinel.y = Math.max(211 * T, Math.min(voidSentinel.y, 229 * T - voidSentinel.height));
+            // Check if hits player during dash
+            if (!voidSentinel.dashHit && isNearVoidSentinel()) {
+                voidSentinel.dashHit = true;
+                if (shieldActive) {
+                    voidSentinel.stunned = true;
+                    voidSentinel.stunUntil = gameTime + 2000;
+                    voidSentinel.dashState = 'idle';
+                    voidSentinel.lastDashTime = gameTime;
+                    addNotification('Shield blocks the dash!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
+                    return;
+                }
+                health.value = Math.max(0, health.value - 10);
+                addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
+            }
+        } else {
+            // Reached target — start second windup
+            voidSentinel.dashState = 'windup2';
+            voidSentinel.dashWindupStart = gameTime;
+            // Lock onto player again
+            voidSentinel.dashTargetX = pcx;
+            voidSentinel.dashTargetY = pcy;
+            voidSentinel.dashHit = false;
+        }
+        return;
+    }
+
+    if (voidSentinel.dashState === 'windup2') {
+        // 2 second windup
+        if (gameTime - voidSentinel.dashWindupStart >= 2000) {
+            voidSentinel.dashState = 'dashing2';
+        }
+        return;
+    }
+
+    if (voidSentinel.dashState === 'dashing2') {
+        const dx = voidSentinel.dashTargetX - vcx;
+        const dy = voidSentinel.dashTargetY - vcy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 6) {
+            voidSentinel.x += (dx / dist) * voidSentinel.dashSpeed * dt;
+            voidSentinel.y += (dy / dist) * voidSentinel.dashSpeed * dt;
+            voidSentinel.x = Math.max(4 * T, Math.min(voidSentinel.x, 25 * T - voidSentinel.width));
+            voidSentinel.y = Math.max(211 * T, Math.min(voidSentinel.y, 229 * T - voidSentinel.height));
+            if (!voidSentinel.dashHit && isNearVoidSentinel()) {
+                voidSentinel.dashHit = true;
+                if (shieldActive) {
+                    voidSentinel.stunned = true;
+                    voidSentinel.stunUntil = gameTime + 2000;
+                    voidSentinel.dashState = 'idle';
+                    voidSentinel.lastDashTime = gameTime;
+                    addNotification('Shield blocks the dash!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
+                    return;
+                }
+                health.value = Math.max(0, health.value - 10);
+                addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
+            }
+        } else {
+            // Done — back to normal
+            voidSentinel.dashState = 'idle';
+            voidSentinel.lastDashTime = gameTime;
+        }
+        return;
+    }
+
+    // ── Normal movement (when not dashing) ──
+    const dx = pcx - vcx, dy = pcy - vcy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 4) {
+        const nx = voidSentinel.x + (dx / dist) * voidSentinel.speed * dt;
+        const ny = voidSentinel.y + (dy / dist) * voidSentinel.speed * dt;
+        voidSentinel.x = Math.max(4 * T, Math.min(nx, 25 * T - voidSentinel.width));
+        voidSentinel.y = Math.max(211 * T, Math.min(ny, 229 * T - voidSentinel.height));
+    }
+
+    // Normal melee attack
+    if (isNearVoidSentinel()) {
+        if (gameTime - voidSentinel.lastAttack >= voidSentinel.attackCooldown) {
+            voidSentinel.lastAttack = gameTime;
+            if (shieldActive) {
+                voidSentinel.stunned = true;
+                voidSentinel.stunUntil = gameTime + 2000;
+                addNotification('Shield stuns the Sentinel!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
+            } else {
+                health.value = Math.max(0, health.value - voidSentinel.damage);
+                addNotification('Void Sentinel strikes! -' + voidSentinel.damage + ' HP', 800, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
+            }
+        }
+    }
+}
+
+function hitVoidSentinel() {
+    if (!swordPickedUp || !voidSentinel.alive) return;
+    if (!isNearVoidSentinel()) return;
+    if (!inArena) return;
+    if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
+    playerAttackCooldown = gameTime;
+    // Aggro on first hit
+    if (!voidSentinel.aggro) {
+        voidSentinel.aggro = true;
+        addNotification('The Void Sentinel awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    }
+    const dmg = swordDamage * getVoidMultiplier();
+    voidSentinel.hp -= dmg;
+    addNotification(`Hit Sentinel! -${dmg} HP`, 800, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
+    if (voidSentinel.hp <= 0) {
+        voidSentinel.hp = 0;
+        voidSentinel.alive = false;
+        voidSentinel.aggro = false;
+        voidSentinelDeathTime = gameTime;
+        voidSentinel.maxHp = 10000;
+        const gld = 15 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        addNotification('The Void Sentinel is defeated!', 5000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+        if (!voidStarSwordUnlocked) {
+            voidStarSwordUnlocked = true;
+            currentSword = 'voidstar'; swordDamage = 7;
+            addNotification('Void Star sword acquired! 7 dmg + Void Rush!', 6000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            addNotification('Press V to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
+        }
+    }
+}
+
+// ── Void Rush (player dash ability) ─────────────────────────
+
+const voidRush = {
+    state: 'idle', // 'idle', 'windup1', 'dashing1', 'windup2', 'dashing2'
+    cooldown: 20000,
+    lastUseTime: -Infinity,
+    windupStart: 0,
+    targetX: 0,
+    targetY: 0,
+    dashSpeed: 500,
+    hit: false,
+};
+
+function useVoidRush() {
+    if (currentSword !== 'voidstar') return;
+    if (voidRush.state !== 'idle') return;
+    if (gameTime - voidRush.lastUseTime < voidRush.cooldown) {
+        const remaining = Math.ceil((voidRush.cooldown - (gameTime - voidRush.lastUseTime)) / 1000);
+        addNotification(`Void Rush cooldown: ${remaining}s`, 1500, 'rgba(200,200,200,1)', 'rgba(40,40,40,0.8)');
+        return;
+    }
+    // Find nearest enemy to target
+    let tx = null, ty = null, bestDist = Infinity;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    function checkTarget(ex, ey, alive) {
+        if (!alive) return;
+        const d = Math.hypot(ex - pcx, ey - pcy);
+        if (d < bestDist) { bestDist = d; tx = ex; ty = ey; }
+    }
+    if (inArena && voidSentinel.alive) checkTarget(voidSentinel.x + voidSentinel.width / 2, voidSentinel.y + voidSentinel.height / 2, true);
+    if (spider.alive && spider.active) checkTarget(spider.x + spider.width / 2, spider.y + spider.height / 2, true);
+    if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) checkTarget(seaSnake.x + seaSnake.width / 2, seaSnake.y + seaSnake.height / 2, true);
+    if (troll.alive) checkTarget(troll.x + troll.width / 2, troll.y + troll.height / 2, true);
+    if (dragon.alive) checkTarget(dragon.x + dragon.width / 2, dragon.y + dragon.height / 2, true);
+    if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) checkTarget(orc.x + orc.width / 2, orc.y + orc.height / 2, true); }
+    if (tx === null) {
+        addNotification('No target nearby!', 1000, 'rgba(200,200,200,1)', 'rgba(40,40,40,0.8)');
+        return;
+    }
+    voidRush.state = 'windup1';
+    voidRush.windupStart = gameTime;
+    voidRush.targetX = tx;
+    voidRush.targetY = ty;
+    voidRush.hit = false;
+}
+
+function updateVoidRush(dt) {
+    if (voidRush.state === 'idle') return;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+
+    if (voidRush.state === 'windup1') {
+        if (gameTime - voidRush.windupStart >= 1000) {
+            voidRush.state = 'dashing1';
+        }
+        return;
+    }
+
+    if (voidRush.state === 'dashing1') {
+        const dx = voidRush.targetX - pcx, dy = voidRush.targetY - pcy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 6) {
+            player.x += (dx / dist) * voidRush.dashSpeed * dt;
+            player.y += (dy / dist) * voidRush.dashSpeed * dt;
+            // Deal damage to nearby enemies during dash
+            if (!voidRush.hit) {
+                const dmg = 20;
+                if (voidRushHitEnemies(dmg)) voidRush.hit = true;
+            }
+        } else {
+            // Reached target — start second windup, retarget nearest enemy
+            voidRush.state = 'windup2';
+            voidRush.windupStart = gameTime;
+            voidRush.hit = false;
+            // Retarget
+            let tx2 = null, ty2 = null, bestDist2 = Infinity;
+            const px2 = player.x + player.width / 2, py2 = player.y + player.height / 2;
+            function checkTarget2(ex, ey, alive) {
+                if (!alive) return;
+                const d = Math.hypot(ex - px2, ey - py2);
+                if (d < bestDist2) { bestDist2 = d; tx2 = ex; ty2 = ey; }
+            }
+            if (inArena && voidSentinel.alive) checkTarget2(voidSentinel.x + voidSentinel.width / 2, voidSentinel.y + voidSentinel.height / 2, true);
+            if (spider.alive && spider.active) checkTarget2(spider.x + spider.width / 2, spider.y + spider.height / 2, true);
+            if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) checkTarget2(seaSnake.x + seaSnake.width / 2, seaSnake.y + seaSnake.height / 2, true);
+            if (troll.alive) checkTarget2(troll.x + troll.width / 2, troll.y + troll.height / 2, true);
+            if (dragon.alive) checkTarget2(dragon.x + dragon.width / 2, dragon.y + dragon.height / 2, true);
+            if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) checkTarget2(orc.x + orc.width / 2, orc.y + orc.height / 2, true); }
+            if (tx2 !== null) { voidRush.targetX = tx2; voidRush.targetY = ty2; }
+            else { voidRush.state = 'idle'; voidRush.lastUseTime = gameTime; }
+        }
+        return;
+    }
+
+    if (voidRush.state === 'windup2') {
+        if (gameTime - voidRush.windupStart >= 2000) {
+            voidRush.state = 'dashing2';
+        }
+        return;
+    }
+
+    if (voidRush.state === 'dashing2') {
+        const dx = voidRush.targetX - pcx, dy = voidRush.targetY - pcy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 6) {
+            player.x += (dx / dist) * voidRush.dashSpeed * dt;
+            player.y += (dy / dist) * voidRush.dashSpeed * dt;
+            if (!voidRush.hit) {
+                const dmg = 30; // 20 + 10 extra
+                if (voidRushHitEnemies(dmg)) voidRush.hit = true;
+            }
+        } else {
+            voidRush.state = 'idle';
+            voidRush.lastUseTime = gameTime;
+        }
+        return;
+    }
+}
+
+function voidRushHitEnemies(dmg) {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    let hit = false;
+    function tryHit(enemy, range) {
+        const ecx = enemy.x + enemy.width / 2, ecy = enemy.y + enemy.height / 2;
+        if (Math.hypot(pcx - ecx, pcy - ecy) < T * range) {
+            enemy.hp -= dmg;
+            addNotification(`Void Rush! -${dmg} HP`, 1000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
+            if (enemy.hp <= 0) enemy.hp = 0;
+            hit = true;
+        }
+    }
+    if (inArena && voidSentinel.alive) tryHit(voidSentinel, 1.8);
+    if (spider.alive && spider.active) tryHit(spider, 1.5);
+    if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) tryHit(seaSnake, 1.5);
+    if (troll.alive) tryHit(troll, 1.5);
+    if (dragon.alive) tryHit(dragon, 1.8);
+    if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) tryHit(orc, 1.5); }
+    return hit;
 }
 
 // ── Void Star ──────────────────────────────────────────────

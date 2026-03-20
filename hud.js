@@ -120,8 +120,23 @@ function drawHUD() {
         }
     }
 
-    // Void Star indicator
-    if (voidStarUnlocked) {
+    // Void Rush / Void Star indicator
+    if (currentSword === 'voidstar' && voidStarSwordUnlocked) {
+        const rushCdLeft = Math.max(0, voidRush.cooldown - (gameTime - voidRush.lastUseTime));
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        if (voidRush.state !== 'idle') {
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 150);
+            ctx.fillStyle = `rgba(200,140,255,${pulse})`;
+            ctx.fillText('[V] Void Rush Active', 16, canvas.height - 120 - touchOffsetL);
+        } else if (rushCdLeft <= 0) {
+            ctx.fillStyle = '#C88FFF';
+            ctx.fillText('[V] Void Rush Ready', 16, canvas.height - 120 - touchOffsetL);
+        } else {
+            const secs = Math.ceil(rushCdLeft / 1000);
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[V] Void Rush ${secs}s`, 16, canvas.height - 120 - touchOffsetL);
+        }
+    } else if (voidStarUnlocked) {
         const voidCdLeft = Math.max(0, VOID_STAR_COOLDOWN - (gameTime - lastVoidStarTime));
         ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
         if (voidStarActive) {
@@ -330,6 +345,40 @@ function teleportToCastleGates() {
     player.x = 14.5 * T;
     player.y = 29 * T;
     addNotification('Teleported to the castle gates!', 2000, 'rgba(68,170,255,1)', 'rgba(0,20,60,0.8)');
+}
+
+// ── Void Sentinel Boss Bar ──────────────────────────────────
+
+function drawVoidSentinelBossBar() {
+    if (!inArena || !voidSentinel.alive || !voidSentinel.aggro) return;
+    const barW = Math.min(500, canvas.width - 80);
+    const barH = 20;
+    const barX = (canvas.width - barW) / 2;
+    const barY = 20;
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(barX - 4, barY - 18, barW + 8, barH + 24);
+    ctx.strokeStyle = '#8a4abf'; ctx.lineWidth = 2;
+    ctx.strokeRect(barX - 4, barY - 18, barW + 8, barH + 24);
+    // Label
+    ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#C88FFF';
+    ctx.fillText('Void Sentinel', canvas.width / 2, barY - 2);
+    // Bar background
+    ctx.fillStyle = 'rgba(40,0,60,0.8)'; ctx.fillRect(barX, barY, barW, barH);
+    // HP fill
+    const ratio = voidSentinel.hp / voidSentinel.maxHp;
+    const grad = ctx.createLinearGradient(barX, barY, barX + barW * ratio, barY);
+    grad.addColorStop(0, '#7a2abf');
+    grad.addColorStop(1, '#C88FFF');
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX + 2, barY + 2, (barW - 4) * ratio, barH - 4);
+    // Border
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
+    // HP text
+    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${Math.ceil(voidSentinel.hp)} / ${voidSentinel.maxHp}`, canvas.width / 2, barY + barH / 2);
 }
 
 // ── Pause Button ────────────────────────────────────────────

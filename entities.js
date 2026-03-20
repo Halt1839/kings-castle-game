@@ -40,6 +40,32 @@ const campLeader = { x: 17 * T + 8, y: 115 * T + 8, width: 16, height: 16 };
 const guestWizard = { x: 25 * T + 8, y: 7 * T + 8, width: 16, height: 16 };
 const guestCampLeader = { x: 27 * T + 8, y: 8 * T + 8, width: 16, height: 16 };
 
+// ── Void Sentinel (arena boss) ──────────────────────────────
+
+const voidSentinel = {
+    x: 14 * T, y: 220 * T,
+    width: 16, height: 16,
+    hp: 10000, maxHp: 10000,
+    alive: true,
+    aggro: false, // idle until attacked
+    lastAttack: 0,
+    attackCooldown: 1500,
+    damage: 2,
+    speed: 80,
+    stunned: false,
+    stunUntil: 0,
+    // Dash ability
+    dashState: 'idle', // 'idle', 'windup1', 'dashing1', 'windup2', 'dashing2'
+    dashCooldown: 20000,
+    lastDashTime: -Infinity,
+    dashWindupStart: 0,
+    dashTargetX: 0,
+    dashTargetY: 0,
+    dashSpeed: 500,
+    dashHit: false, // track if current dash already hit player
+};
+let voidSentinelDeathTime = -Infinity;
+
 // ── Player (King) ───────────────────────────────────────────
 
 const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
@@ -47,6 +73,11 @@ const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
 let swordPickedUp = false;
 
 const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK]);
+
+// Secret passage tiles (col 12, rows 42-43) — walkable grass
+function isSecretPassageTile(row, col) {
+    return col === 12 && (row === 42 || row === 43);
+}
 
 // Collision check for NPC movement (orcs/guards) — same as SOLID but allows GRASS
 const NPC_SOLID = new Set(SOLID);
@@ -76,6 +107,10 @@ function isSolid(px, py, pw, ph) {
         if (inBoat && tile === DOCK) continue;
         if (inBoat && tile === SAND && (col === 14 || col === 15)) continue;
         if (inBoat && tile === SAND) return true;
+        // Secret passage: grass at col 12, rows 42-43 is walkable
+        if (tile === GRASS && isSecretPassageTile(row, col)) continue;
+        // Secret teleport: tree at row 44, col 12 is walkable (triggers teleport)
+        if (tile === TREE && row === 44 && col === 12) continue;
         if (SOLID.has(tile)) return true;
         // Progression gates (disabled after first dragon kill)
         if (typeof dragonKills === 'undefined' || dragonKills === 0) {
@@ -163,4 +198,11 @@ function isNearTroll() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     const tcx = troll.x + troll.width / 2, tcy = troll.y + troll.height / 2;
     return Math.hypot(pcx - tcx, pcy - tcy) < T * 1.5;
+}
+
+function isNearVoidSentinel() {
+    if (!voidSentinel.alive) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const vcx = voidSentinel.x + voidSentinel.width / 2, vcy = voidSentinel.y + voidSentinel.height / 2;
+    return Math.hypot(pcx - vcx, pcy - vcy) < T * 1.8;
 }

@@ -300,6 +300,48 @@ function drawTile(col, row, ox, oy) {
             ctx.beginPath(); ctx.arc(x+T/2, y+T/2, 2, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#B8860B'; ctx.lineWidth = 1; ctx.strokeRect(x+6, y+6, T-12, T-12);
             break;
+        case ARENA_FLOOR:
+            ctx.fillStyle = '#4a4a5a'; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 8, y + 8, 4, 4); ctx.fillRect(x + 20, y + 20, 4, 4);
+            ctx.strokeStyle = '#5a5a6a'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
+            break;
+    }
+}
+
+// ── Void Rush Visual Effects ────────────────────────────────
+
+function drawVoidRush(ox, oy) {
+    if (voidRush.state === 'idle') return;
+    const pcx = player.x + player.width / 2 - ox, pcy = player.y + player.height / 2 - oy;
+    const tx = voidRush.targetX - ox, ty = voidRush.targetY - oy;
+
+    if (voidRush.state === 'windup1' || voidRush.state === 'windup2') {
+        const isSecond = voidRush.state === 'windup2';
+        const windupDur = isSecond ? 2000 : 1000;
+        const progress = Math.min(1, (gameTime - voidRush.windupStart) / windupDur);
+        const pulse = 0.4 + 0.4 * Math.sin(performance.now() / 100);
+        // Target ring
+        ctx.strokeStyle = `rgba(180,100,255,${pulse})`;
+        ctx.lineWidth = isSecond ? 3 : 2;
+        ctx.beginPath(); ctx.arc(tx, ty, 12 + (1 - progress) * 20, 0, Math.PI * 2); ctx.stroke();
+        // Crosshair
+        ctx.strokeStyle = `rgba(200,140,255,${0.6 + 0.3 * pulse})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(tx - 6, ty); ctx.lineTo(tx + 6, ty); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tx, ty - 6); ctx.lineTo(tx, ty + 6); ctx.stroke();
+        // Line from player to target
+        ctx.strokeStyle = `rgba(180,100,255,${pulse * 0.4})`;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(pcx, pcy); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    if (voidRush.state === 'dashing1' || voidRush.state === 'dashing2') {
+        // Trail behind player
+        ctx.fillStyle = 'rgba(140,60,220,0.3)';
+        ctx.beginPath(); ctx.arc(pcx, pcy, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(200,140,255,0.15)';
+        ctx.beginPath(); ctx.arc(pcx, pcy, 18, 0, Math.PI * 2); ctx.fill();
     }
 }
 
@@ -350,13 +392,28 @@ function drawKing(ox, oy) {
         } else {
             ctx.rotate(-0.3); // idle angle
         }
-        // Sword blade
-        const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
-        // Guard
-        ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
-        // Handle
-        ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
+        if (currentSword === 'voidstar') {
+            // Void Star weapon — star shape on a handle
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, -2, 3, 6);
+            // Star
+            const sp = 0.7 + 0.3 * Math.sin(performance.now() / 300);
+            ctx.fillStyle = `rgba(200,140,255,${sp})`;
+            ctx.beginPath();
+            ctx.moveTo(0.5, -12); ctx.lineTo(2, -8); ctx.lineTo(6, -7);
+            ctx.lineTo(3, -4); ctx.lineTo(4, 0); ctx.lineTo(0.5, -2);
+            ctx.lineTo(-3, 0); ctx.lineTo(-2, -4); ctx.lineTo(-5, -7);
+            ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
+        } else {
+            // Sword blade
+            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+            ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
+            // Guard
+            ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
+            // Handle
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
+        }
         ctx.restore();
     }
 }
@@ -436,10 +493,23 @@ function drawKingInBoat(ox, oy) {
             const swingProgress = swingElapsed / SWORD_SWING_DURATION;
             ctx.rotate((-1 + swingProgress * 2) * Math.PI / 3);
         } else { ctx.rotate(-0.3); }
-        const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
-        ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
-        ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
+        if (currentSword === 'voidstar') {
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, -2, 3, 6);
+            const sp = 0.7 + 0.3 * Math.sin(performance.now() / 300);
+            ctx.fillStyle = `rgba(200,140,255,${sp})`;
+            ctx.beginPath();
+            ctx.moveTo(0.5, -12); ctx.lineTo(2, -8); ctx.lineTo(6, -7);
+            ctx.lineTo(3, -4); ctx.lineTo(4, 0); ctx.lineTo(0.5, -2);
+            ctx.lineTo(-3, 0); ctx.lineTo(-2, -4); ctx.lineTo(-5, -7);
+            ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
+        } else {
+            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+            ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
+            ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
+        }
         ctx.restore();
     }
 }

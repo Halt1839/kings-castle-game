@@ -508,6 +508,120 @@ function drawGuestRoomNPCs(ox, oy) {
     ctx.fillStyle = '#8B0000'; ctx.fillRect(csx + 7, csy - 4, 2, 4);
 }
 
+function drawVoidSentinel(ox, oy) {
+    if (!voidSentinel.alive) return;
+
+    // Dash windup indicator — purple outline at target position
+    if (voidSentinel.dashState === 'windup1' || voidSentinel.dashState === 'windup2') {
+        const tx = voidSentinel.dashTargetX - ox, ty = voidSentinel.dashTargetY - oy;
+        const isSecond = voidSentinel.dashState === 'windup2';
+        const windupDur = isSecond ? 2000 : 1000;
+        const progress = Math.min(1, (gameTime - voidSentinel.dashWindupStart) / windupDur);
+        const pulse = 0.4 + 0.4 * Math.sin(performance.now() / 100);
+        // Outer ring (grows with progress)
+        ctx.strokeStyle = `rgba(180,100,255,${pulse})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(tx, ty, 12 + (1 - progress) * 20, 0, Math.PI * 2); ctx.stroke();
+        // Inner target
+        ctx.strokeStyle = `rgba(200,140,255,${0.6 + 0.3 * pulse})`;
+        ctx.lineWidth = isSecond ? 3 : 2;
+        ctx.beginPath(); ctx.arc(tx, ty, 10, 0, Math.PI * 2); ctx.stroke();
+        // Crosshair
+        ctx.beginPath(); ctx.moveTo(tx - 6, ty); ctx.lineTo(tx + 6, ty); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tx, ty - 6); ctx.lineTo(tx, ty + 6); ctx.stroke();
+        // "!" warning above sentinel
+        const vsx = Math.round(voidSentinel.x - ox) + 8;
+        const vsy = Math.round(voidSentinel.y - oy);
+        ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillStyle = `rgba(200,140,255,${pulse})`;
+        ctx.fillText(isSecond ? '!!' : '!', vsx, vsy - 10);
+    }
+
+    // Dash trail effect while dashing
+    if (voidSentinel.dashState === 'dashing1' || voidSentinel.dashState === 'dashing2') {
+        const vsx = Math.round(voidSentinel.x - ox) + 8;
+        const vsy = Math.round(voidSentinel.y - oy) + 8;
+        ctx.fillStyle = 'rgba(140,60,220,0.3)';
+        ctx.beginPath(); ctx.arc(vsx, vsy, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,100,255,0.15)';
+        ctx.beginPath(); ctx.arc(vsx, vsy, 16, 0, Math.PI * 2); ctx.fill();
+    }
+
+    const sx = Math.round(voidSentinel.x - ox), sy = Math.round(voidSentinel.y - oy);
+    const cx = sx + 8;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + 18, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Aggro aura
+    if (voidSentinel.aggro) {
+        const pulse = 0.15 + 0.1 * Math.sin(performance.now() / 200);
+        ctx.fillStyle = `rgba(140,60,220,${pulse})`;
+        ctx.beginPath(); ctx.ellipse(cx, sy + 10, 14, 14, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Body — left dark purple, right light purple
+    ctx.fillStyle = '#3a1a5e'; ctx.fillRect(sx + 1, sy + 7, 7, 11);
+    ctx.fillStyle = '#9a6abf'; ctx.fillRect(sx + 8, sy + 7, 7, 11);
+    // Inner tunic
+    ctx.fillStyle = '#4a2a6e'; ctx.fillRect(sx + 3, sy + 8, 5, 9);
+    ctx.fillStyle = '#8a5aaf'; ctx.fillRect(sx + 8, sy + 8, 5, 9);
+    // Belt
+    ctx.fillStyle = '#1a0a2e'; ctx.fillRect(sx + 1, sy + 14, 14, 2);
+    // Head — split dark/light
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sx, sy - 6, 8, 16); ctx.clip();
+    ctx.fillStyle = '#3a1a5e';
+    ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sx + 8, sy - 6, 8, 16); ctx.clip();
+    ctx.fillStyle = '#9a6abf';
+    ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Eyes
+    ctx.fillStyle = voidSentinel.aggro ? '#fff' : '#aaa';
+    ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+    if (voidSentinel.aggro) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath(); ctx.arc(cx - 2, sy + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 2, sy + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Void Star on head — 4-pointed star
+    const starYPos = sy - 5;
+    const starPulse = 0.7 + 0.3 * Math.sin(performance.now() / 300);
+    ctx.fillStyle = `rgba(180,100,255,${starPulse * 0.4})`;
+    ctx.beginPath(); ctx.arc(cx, starYPos, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(200,140,255,${starPulse})`;
+    ctx.beginPath();
+    ctx.moveTo(cx, starYPos - 5);
+    ctx.lineTo(cx + 1.5, starYPos - 1.5);
+    ctx.lineTo(cx + 5, starYPos);
+    ctx.lineTo(cx + 1.5, starYPos + 1.5);
+    ctx.lineTo(cx, starYPos + 5);
+    ctx.lineTo(cx - 1.5, starYPos + 1.5);
+    ctx.lineTo(cx - 5, starYPos);
+    ctx.lineTo(cx - 1.5, starYPos - 1.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx, starYPos, 1.5, 0, Math.PI * 2); ctx.fill();
+    // Arms
+    ctx.fillStyle = '#3a1a5e'; ctx.fillRect(sx - 1, sy + 8, 3, 6);
+    ctx.fillStyle = '#9a6abf'; ctx.fillRect(sx + 14, sy + 8, 3, 6);
+    // Feet
+    ctx.fillStyle = '#1a0a2e';
+    ctx.fillRect(sx + 3, sy + 17, 4, 2); ctx.fillRect(sx + 9, sy + 17, 4, 2);
+    // Stun stars
+    if (voidSentinel.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 3; i++) {
+            const angle = st + i * (Math.PI * 2 / 3);
+            const sx2 = cx + Math.cos(angle) * 12;
+            const sy2 = sy - 2 + Math.sin(angle) * 5;
+            ctx.fillStyle = '#C88FFF'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', sx2, sy2);
+        }
+    }
+}
+
 function drawFireBreath(ox, oy) {
     if (typeof dragon === 'undefined' || !dragon.alive) return;
     const dcx = dragon.x + dragon.width / 2 - ox;

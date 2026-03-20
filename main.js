@@ -299,6 +299,12 @@ function gameLoop(now) {
     // Update void star
     updateVoidStar();
 
+    // Update void sentinel
+    updateVoidSentinel(dt);
+
+    // Update void rush
+    updateVoidRush(dt);
+
     // Check for death
     if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
@@ -341,7 +347,9 @@ function gameLoop(now) {
             hitTroll();
         } else if (swordPickedUp && dragon.alive && isNearDragon()) {
             hitDragon();
-        } else if (!swordPickedUp && ((spider.active && isNearSpider()) || (seaSnake.active && isNearSeaSnake()) || isNearAnyOrc() || (troll.alive && isNearTroll()) || (dragon.alive && isNearDragon()))) {
+        } else if (swordPickedUp && voidSentinel.alive && isNearVoidSentinel()) {
+            hitVoidSentinel();
+        } else if (!swordPickedUp && ((spider.active && isNearSpider()) || (seaSnake.active && isNearSeaSnake()) || isNearAnyOrc() || (troll.alive && isNearTroll()) || (dragon.alive && isNearDragon()) || (voidSentinel.alive && isNearVoidSentinel()))) {
             addNotification('You need a sword to fight!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
         }
         hPressed = false;
@@ -359,9 +367,10 @@ function gameLoop(now) {
         bPressed = false;
     }
 
-    // Handle V press (void star)
+    // Handle V press (void rush if voidstar sword equipped, else void star buff)
     if (vPressed) {
-        if (voidStarUnlocked) useVoidStar();
+        if (currentSword === 'voidstar' && voidStarSwordUnlocked) useVoidRush();
+        else if (voidStarUnlocked) useVoidStar();
         vPressed = false;
     }
 
@@ -442,7 +451,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle') {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -457,6 +466,25 @@ function gameLoop(now) {
         playerWalking = (dx !== 0 || dy !== 0);
         if (playerWalking) playerWalkPhase += dt * 10;
         else playerWalkPhase = 0;
+
+        // Secret arena teleport: step on tree at row 44, col 12
+        const pRow = Math.floor((player.y + player.height / 2) / T);
+        const pCol = Math.floor((player.x + player.width / 2) / T);
+        if (!inArena && pRow === 44 && pCol === 12) {
+            arenaReturnX = player.x;
+            arenaReturnY = player.y;
+            player.x = 14 * T;
+            player.y = 212 * T;
+            inArena = true;
+            addNotification('You entered a secret arena!', 3000, 'rgba(200,150,255,1)', 'rgba(40,0,60,0.85)');
+        }
+        // Return from arena: step on door tiles at row 210, cols 14-15
+        if (inArena && pRow === 210 && (pCol === 14 || pCol === 15)) {
+            player.x = arenaReturnX;
+            player.y = arenaReturnY;
+            inArena = false;
+            addNotification('You returned from the arena.', 2000, 'rgba(150,200,255,1)', 'rgba(0,30,60,0.85)');
+        }
     } else {
         playerWalking = false; playerWalkPhase = 0;
     }
@@ -491,6 +519,7 @@ function gameLoop(now) {
     drawTroll(camX, camY);
     drawDragon(camX, camY);
     drawFireBreath(camX, camY);
+    drawVoidSentinel(camX, camY);
     drawGuestRoomNPCs(camX, camY);
 
     if (inBoat) drawKingInBoat(camX, camY);
@@ -499,6 +528,7 @@ function gameLoop(now) {
     else if (activeAction && activeAction.name === 'toilet') drawKingOnToilet(camX, camY);
     else drawKing(camX, camY);
 
+    drawVoidRush(camX, camY);
     drawShieldEffect(camX, camY);
     drawSleepOverlay();
 
@@ -513,6 +543,8 @@ function gameLoop(now) {
         let other;
         if (currentSword === 'legendary') other = "King's Sword (3 dmg)";
         else if (currentSword === 'kings' && dragonSwordUnlocked) other = 'Dragon Sword (5 dmg)';
+        else if (currentSword === 'dragon' && voidStarSwordUnlocked) other = 'Void Star (7 dmg)';
+        else if (currentSword === 'voidstar') other = 'Legendary Sword (2 dmg)';
         else other = 'Legendary Sword (2 dmg)';
         drawPrompt(`${kl('E')} to switch to ${other}`);
     } else if (isNearWeaponryBuildSite()) {
@@ -521,6 +553,8 @@ function gameLoop(now) {
         drawPrompt(`${kl('E')} to build Guest Room (30 gold) [${goldCount} gold]`);
     } else if (isNearGold()) {
         drawPrompt(`${kl('E')} to pick up the gold block`);
+    } else if (isNearVoidSentinel()) {
+        drawPrompt(`${kl('H')} to attack the Void Sentinel`);
     } else if (isNearDragon()) {
         drawPrompt(`${kl('H')} to attack the dragon!`);
     } else if (isNearTroll()) {
@@ -560,6 +594,7 @@ function gameLoop(now) {
     }
 
     drawHUD();
+    drawVoidSentinelBossBar();
     drawQuestTasks();
     drawTeleportButton();
     drawPauseButton();
