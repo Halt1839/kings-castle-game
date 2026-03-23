@@ -439,7 +439,11 @@ function pickUpSword() {
     addNotification('You found the Legendary Sword!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
 }
 
-// ── Quest Task System ───────────────────────────────────────
+// ── Quest System ────────────────────────────────────────────
+
+let activeQuest = 'main'; // 'main' or 'void'
+let voidQuestFoundEntrance = false;
+let voidQuestNoliDefeated = false;
 
 const questTasks = {
     ateFood: false,
@@ -476,6 +480,10 @@ function checkAllTasks() {
 }
 
 function drawQuestTasks() {
+    if (activeQuest === 'void' && dragonKills > 0) {
+        drawVoidQuestTasks();
+        return;
+    }
     const tx = canvas.width - 250, ty = 54;
 
     // Build task list based on phase
@@ -536,6 +544,41 @@ function drawQuestTasks() {
     }
 
     if (questTasks.allComplete) {
+        ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#4CAF50';
+        ctx.fillText('Quest complete!', tx + 4, ty + 22 + tasks.length * 22 + 4);
+    }
+}
+
+function drawVoidQuestTasks() {
+    const tx = canvas.width - 250, ty = 54;
+    const tasks = [
+        { label: 'Find the secret entrance', done: voidQuestFoundEntrance },
+    ];
+    if (voidQuestFoundEntrance) {
+        tasks.push({ label: 'Defeat Noli', done: voidQuestNoliDefeated });
+    }
+
+    const allDone = voidQuestFoundEntrance && voidQuestNoliDefeated;
+    const panelH = 40 + tasks.length * 22 + (allDone ? 26 : 0);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(tx - 8, ty - 4, 240, panelH);
+    ctx.strokeStyle = '#8B5CF6'; ctx.lineWidth = 1;
+    ctx.strokeRect(tx - 8, ty - 4, 240, panelH);
+
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#C084FC';
+    ctx.fillText('Void Quest', tx, ty);
+
+    ctx.font = '12px monospace';
+    for (let i = 0; i < tasks.length; i++) {
+        const iy = ty + 22 + i * 22;
+        const check = tasks[i].done ? '[x]' : '[ ]';
+        ctx.fillStyle = tasks[i].done ? '#4CAF50' : '#aaa';
+        ctx.fillText(`${check} ${tasks[i].label}`, tx + 4, iy);
+    }
+
+    if (allDone) {
         ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#4CAF50';
         ctx.fillText('Quest complete!', tx + 4, ty + 22 + tasks.length * 22 + 4);
     }
@@ -1854,7 +1897,7 @@ function hitDragon() {
     }
 }
 
-// ── Void Sentinel Combat System ─────────────────────────────
+// ── Noli Combat System ──────────────────────────────────────
 
 function updateVoidSentinel(dt) {
     // Respawn after death
@@ -1995,7 +2038,7 @@ function updateVoidSentinel(dt) {
                 addNotification('Shield stuns the Sentinel!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
             } else {
                 health.value = Math.max(0, health.value - voidSentinel.damage);
-                addNotification('Void Sentinel strikes! -' + voidSentinel.damage + ' HP', 800, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
+                addNotification('Noli strikes! -' + voidSentinel.damage + ' HP', 800, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
             }
         }
     }
@@ -2010,7 +2053,7 @@ function hitVoidSentinel() {
     // Aggro on first hit
     if (!voidSentinel.aggro) {
         voidSentinel.aggro = true;
-        addNotification('The Void Sentinel awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+        addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
     }
     const dmg = swordDamage * getVoidMultiplier();
     voidSentinel.hp -= dmg;
@@ -2024,7 +2067,8 @@ function hitVoidSentinel() {
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        addNotification('The Void Sentinel is defeated!', 5000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+        if (!voidQuestNoliDefeated) voidQuestNoliDefeated = true;
+        addNotification('Noli is defeated!', 5000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
         if (!voidStarSwordUnlocked) {
             voidStarSwordUnlocked = true;
             currentSword = 'voidstar'; swordDamage = 7;

@@ -133,29 +133,55 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#F5F5F5'; ctx.beginPath(); ctx.ellipse(x+T/2, y+T/2, 8, 6, 0, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#d0e0f0'; ctx.beginPath(); ctx.ellipse(x+T/2, y+T/2, 5, 3, 0, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#C0C0C0'; ctx.fillRect(x+T/2-1, y+4, 2, 8); break;
-        case GRASS:
-            ctx.fillStyle = '#4a8c3f'; ctx.fillRect(x, y, T, T);
-            // Grass blades
-            ctx.fillStyle = '#3d7a34';
+        case GRASS: {
+            let gBase = '#4a8c3f', gBlade = '#3d7a34';
+            const isLawn = row >= 29 && row <= 38;
+            if (isLawn) {
+                const dd = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
+                if (dd === 'void') {
+                    if (col <= 12) { gBase = '#6a3d8f'; gBlade = '#5a2d7f'; }
+                    else { gBase = '#b088d0'; gBlade = '#9a78c0'; }
+                } else if (dd === 'gold') {
+                    if (col <= 12) { gBase = '#8a7a3a'; gBlade = '#7a6a2a'; }
+                    else { gBase = '#b8a858'; gBlade = '#a89848'; }
+                }
+            }
+            ctx.fillStyle = gBase; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = gBlade;
             ctx.fillRect(x+4, y+8, 2, 6); ctx.fillRect(x+12, y+4, 2, 5);
             ctx.fillRect(x+22, y+10, 2, 7); ctx.fillRect(x+8, y+20, 2, 5);
             ctx.fillRect(x+18, y+16, 2, 6); ctx.fillRect(x+26, y+22, 2, 5);
             break;
-        case PATH:
-            ctx.fillStyle = '#b09860'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#a08850'; ctx.fillRect(x+3, y+5, 4, 3); ctx.fillRect(x+14, y+18, 5, 3);
+        }
+        case PATH: {
+            let pBase = '#b09860', pDetail = '#a08850';
+            if (row >= 29 && row <= 38) {
+                const dd = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
+                if (dd === 'void') { pBase = '#4a2a6e'; pDetail = '#3a1a5e'; }
+                else if (dd === 'gold') { pBase = '#c8a838'; pDetail = '#b89828'; }
+            }
+            ctx.fillStyle = pBase; ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = pDetail; ctx.fillRect(x+3, y+5, 4, 3); ctx.fillRect(x+14, y+18, 5, 3);
             ctx.fillRect(x+22, y+8, 3, 3);
             break;
-        case WATER:
-            ctx.fillStyle = '#2874a6'; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = '#3498db';
+        }
+        case WATER: {
+            let wBase = '#2874a6', wWave = 'rgba(100,180,255,0.4)';
+            const isRiver = row >= 39 && row <= 40;
+            if (isRiver) {
+                const dd = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
+                if (dd === 'void') { wBase = '#2a1040'; wWave = 'rgba(150,100,220,0.4)'; }
+                else if (dd === 'gold') { wBase = '#8a6a1a'; wWave = 'rgba(218,165,32,0.4)'; }
+            }
+            ctx.fillStyle = wBase; ctx.fillRect(x, y, T, T);
             const wt = performance.now() / 800 + x * 0.1;
             for (let i = 0; i < 3; i++) {
                 const wy = y + 6 + i * 10 + Math.sin(wt + i) * 2;
                 ctx.beginPath(); ctx.moveTo(x, wy); ctx.quadraticCurveTo(x+T/2, wy - 4, x+T, wy); ctx.lineWidth = 2;
-                ctx.strokeStyle = 'rgba(100,180,255,0.4)'; ctx.stroke();
+                ctx.strokeStyle = wWave; ctx.stroke();
             }
             break;
+        }
         case BRIDGE:
             ctx.fillStyle = '#8B6914'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#7a5c10'; ctx.fillRect(x, y, T, 3); ctx.fillRect(x, y+T-3, T, 3);

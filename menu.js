@@ -65,6 +65,9 @@ function saveGame(slot) {
         goldDesignUnlocked,
         voidDesignUnlocked,
         voidSentinel: { x: voidSentinel.x, y: voidSentinel.y, hp: voidSentinel.hp, maxHp: voidSentinel.maxHp, alive: voidSentinel.alive, aggro: voidSentinel.aggro, deathTime: voidSentinelDeathTime },
+        activeQuest,
+        voidQuestFoundEntrance,
+        voidQuestNoliDefeated,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -146,6 +149,9 @@ function loadGame(slot) {
         if (s.voidSentinel.maxHp) voidSentinel.maxHp = s.voidSentinel.maxHp;
         if (s.voidSentinel.deathTime !== undefined) voidSentinelDeathTime = s.voidSentinel.deathTime;
     }
+    if (s.activeQuest !== undefined) activeQuest = s.activeQuest;
+    if (s.voidQuestFoundEntrance !== undefined) voidQuestFoundEntrance = s.voidQuestFoundEntrance;
+    if (s.voidQuestNoliDefeated !== undefined) voidQuestNoliDefeated = s.voidQuestNoliDefeated;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -209,6 +215,7 @@ function newGame(slot) {
     voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
+    activeQuest = 'main'; voidQuestFoundEntrance = false; voidQuestNoliDefeated = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;

@@ -40,9 +40,16 @@ window.addEventListener('keydown', (e) => {
     }
 
     if (gameState === 'paused') {
-        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection + 1) % 2;
-        if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % 2;
-        if (e.key === 'Escape') { gameState = 'playing'; lastTime = performance.now(); }
+        if (pauseScreen === 'quests') {
+            const qItems = getQuestItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') questSelection = (questSelection - 1 + qItems.length) % qItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') questSelection = (questSelection + 1) % qItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'main'; }
+        } else {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + 3) % 3;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % 3;
+            if (e.key === 'Escape') { gameState = 'playing'; lastTime = performance.now(); }
+        }
         return;
     }
 
@@ -98,7 +105,7 @@ window.addEventListener('keydown', (e) => {
         else if (messengerDialog.active) { messengerDialog.active = false; messengerDialog.stage = null; }
         else if (wizardDialog.active) { wizardDialog.active = false; wizardDialog.stage = null; }
         else if (campLeaderDialog.active) { campLeaderDialog.active = false; campLeaderDialog.stage = null; }
-        else { gameState = 'paused'; pauseSelection = 0; if (currentSlot) saveGame(currentSlot); }
+        else { gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main'; if (currentSlot) saveGame(currentSlot); }
         return;
     }
 
@@ -134,7 +141,7 @@ canvas.addEventListener('click', (e) => {
         }
         if (mx >= pauseBtn.x && mx <= pauseBtn.x + pauseBtn.w &&
             my >= pauseBtn.y && my <= pauseBtn.y + pauseBtn.h) {
-            gameState = 'paused'; pauseSelection = 0;
+            gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main';
             if (currentSlot) saveGame(currentSlot);
         }
         if (dragonKills > 0 && mx >= shopBtn.x && mx <= shopBtn.x + shopBtn.w &&
@@ -204,11 +211,24 @@ function gameLoop(now) {
         drawTouchControls();
         if (ePressed) {
             ePressed = false;
-            if (pauseSelection === 0) {
-                gameState = 'playing'; lastTime = performance.now();
+            if (pauseScreen === 'quests') {
+                const qItems = getQuestItems();
+                const selected = qItems[questSelection];
+                if (selected.key === 'back') {
+                    pauseScreen = 'main';
+                } else {
+                    activeQuest = selected.key;
+                    pauseScreen = 'main';
+                }
             } else {
-                if (currentSlot) saveGame(currentSlot);
-                gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
+                if (pauseSelection === 0) {
+                    gameState = 'playing'; lastTime = performance.now();
+                } else if (pauseSelection === 1) {
+                    pauseScreen = 'quests'; questSelection = 0;
+                } else {
+                    if (currentSlot) saveGame(currentSlot);
+                    gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
+                }
             }
         } else { ePressed = false; }
         drawVersion();
@@ -488,6 +508,7 @@ function gameLoop(now) {
             player.x = 14 * T;
             player.y = 212 * T;
             inArena = true;
+            if (!voidQuestFoundEntrance) voidQuestFoundEntrance = true;
             addNotification('You entered a secret arena!', 3000, 'rgba(200,150,255,1)', 'rgba(40,0,60,0.85)');
         }
         // Return from arena: step on door tiles at row 210, cols 14-15
@@ -572,7 +593,7 @@ function gameLoop(now) {
     } else if (isNearGold()) {
         drawPrompt(`${kl('E')} to pick up the gold block`);
     } else if (isNearVoidSentinel()) {
-        drawPrompt(`${kl('H')} to attack the Void Sentinel`);
+        drawPrompt(`${kl('H')} to attack Noli`);
     } else if (isNearDragon()) {
         drawPrompt(`${kl('H')} to attack the dragon!`);
     } else if (isNearTroll()) {

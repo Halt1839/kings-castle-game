@@ -40,7 +40,7 @@ const campLeader = { x: 17 * T + 8, y: 115 * T + 8, width: 16, height: 16 };
 const guestWizard = { x: 25 * T + 8, y: 7 * T + 8, width: 16, height: 16 };
 const guestCampLeader = { x: 27 * T + 8, y: 8 * T + 8, width: 16, height: 16 };
 
-// ── Void Sentinel (arena boss) ──────────────────────────────
+// ── Noli (arena boss) ───────────────────────────────────────
 
 const voidSentinel = {
     x: 14 * T, y: 220 * T,

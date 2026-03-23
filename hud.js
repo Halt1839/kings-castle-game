@@ -350,7 +350,7 @@ function teleportToCastleGates() {
     addNotification('Teleported to the castle gates!', 2000, 'rgba(68,170,255,1)', 'rgba(0,20,60,0.8)');
 }
 
-// ── Void Sentinel Boss Bar ──────────────────────────────────
+// ── Noli Boss Bar ───────────────────────────────────────────
 
 function drawVoidSentinelBossBar() {
     if (!inArena || !voidSentinel.alive || !voidSentinel.aggro) return;
@@ -366,7 +366,7 @@ function drawVoidSentinelBossBar() {
     // Label
     ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#C88FFF';
-    ctx.fillText('Void Sentinel', canvas.width / 2, barY - 2);
+    ctx.fillText('Noli', canvas.width / 2, barY - 2);
     // Bar background
     ctx.fillStyle = 'rgba(40,0,60,0.8)'; ctx.fillRect(barX, barY, barW, barH);
     // HP fill
@@ -400,10 +400,16 @@ function drawPauseButton() {
 // ── Pause Menu ──────────────────────────────────────────────
 
 let pauseSelection = 0;
+let pauseScreen = 'main'; // 'main' or 'quests'
+let questSelection = 0;
 
 function drawPauseMenu() {
+    if (pauseScreen === 'quests') {
+        drawQuestSelectMenu();
+        return;
+    }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const bw = 280, bh = 200;
+    const bw = 280, bh = 240;
     const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
     ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
@@ -411,15 +417,50 @@ function drawPauseMenu() {
     ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillStyle = '#FFD700'; ctx.fillText('PAUSED', bx + bw/2, by + 20);
 
-    const items = ['Resume', 'Quit to Menu'];
+    const items = ['Resume', 'Quests', 'Quit to Menu'];
     ctx.font = 'bold 16px monospace';
     for (let i = 0; i < items.length; i++) {
-        const iy = by + 80 + i * 44;
+        const iy = by + 70 + i * 44;
         if (i === pauseSelection) {
             ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 20, iy - 6, bw - 40, 32);
             ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + items[i] + ' <', bx + bw/2, iy);
         } else {
             ctx.fillStyle = '#ccc'; ctx.fillText(items[i], bx + bw/2, iy);
+        }
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
+}
+
+function getQuestItems() {
+    const items = [{ label: 'Main Quest', key: 'main' }];
+    if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawQuestSelectMenu() {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const items = getQuestItems();
+    const bw = 280, bh = 80 + items.length * 44 + 30;
+    const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
+    ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
+
+    ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#FFD700'; ctx.fillText('QUESTS', bx + bw/2, by + 16);
+
+    ctx.font = 'bold 16px monospace';
+    for (let i = 0; i < items.length; i++) {
+        const iy = by + 70 + i * 44;
+        const isActive = items[i].key === activeQuest;
+        const label = items[i].label + (isActive ? ' *' : '');
+        if (i === questSelection) {
+            ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 20, iy - 6, bw - 40, 32);
+            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + label + ' <', bx + bw/2, iy);
+        } else {
+            ctx.fillStyle = isActive ? '#FFD700' : '#ccc';
+            ctx.fillText(label, bx + bw/2, iy);
         }
     }
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';

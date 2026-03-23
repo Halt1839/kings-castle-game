@@ -131,7 +131,7 @@ function handleTouchStart(e) {
         // Tap on pause button area
         if (touchHitTest(tx, ty, pauseBtn)) {
             if (gameState === 'playing' && !shopOpen) {
-                gameState = 'paused'; pauseSelection = 0;
+                gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main';
                 if (currentSlot) saveGame(currentSlot);
             }
         }
