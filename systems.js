@@ -820,6 +820,251 @@ let currentDesign = 'default'; // 'default', 'gold', 'void'
 let goldDesignUnlocked = false;
 let voidDesignUnlocked = false;
 let guestRoomBuilt = false;
+// ── Dagger System ────────────────────────────────────────────
+let daggerUnlocked = false;
+const daggerStab = {
+    active: false,
+    startTime: 0,
+    startX: 0,
+    startY: 0,
+    targetMob: null,
+    mobStartX: 0,
+    playerSideX: 0, // -1 = player left of mob, 1 = right
+    cooldownUntil: 0,
+};
+const DAGGER_STAB_DURATION = 250;
+const DAGGER_STAB_COOLDOWN = 800;
+const DAGGER_STAB_RANGE = 80;
+
+function findNearestStabTarget() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    let nearest = null, nearestDist = Infinity;
+    const checkMob = (mob) => {
+        if (!mob.alive) return;
+        const d = Math.hypot(pcx - (mob.x + mob.width / 2), pcy - (mob.y + mob.height / 2));
+        if (d < DAGGER_STAB_RANGE && d < nearestDist) { nearest = mob; nearestDist = d; }
+    };
+    if (spider.active) checkMob(spider);
+    if (seaSnake.active) checkMob(seaSnake);
+    for (const orc of orcs) checkMob(orc);
+    if (troll.alive) checkMob(troll);
+    if (dragon.alive) checkMob(dragon);
+    if (inArena && voidSentinel.alive) checkMob(voidSentinel);
+    return nearest;
+}
+
+function startDaggerStab(mob) {
+    const pcx = player.x + player.width / 2;
+    const mobCX = mob.x + mob.width / 2;
+    daggerStab.active = true;
+    daggerStab.startTime = gameTime;
+    daggerStab.startX = player.x;
+    daggerStab.startY = player.y;
+    daggerStab.targetMob = mob;
+    daggerStab.mobStartX = mob.x;
+    daggerStab.playerSideX = pcx < mobCX ? -1 : 1;
+    daggerStab.cooldownUntil = gameTime + DAGGER_STAB_DURATION + DAGGER_STAB_COOLDOWN;
+}
+
+function updateDaggerStab() {
+    if (!daggerStab.active) return;
+    const elapsed = gameTime - daggerStab.startTime;
+    const mob = daggerStab.targetMob;
+    if (!mob || !mob.alive) { daggerStab.active = false; return; }
+    if (elapsed >= DAGGER_STAB_DURATION) {
+        completeDaggerStab();
+        return;
+    }
+    const t = elapsed / DAGGER_STAB_DURATION;
+    const mobCX = mob.x + mob.width / 2, mobCY = mob.y + mob.height / 2;
+    const startCX = daggerStab.startX + player.width / 2, startCY = daggerStab.startY + player.height / 2;
+    const dx = mobCX - startCX, dy = mobCY - startCY;
+    const dist = Math.hypot(dx, dy);
+    // Stop one tile away from mob center so player doesn't overlap
+    const stopDist = Math.max(0, dist - T);
+    const targetX = daggerStab.startX + (stopDist / dist) * dx;
+    const targetY = daggerStab.startY + (stopDist / dist) * dy;
+    player.x = daggerStab.startX + (targetX - daggerStab.startX) * t;
+    player.y = daggerStab.startY + (targetY - daggerStab.startY) * t;
+}
+
+function completeDaggerStab() {
+    const mob = daggerStab.targetMob;
+    daggerStab.active = false;
+    if (!mob || !mob.alive) return;
+    // Aggro Noli on first hit
+    if (mob === voidSentinel && !voidSentinel.aggro) {
+        voidSentinel.aggro = true;
+        addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    }
+    const pcx = player.x + player.width / 2;
+    const mobCX = mob.x + mob.width / 2;
+    const currentSide = pcx < mobCX ? -1 : 1;
+    const isBackstab = (currentSide === daggerStab.playerSideX);
+    const dmg = isBackstab ? 8 : 5;
+    swordSwingTime = performance.now();
+    mob.hp -= dmg;
+    addNotification(isBackstab ? `Backstab! -${dmg} HP` : `Dagger stab! -${dmg} HP`, 1000,
+        isBackstab ? 'rgba(255,100,50,1)' : 'rgba(255,180,50,1)',
+        isBackstab ? 'rgba(80,20,0,0.9)' : 'rgba(60,30,0,0.8)');
+    if (mob.hp <= 0) { mob.hp = 0; handleStabKill(mob); }
+}
+
+function handleStabKill(mob) {
+    if (mob === spider) {
+        spider.alive = false; spiderDeathTime = gameTime; spider.maxHp += 10; addWeaponXP(25);
+        const gld = 3 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        const gc = Math.floor((spider.x + spider.width / 2) / T), gr = Math.floor((spider.y + spider.height / 2) / T);
+        map[gr][gc] = GOLD_BLOCK;
+        questTasks.spiderDefeated = true; checkAllTasks();
+        addNotification('The giant spider is defeated! It dropped a gold block!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
+    } else if (mob === seaSnake) {
+        seaSnake.alive = false; seaSnakeDeathTime = gameTime; seaSnake.maxHp += 10; addWeaponXP(30);
+        const gld = 5 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        health.max = Math.max(health.max, 15);
+        if (dragonKills === 0) health.value = health.max;
+        questTasks.seaSnakeDefeated = true;
+        addNotification('The sea snake is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
+        if (dragonKills === 0) addNotification(`Health increased to ${health.max}/${health.max}!`, 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
+    } else if (mob === troll) {
+        troll.alive = false; trollDeathTime = gameTime; troll.maxHp += 10; addWeaponXP(45);
+        const gld = 8 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        health.max = Math.max(health.max, 30);
+        if (dragonKills === 0) health.value = health.max;
+        questTasks.trollDefeated = true;
+        addNotification('The mountain troll is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
+        if (dragonKills === 0) addNotification('Health increased to 30/30!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
+        addNotification('A secret passage to the peak opens!', 5000, 'rgba(255,200,100,1)', 'rgba(60,40,0,0.9)');
+        openPeakPassage();
+    } else if (mob === dragon) {
+        dragon.alive = false; dragonKills++; addWeaponXP(100);
+        const gld = 15 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dragon.maxHp += 30; dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
+        if (dragonKills === 1) {
+            kingSwordUnlocked = true; currentSword = 'kings'; swordDamage = 3;
+            addNotification("King's Sword unlocked! 3 damage per hit!", 6000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
+            addNotification('Build new rooms at the castle with gold!', 5000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
+        }
+        if (!goldDesignUnlocked) { goldDesignUnlocked = true; addNotification('Gold design unlocked!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'); }
+        respawnMonsters();
+        questTasks.dragonDefeated = true;
+        addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
+        addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
+        addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
+    } else if (mob === voidSentinel) {
+        voidSentinel.alive = false; voidSentinel.aggro = false; voidSentinelDeathTime = gameTime;
+        voidSentinel.maxHp = 2500; addWeaponXP(1000);
+        const gld = 15 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        if (!voidQuestNoliDefeated) voidQuestNoliDefeated = true;
+        addNotification('Noli is defeated!', 5000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+        if (!voidStarSwordUnlocked) {
+            voidStarSwordUnlocked = true; currentSword = 'voidstar'; swordDamage = 7;
+            addNotification('Void Star sword acquired! 7 dmg + Void Rush!', 6000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            addNotification('Press R to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
+        }
+        if (!voidDesignUnlocked) { voidDesignUnlocked = true; addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'); }
+    } else {
+        mob.alive = false; addWeaponXP(10);
+        const gld = 2 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+    }
+}
+
+// ── Mastery System ──────────────────────────────────────────
+
+const swordMastery = { xp: 0, level: 0 };
+let masterySkin = 'default';
+const MASTERY_SKINS = ['default', 'bronze', 'silver', 'gold', 'diamond'];
+const MASTERY_MILESTONES = { 25: 'bronze', 50: 'silver', 75: 'gold', 100: 'diamond' };
+
+const daggerMastery = { xp: 0, level: 0 };
+let daggerMasterySkin = 'default';
+const DAGGER_MASTERY_SKINS = ['default', 'shadow', 'crimson', 'phantom', 'nightblade'];
+const DAGGER_MASTERY_MILESTONES = { 25: 'shadow', 50: 'crimson', 75: 'phantom', 100: 'nightblade' };
+
+function xpForLevel(level) {
+    return Math.floor(100 * Math.pow(1.1, level - 1));
+}
+
+function addSwordXP(amount) {
+    if (swordMastery.level >= 100) return;
+    swordMastery.xp += amount;
+    let leveled = false;
+    while (swordMastery.level < 100) {
+        const needed = xpForLevel(swordMastery.level + 1);
+        if (swordMastery.xp >= needed) {
+            swordMastery.xp -= needed;
+            swordMastery.level++;
+            leveled = true;
+            const milestone = MASTERY_MILESTONES[swordMastery.level];
+            if (milestone) {
+                masterySkin = milestone;
+                addNotification(`Sword Mastery ${swordMastery.level}! ${milestone.charAt(0).toUpperCase() + milestone.slice(1)} skin unlocked!`, 6000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
+            }
+        } else break;
+    }
+    if (leveled && !MASTERY_MILESTONES[swordMastery.level]) {
+        addNotification(`Sword Mastery Level ${swordMastery.level}!`, 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.8)');
+    }
+    if (swordMastery.level >= 100) swordMastery.xp = 0;
+}
+
+function addDaggerXP(amount) {
+    if (daggerMastery.level >= 100) return;
+    daggerMastery.xp += amount;
+    let leveled = false;
+    while (daggerMastery.level < 100) {
+        const needed = xpForLevel(daggerMastery.level + 1);
+        if (daggerMastery.xp >= needed) {
+            daggerMastery.xp -= needed;
+            daggerMastery.level++;
+            leveled = true;
+            const milestone = DAGGER_MASTERY_MILESTONES[daggerMastery.level];
+            if (milestone) {
+                daggerMasterySkin = milestone;
+                addNotification(`Dagger Mastery ${daggerMastery.level}! ${milestone.charAt(0).toUpperCase() + milestone.slice(1)} skin unlocked!`, 6000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.9)');
+            }
+        } else break;
+    }
+    if (leveled && !DAGGER_MASTERY_MILESTONES[daggerMastery.level]) {
+        addNotification(`Dagger Mastery Level ${daggerMastery.level}!`, 2000, 'rgba(255,200,150,1)', 'rgba(40,20,0,0.8)');
+    }
+    if (daggerMastery.level >= 100) daggerMastery.xp = 0;
+}
+
+function addWeaponXP(amount) {
+    if (currentSword === 'dagger') addDaggerXP(amount);
+    else addSwordXP(amount);
+}
+
+function getMasteryUnlockedSkins() {
+    const skins = ['default'];
+    if (swordMastery.level >= 25) skins.push('bronze');
+    if (swordMastery.level >= 50) skins.push('silver');
+    if (swordMastery.level >= 75) skins.push('gold');
+    if (swordMastery.level >= 100) skins.push('diamond');
+    return skins;
+}
+
+function getDaggerMasteryUnlockedSkins() {
+    const skins = ['default'];
+    if (daggerMastery.level >= 25) skins.push('shadow');
+    if (daggerMastery.level >= 50) skins.push('crimson');
+    if (daggerMastery.level >= 75) skins.push('phantom');
+    if (daggerMastery.level >= 100) skins.push('nightblade');
+    return skins;
+}
+
+function getActiveMasterySkin() {
+    if (currentSword === 'dagger') return daggerMasterySkin;
+    return masterySkin;
+}
+
 let dragonKills = 0;
 let dragonRespawnTime = -Infinity;
 let lastCongratsKill = 0; // tracks which dragon kill NPCs last congratulated for
@@ -839,27 +1084,33 @@ function respawnMonsters() {
     if (!peakPassageOpen) openPeakPassage();
 }
 
+const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, dragon: 5, voidstar: 7, admin: 10 };
+const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', dragon: 'Dragon Sword (5 dmg)', voidstar: 'Void Star (7 dmg)', admin: 'Admin Sword (10 dmg)' };
+const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
+
+function getSwordOrder() {
+    const order = ['legendary', 'kings'];
+    if (daggerUnlocked) order.push('dagger');
+    if (dragonSwordUnlocked) order.push('dragon');
+    if (voidStarSwordUnlocked) order.push('voidstar');
+    if (adminSwordEquipped) order.push('admin');
+    return order;
+}
+
 function switchSword() {
     if (!kingSwordUnlocked) return;
-    if (currentSword === 'admin') {
-        currentSword = 'legendary'; swordDamage = 2;
-        addNotification('Switched to Legendary Sword (2 dmg)', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
-    } else if (currentSword === 'legendary') {
-        currentSword = 'kings'; swordDamage = 3;
-        addNotification("Switched to King's Sword (3 dmg)", 2000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
-    } else if (currentSword === 'kings' && dragonSwordUnlocked) {
-        currentSword = 'dragon'; swordDamage = 5;
-        addNotification('Switched to Dragon Sword (5 dmg)', 2000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)');
-    } else if ((currentSword === 'kings' || currentSword === 'dragon') && voidStarSwordUnlocked) {
-        currentSword = 'voidstar'; swordDamage = 7;
-        addNotification('Switched to Void Star (7 dmg)', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
-    } else if ((currentSword === 'kings' || currentSword === 'dragon' || currentSword === 'voidstar') && adminSwordEquipped) {
-        currentSword = 'admin'; swordDamage = 10;
-        addNotification('Switched to Admin Sword (10 dmg)', 2000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.9)');
-    } else {
-        currentSword = 'legendary'; swordDamage = 2;
-        addNotification('Switched to Legendary Sword (2 dmg)', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
-    }
+    const order = getSwordOrder();
+    const idx = order.indexOf(currentSword);
+    const next = order[(idx + 1) % order.length];
+    currentSword = next;
+    swordDamage = SWORD_DMG_MAP[next];
+    addNotification(`Switched to ${SWORD_NAME_MAP[next]}`, 2000, SWORD_COLOR_MAP[next][0], SWORD_COLOR_MAP[next][1]);
+}
+
+function getNextSwordName() {
+    const order = getSwordOrder();
+    const idx = order.indexOf(currentSword);
+    return SWORD_NAME_MAP[order[(idx + 1) % order.length]];
 }
 
 function buildWeaponryRoom(free) {
@@ -1021,6 +1272,7 @@ function hitSpider() {
         spider.alive = false;
         spiderDeathTime = gameTime;
         spider.maxHp += 10;
+        addWeaponXP(25);
         const gld = 3 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
@@ -1179,6 +1431,7 @@ function hitSeaSnake() {
         seaSnake.alive = false;
         seaSnakeDeathTime = gameTime;
         seaSnake.maxHp += 10;
+        addWeaponXP(30);
         const gld = 5 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
@@ -1328,6 +1581,118 @@ function drawCampLeaderDialog() {
         ctx.font = '11px monospace'; ctx.fillStyle = '#888';
         ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
     }
+}
+
+// ── Camp Member Dialogs ─────────────────────────────────────
+
+const campScoutDialog = { active: false };
+const campBlacksmithDialog = { active: false };
+const campHealerDialog = { active: false };
+
+function openCampScoutDialog() {
+    campScoutDialog.active = true;
+}
+function advanceCampScoutDialog() {
+    campScoutDialog.active = false;
+}
+function drawCampScoutDialog() {
+    if (!campScoutDialog.active) return;
+    const bw = 380, bh = 140;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(20,10,5,0.92)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#3a5a2a'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#7aaa5a';
+    ctx.fillText('Scout:', bx + 16, by + 14);
+    ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
+    if (dragonKills > 0) {
+        ctx.fillText('"The dragon is slain... but I still"', bx + 16, by + 40);
+        ctx.fillText('"keep watch. Strange things stir"', bx + 16, by + 60);
+        ctx.fillText('"in the void beyond the mountains."', bx + 16, by + 80);
+    } else if (questTasks.trollDefeated) {
+        ctx.fillText('"A dragon nests atop the peak."', bx + 16, by + 40);
+        ctx.fillText('"Its fire can be seen for miles."', bx + 16, by + 60);
+        ctx.fillText('"Be ready for anything up there."', bx + 16, by + 80);
+    } else if (questTasks.spiderDefeated) {
+        ctx.fillText('"I\'ve scouted the trails ahead."', bx + 16, by + 40);
+        ctx.fillText('"There\'s a sea snake in the lake"', bx + 16, by + 60);
+        ctx.fillText('"and a troll guards the mountain."', bx + 16, by + 80);
+    } else {
+        ctx.fillText('"I patrol these woods day and night."', bx + 16, by + 40);
+        ctx.fillText('"Orc war bands have been spotted"', bx + 16, by + 60);
+        ctx.fillText('"moving north. Stay on your guard."', bx + 16, by + 80);
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
+}
+
+function openCampBlacksmithDialog() {
+    campBlacksmithDialog.active = true;
+}
+function advanceCampBlacksmithDialog() {
+    campBlacksmithDialog.active = false;
+}
+function drawCampBlacksmithDialog() {
+    if (!campBlacksmithDialog.active) return;
+    const bw = 380, bh = 140;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(20,10,5,0.92)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#caa060';
+    ctx.fillText('Blacksmith:', bx + 16, by + 14);
+    ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
+    if (currentSword === 'kings' || currentSword === 'dragon' || currentSword === 'voidstar' || currentSword === 'admin') {
+        ctx.fillText('"That\'s a fine blade you carry!"', bx + 16, by + 40);
+        ctx.fillText('"I\'ve never forged anything like it."', bx + 16, by + 60);
+        ctx.fillText('"Take good care of it, Your Majesty."', bx + 16, by + 80);
+    } else if (swordPickedUp) {
+        ctx.fillText('"That bridge sword is decent work."', bx + 16, by + 40);
+        ctx.fillText('"I keep the camp\'s weapons sharp."', bx + 16, by + 60);
+        ctx.fillText('"You\'ll need a stronger blade soon."', bx + 16, by + 80);
+    } else {
+        ctx.fillText('"I\'m the camp blacksmith. I forge"', bx + 16, by + 40);
+        ctx.fillText('"swords, shields, arrowheads..."', bx + 16, by + 60);
+        ctx.fillText('"You should find yourself a weapon."', bx + 16, by + 80);
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
+}
+
+function openCampHealerDialog() {
+    campHealerDialog.active = true;
+}
+function advanceCampHealerDialog() {
+    campHealerDialog.active = false;
+}
+function drawCampHealerDialog() {
+    if (!campHealerDialog.active) return;
+    const bw = 380, bh = 140;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(20,10,5,0.92)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#cc3333'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#ee8888';
+    ctx.fillText('Healer:', bx + 16, by + 14);
+    ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
+    if (healPowerUnlocked) {
+        ctx.fillText('"The wizard taught you well."', bx + 16, by + 40);
+        ctx.fillText('"Your healing power is strong."', bx + 16, by + 60);
+        ctx.fillText('"Don\'t forget to eat — food heals too."', bx + 16, by + 80);
+    } else if (health.value < health.max * 0.5) {
+        ctx.fillText('"You look hurt, Your Majesty!"', bx + 16, by + 40);
+        ctx.fillText('"Eat some food to restore health."', bx + 16, by + 60);
+        ctx.fillText('"The cook at the castle can help."', bx + 16, by + 80);
+    } else {
+        ctx.fillText('"I tend to the wounded here."', bx + 16, by + 40);
+        ctx.fillText('"These herbs from the forest"', bx + 16, by + 60);
+        ctx.fillText('"keep our soldiers fighting."', bx + 16, by + 80);
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
 }
 
 // Guard combat state
@@ -1556,6 +1921,7 @@ function hitNearestOrc() {
     if (nearest.hp <= 0) {
         nearest.hp = 0;
         nearest.alive = false;
+        addWeaponXP(10);
         const gld = 2 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
@@ -1669,6 +2035,7 @@ function hitTroll() {
         troll.alive = false;
         trollDeathTime = gameTime;
         troll.maxHp += 10;
+        addWeaponXP(45);
         const gld = 8 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
@@ -1874,6 +2241,7 @@ function hitDragon() {
         dragon.hp = 0;
         dragon.alive = false;
         dragonKills++;
+        addWeaponXP(100);
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
@@ -2064,6 +2432,7 @@ function hitVoidSentinel() {
         voidSentinel.aggro = false;
         voidSentinelDeathTime = gameTime;
         voidSentinel.maxHp = 2500;
+        addWeaponXP(1000);
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');

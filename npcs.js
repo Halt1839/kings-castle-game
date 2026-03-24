@@ -265,6 +265,88 @@ function drawCampLeader(ox, oy) {
     }
 }
 
+function drawCampScout(ox, oy) {
+    const sx = Math.round(campScout.x - ox), sy = Math.round(campScout.y - oy);
+    const cx = sx + campScout.width / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + campScout.height + 2, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Leather body
+    ctx.fillStyle = '#5a4020'; ctx.fillRect(sx + 2, sy + 8, 12, 10);
+    ctx.fillStyle = '#6a5030'; ctx.fillRect(sx + 4, sy + 9, 8, 8);
+    // Belt
+    ctx.fillStyle = '#3a2a10'; ctx.fillRect(sx + 2, sy + 14, 12, 2);
+    // Head
+    ctx.fillStyle = '#c8a070'; ctx.beginPath(); ctx.arc(cx, sy + 6, 5, 0, Math.PI * 2); ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#333'; ctx.fillRect(cx - 3, sy + 5, 2, 2); ctx.fillRect(cx + 1, sy + 5, 2, 2);
+    // Hood
+    ctx.fillStyle = '#3a5a2a'; ctx.fillRect(sx + 2, sy - 2, 12, 6);
+    ctx.fillRect(sx + 4, sy - 4, 8, 3);
+    // Cloak sides
+    ctx.fillStyle = '#3a5a2a'; ctx.fillRect(sx, sy + 8, 3, 10); ctx.fillRect(sx + 13, sy + 8, 3, 10);
+    // Quiver on back
+    ctx.fillStyle = '#4a3010'; ctx.fillRect(sx + 14, sy + 2, 3, 12);
+    ctx.fillStyle = '#aaa'; ctx.fillRect(sx + 14, sy, 1, 4); ctx.fillRect(sx + 16, sy + 1, 1, 3);
+    // Feet
+    ctx.fillStyle = '#3a2a10'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
+}
+
+function drawCampBlacksmith(ox, oy) {
+    const sx = Math.round(campBlacksmith.x - ox), sy = Math.round(campBlacksmith.y - oy);
+    const cx = sx + campBlacksmith.width / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + campBlacksmith.height + 2, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Thick body (muscular)
+    ctx.fillStyle = '#444'; ctx.fillRect(sx + 1, sy + 7, 14, 11);
+    ctx.fillStyle = '#555'; ctx.fillRect(sx + 3, sy + 8, 10, 9);
+    // Apron
+    ctx.fillStyle = '#6a4a2a'; ctx.fillRect(sx + 4, sy + 10, 8, 8);
+    // Head (bald)
+    ctx.fillStyle = '#c8a070'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#333'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+    // Thick eyebrows
+    ctx.fillStyle = '#222'; ctx.fillRect(cx - 4, sy + 2, 3, 1); ctx.fillRect(cx + 1, sy + 2, 3, 1);
+    // Beard
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(cx - 3, sy + 7, 6, 3);
+    // Arms (thick)
+    ctx.fillStyle = '#c8a070'; ctx.fillRect(sx - 1, sy + 8, 4, 7); ctx.fillRect(sx + 13, sy + 8, 4, 7);
+    // Hammer in hand
+    ctx.fillStyle = '#8a7a6a'; ctx.fillRect(sx + 15, sy + 4, 2, 10);
+    ctx.fillStyle = '#888'; ctx.fillRect(sx + 13, sy + 2, 6, 4);
+    // Feet
+    ctx.fillStyle = '#333'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
+}
+
+function drawCampHealer(ox, oy) {
+    const sx = Math.round(campHealer.x - ox), sy = Math.round(campHealer.y - oy);
+    const cx = sx + campHealer.width / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + campHealer.height + 2, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Robe body
+    ctx.fillStyle = '#eee'; ctx.fillRect(sx + 2, sy + 7, 12, 11);
+    ctx.fillStyle = '#ddd'; ctx.fillRect(sx + 4, sy + 8, 8, 9);
+    // Red cross on robe
+    ctx.fillStyle = '#cc3333'; ctx.fillRect(cx - 1, sy + 10, 3, 6);
+    ctx.fillRect(cx - 3, sy + 12, 7, 2);
+    // Head
+    ctx.fillStyle = '#d4a574'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    // Eyes (gentle)
+    ctx.fillStyle = '#336'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+    // Hair
+    ctx.fillStyle = '#aaa'; ctx.fillRect(sx + 3, sy - 1, 10, 4);
+    ctx.fillRect(sx + 2, sy + 1, 2, 4); ctx.fillRect(sx + 12, sy + 1, 2, 4);
+    // Arms (in robe sleeves)
+    ctx.fillStyle = '#eee'; ctx.fillRect(sx, sy + 8, 3, 7); ctx.fillRect(sx + 13, sy + 8, 3, 7);
+    // Herb pouch
+    ctx.fillStyle = '#5a8a3a'; ctx.fillRect(sx - 1, sy + 14, 4, 3);
+    // Feet
+    ctx.fillStyle = '#8a7a6a'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
+}
+
 function drawOrc(orc, ox, oy) {
     if (!orc.alive) return;
     const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);

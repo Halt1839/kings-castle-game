@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v2.10';
+const GAME_VERSION = 'v2.15';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
@@ -67,6 +67,7 @@ const KEY_LABELS = {
     H: { key: 'H', touch: 'HIT' },
     B: { key: 'B', touch: 'BLK' },
     F: { key: 'F', touch: 'HEAL' },
+    Y: { key: 'Y', touch: 'STAB' },
     nav: { key: 'W/S', touch: 'Joystick' },
 };
 function kl(action) {

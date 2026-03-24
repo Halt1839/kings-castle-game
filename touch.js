@@ -41,6 +41,7 @@ function getActionLayout() {
         btnV: { x: baseX + BTN_SIZE * 2 + BTN_GAP * 2, y: baseY - BTN_SIZE - BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
         btnB: { x: baseX, y: baseY + BTN_SIZE + BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
         btnF: { x: baseX + BTN_SIZE + BTN_GAP, y: baseY + BTN_SIZE + BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
+        btnS: { x: baseX + BTN_SIZE * 2 + BTN_GAP * 2, y: baseY + BTN_SIZE + BTN_GAP, w: BTN_SIZE, h: BTN_SIZE },
     };
 }
 
@@ -127,6 +128,7 @@ function handleTouchStart(e) {
         if (touchHitTest(tx, ty, actions.btnB)) bPressed = true;
         if (touchHitTest(tx, ty, actions.btnF)) fPressed = true;
         if (voidStarUnlocked && touchHitTest(tx, ty, actions.btnV)) vPressed = true;
+        if (currentSword === 'dagger' && touchHitTest(tx, ty, actions.btnS)) yPressed = true;
 
         // Tap on pause button area
         if (touchHitTest(tx, ty, pauseBtn)) {
@@ -257,6 +259,7 @@ function drawTouchControls() {
         if (voidStarUnlocked) drawTouchButton(actions.btnV, 'VOID', false, '180,100,255');
         drawTouchButton(actions.btnB, 'BLK', false, '68,136,255');
         drawTouchButton(actions.btnF, 'HEAL', false, '138,43,226');
+        if (currentSword === 'dagger') drawTouchButton(actions.btnS, 'STAB', false, '255,140,50');
     } else {
         // Menu/pause/dead: joystick + ACT for navigation
         drawJoystick();

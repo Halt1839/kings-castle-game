@@ -7,6 +7,7 @@ let fPressed = false;
 let bPressed = false;
 let vPressed = false;
 let rPressed = false;
+let yPressed = false;
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.key);
@@ -45,9 +46,24 @@ window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') questSelection = (questSelection - 1 + qItems.length) % qItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') questSelection = (questSelection + 1) % qItems.length;
             if (e.key === 'Escape') { pauseScreen = 'main'; }
+        } else if (pauseScreen === 'mastery') {
+            const mItems = getMasteryPickerItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mItems.length) % mItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'main'; }
+        } else if (pauseScreen === 'mastery_sword') {
+            const msItems = getSwordMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + msItems.length) % msItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % msItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
+        } else if (pauseScreen === 'mastery_dagger') {
+            const mdItems = getDaggerMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mdItems.length) % mdItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mdItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
         } else {
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + 3) % 3;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % 3;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % PAUSE_ITEMS.length;
             if (e.key === 'Escape') { gameState = 'playing'; lastTime = performance.now(); }
         }
         return;
@@ -105,9 +121,15 @@ window.addEventListener('keydown', (e) => {
         else if (messengerDialog.active) { messengerDialog.active = false; messengerDialog.stage = null; }
         else if (wizardDialog.active) { wizardDialog.active = false; wizardDialog.stage = null; }
         else if (campLeaderDialog.active) { campLeaderDialog.active = false; campLeaderDialog.stage = null; }
+        else if (campScoutDialog.active) { campScoutDialog.active = false; }
+        else if (campBlacksmithDialog.active) { campBlacksmithDialog.active = false; }
+        else if (campHealerDialog.active) { campHealerDialog.active = false; }
         else { gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main'; if (currentSlot) saveGame(currentSlot); }
         return;
     }
+
+    // Dagger stab — only set in playing state (menu/paused/dead/admin/shop returned above)
+    if (e.key === 'y' || e.key === 'Y') yPressed = true;
 
     if (dialog.active || butlerDialog.active || (campLeaderDialog.active && campLeaderDialog.stage === 'rematch_ask')) {
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
@@ -220,11 +242,39 @@ function gameLoop(now) {
                     activeQuest = selected.key;
                     pauseScreen = 'main';
                 }
+            } else if (pauseScreen === 'mastery') {
+                const mItems = getMasteryPickerItems();
+                const mSelected = mItems[masterySelection];
+                if (mSelected.key === 'back') {
+                    pauseScreen = 'main';
+                } else if (mSelected.key === 'sword') {
+                    pauseScreen = 'mastery_sword'; masterySelection = 0;
+                } else if (mSelected.key === 'dagger') {
+                    pauseScreen = 'mastery_dagger'; masterySelection = 0;
+                }
+            } else if (pauseScreen === 'mastery_sword') {
+                const msItems = getSwordMasteryItems();
+                const msSelected = msItems[masterySelection];
+                if (msSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    masterySkin = msSelected.key;
+                }
+            } else if (pauseScreen === 'mastery_dagger') {
+                const mdItems = getDaggerMasteryItems();
+                const mdSelected = mdItems[masterySelection];
+                if (mdSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    daggerMasterySkin = mdSelected.key;
+                }
             } else {
                 if (pauseSelection === 0) {
                     gameState = 'playing'; lastTime = performance.now();
                 } else if (pauseSelection === 1) {
                     pauseScreen = 'quests'; questSelection = 0;
+                } else if (pauseSelection === 2) {
+                    pauseScreen = 'mastery'; masterySelection = 0;
                 } else {
                     if (currentSlot) saveGame(currentSlot);
                     gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
@@ -327,6 +377,9 @@ function gameLoop(now) {
     // Update void rush
     updateVoidRush(dt);
 
+    // Update dagger stab
+    updateDaggerStab();
+
     // Check for death
     if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
@@ -401,6 +454,15 @@ function gameLoop(now) {
         rPressed = false;
     }
 
+    // Handle Y press (dagger stab)
+    if (yPressed) {
+        if (currentSword === 'dagger' && swordPickedUp && !daggerStab.active && gameTime >= daggerStab.cooldownUntil) {
+            const stabTarget = findNearestStabTarget();
+            if (stabTarget) startDaggerStab(stabTarget);
+        }
+        yPressed = false;
+    }
+
     // Handle E press
     if (ePressed) {
         if (dialog.active) {
@@ -413,6 +475,12 @@ function gameLoop(now) {
             advanceWizardDialog();
         } else if (campLeaderDialog.active) {
             advanceCampLeaderDialog();
+        } else if (campScoutDialog.active) {
+            advanceCampScoutDialog();
+        } else if (campBlacksmithDialog.active) {
+            advanceCampBlacksmithDialog();
+        } else if (campHealerDialog.active) {
+            advanceCampHealerDialog();
         } else if (activeAction) {
             // Track quest tasks on exit
             if (activeAction.name === 'toilet') {
@@ -459,6 +527,12 @@ function gameLoop(now) {
                 else addNotification(`Need 30 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
             } else if (isNearCampLeader() && !orcSiege.active) {
                 openCampLeaderDialog();
+            } else if (isNearCampScout()) {
+                openCampScoutDialog();
+            } else if (isNearCampBlacksmith()) {
+                openCampBlacksmithDialog();
+            } else if (isNearCampHealer()) {
+                openCampHealerDialog();
             } else if (isNearBoat()) {
                 boardBoat();
             } else if (nearCook) {
@@ -483,7 +557,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle') {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -548,6 +622,9 @@ function gameLoop(now) {
     drawSeaSnake(camX, camY);
     drawBoatAtDock(camX, camY);
     drawCampLeader(camX, camY);
+    drawCampScout(camX, camY);
+    drawCampBlacksmith(camX, camY);
+    drawCampHealer(camX, camY);
     drawAllOrcs(camX, camY);
     drawTroll(camX, camY);
     drawDragon(camX, camY);
@@ -561,6 +638,26 @@ function gameLoop(now) {
     else if (activeAction && activeAction.name === 'toilet') drawKingOnToilet(camX, camY);
     else drawKing(camX, camY);
 
+    // Dagger stab trail
+    if (daggerStab.active) {
+        const t = (gameTime - daggerStab.startTime) / DAGGER_STAB_DURATION;
+        ctx.save();
+        ctx.globalAlpha = 0.4 * (1 - t);
+        ctx.fillStyle = '#FFB030';
+        const trailX = daggerStab.startX - camX;
+        const trailY = daggerStab.startY - camY;
+        const curX = player.x - camX;
+        const curY = player.y - camY;
+        for (let i = 0; i < 3; i++) {
+            const f = i / 3;
+            const tx = trailX + (curX - trailX) * f;
+            const ty = trailY + (curY - trailY) * f;
+            ctx.globalAlpha = 0.2 * (1 - f) * (1 - t);
+            ctx.fillRect(tx + 4, ty + 4, player.width - 8, player.height - 8);
+        }
+        ctx.restore();
+    }
+
     drawVoidRush(camX, camY);
     drawShieldEffect(camX, camY);
     drawSleepOverlay();
@@ -571,6 +668,9 @@ function gameLoop(now) {
     else if (messengerDialog.active) drawMessengerDialog();
     else if (wizardDialog.active) drawWizardDialog();
     else if (campLeaderDialog.active) drawCampLeaderDialog();
+    else if (campScoutDialog.active) drawCampScoutDialog();
+    else if (campBlacksmithDialog.active) drawCampBlacksmithDialog();
+    else if (campHealerDialog.active) drawCampHealerDialog();
     else if (activeAction) drawActionMessage();
     else if (isNearDesignRack()) {
         const next = currentDesign === 'default' ? (goldDesignUnlocked ? 'Gold' : (voidDesignUnlocked ? 'Void' : 'Default')) :
@@ -579,13 +679,7 @@ function gameLoop(now) {
     } else if (isNearDesignRoomBuildSite()) {
         drawPrompt(`${kl('E')} to build Design Room (100 gold) [${goldCount} gold]`);
     } else if (isNearWeaponRack()) {
-        let other;
-        if (currentSword === 'legendary') other = "King's Sword (3 dmg)";
-        else if (currentSword === 'kings' && dragonSwordUnlocked) other = 'Dragon Sword (5 dmg)';
-        else if (currentSword === 'dragon' && voidStarSwordUnlocked) other = 'Void Star (7 dmg)';
-        else if (currentSword === 'voidstar') other = 'Legendary Sword (2 dmg)';
-        else other = 'Legendary Sword (2 dmg)';
-        drawPrompt(`${kl('E')} to switch to ${other}`);
+        drawPrompt(`${kl('E')} to switch to ${getNextSwordName()}`);
     } else if (isNearWeaponryBuildSite()) {
         drawPrompt(`${kl('E')} to build Weaponry (20 gold) [${goldCount} gold]`);
     } else if (isNearGuestRoomBuildSite()) {
@@ -593,21 +687,33 @@ function gameLoop(now) {
     } else if (isNearGold()) {
         drawPrompt(`${kl('E')} to pick up the gold block`);
     } else if (isNearVoidSentinel()) {
-        drawPrompt(`${kl('H')} to attack Noli`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack Noli${stabHint}`);
     } else if (isNearDragon()) {
-        drawPrompt(`${kl('H')} to attack the dragon!`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the dragon!${stabHint}`);
     } else if (isNearTroll()) {
-        drawPrompt(`${kl('H')} to attack the troll!`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the troll!${stabHint}`);
     } else if (isNearAnyOrc()) {
-        drawPrompt(`${kl('H')} to attack the orc!`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the orc!${stabHint}`);
     } else if (isNearCampLeader() && !orcSiege.active) {
         drawPrompt(`${kl('E')} to talk to the Camp Leader`);
+    } else if (isNearCampScout()) {
+        drawPrompt(`${kl('E')} to talk to the Scout`);
+    } else if (isNearCampBlacksmith()) {
+        drawPrompt(`${kl('E')} to talk to the Blacksmith`);
+    } else if (isNearCampHealer()) {
+        drawPrompt(`${kl('E')} to talk to the Healer`);
     } else if (isNearSeaSnake()) {
-        drawPrompt(`${kl('H')} to attack the sea snake!`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the sea snake!${stabHint}`);
     } else if (isNearBoat()) {
         drawPrompt(`${kl('E')} to board the boat`);
     } else if (isNearSpider()) {
-        drawPrompt(`${kl('H')} to attack the spider!`);
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the spider!${stabHint}`);
     } else if (isNearWizard()) {
         drawPrompt(`${kl('E')} to talk to the Wizard`);
     } else if (isNearMessenger()) {

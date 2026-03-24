@@ -68,6 +68,11 @@ function saveGame(slot) {
         activeQuest,
         voidQuestFoundEntrance,
         voidQuestNoliDefeated,
+        swordMastery: { xp: swordMastery.xp, level: swordMastery.level },
+        masterySkin,
+        daggerUnlocked,
+        daggerMastery: { xp: daggerMastery.xp, level: daggerMastery.level },
+        daggerMasterySkin,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -79,6 +84,8 @@ function loadGame(slot) {
     const saves = getSaves();
     const s = saves[slot];
     if (!s) return false;
+    // Reset everything to defaults first — prevents state from bleeding across slots
+    resetGameState();
     player.x = s.player.x; player.y = s.player.y;
     hunger.value = s.hunger.value; hunger.lastDeplete = s.hunger.lastDeplete;
     health.value = s.health.value; health.lastDamage = s.health.lastDamage;
@@ -152,6 +159,11 @@ function loadGame(slot) {
     if (s.activeQuest !== undefined) activeQuest = s.activeQuest;
     if (s.voidQuestFoundEntrance !== undefined) voidQuestFoundEntrance = s.voidQuestFoundEntrance;
     if (s.voidQuestNoliDefeated !== undefined) voidQuestNoliDefeated = s.voidQuestNoliDefeated;
+    if (s.swordMastery) { swordMastery.xp = s.swordMastery.xp; swordMastery.level = s.swordMastery.level; }
+    if (s.masterySkin !== undefined) masterySkin = s.masterySkin;
+    if (s.daggerUnlocked !== undefined) daggerUnlocked = s.daggerUnlocked;
+    if (s.daggerMastery) { daggerMastery.xp = s.daggerMastery.xp; daggerMastery.level = s.daggerMastery.level; }
+    if (s.daggerMasterySkin !== undefined) daggerMasterySkin = s.daggerMasterySkin;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -165,15 +177,16 @@ function loadGame(slot) {
 
 let currentSlot = null;
 
-function newGame(slot) {
-    player.x = 14.5 * T; player.y = 6 * T;
-    hunger.value = 10; hunger.lastDeplete = 0;
-    health.value = 10; health.lastDamage = 0;
+// Reset all game state to defaults — called by both newGame and loadGame
+function resetGameState() {
+    buildMap();
+    hunger.value = 10; hunger.lastDeplete = 0; hunger.max = 10;
+    health.value = 10; health.lastDamage = 0; health.max = 10;
     bathroom.needsToGo = false; bathroom.needStartTime = 0;
     bathroom.lastAteTime = -Infinity; bathroom.hasAte = false; bathroom.pooped = false;
     cookingState.active = false; cookingState.done = false; cookingState.doneAcknowledged = false;
     cookingState.meal = null; cookingState.dessert = null;
-    butlerState.fetching = false;
+    butlerState.fetching = false; butlerState.farewellTriggered = false; butlerState.farewellReady = false;
     activeAction = null; dialog.active = false; butlerDialog.active = false;
     questTasks.ateFood = false; questTasks.usedBathroom = false;
     questTasks.talkedCook = false; questTasks.talkedButler = false;
@@ -196,8 +209,9 @@ function newGame(slot) {
     guard2.x = guardCombat.guard2Home.x; guard2.y = guardCombat.guard2Home.y;
     shieldUnlocked = false; shieldActive = false; lastShieldTime = -Infinity;
     campLeaderDialog.active = false; campLeaderDialog.stage = null;
+    campScoutDialog.active = false; campBlacksmithDialog.active = false; campHealerDialog.active = false;
     wizardDialog.active = false; wizardDialog.stage = null;
-    butlerState.farewellTriggered = false; butlerState.farewellReady = false;
+    messengerDialog.active = false; messengerDialog.stage = null;
     healPowerUnlocked = false; lastHealTime = -Infinity;
     troll.hp = 60; troll.maxHp = 60; troll.alive = true; troll.stunned = false; troll.stunUntil = 0; trollDeathTime = -Infinity;
     peakPassageOpen = false;
@@ -209,21 +223,27 @@ function newGame(slot) {
     currentDesign = 'default'; goldDesignUnlocked = false; voidDesignUnlocked = false;
     dragonKills = 0; dragonRespawnTime = -Infinity;
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
-    hunger.max = 10; health.max = 10;
     voidStarSwordUnlocked = false;
     voidRush.state = 'idle'; voidRush.lastUseTime = -Infinity; voidRush.hitSet = new Set();
     voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
     activeQuest = 'main'; voidQuestFoundEntrance = false; voidQuestNoliDefeated = false;
+    swordMastery.xp = 0; swordMastery.level = 0; masterySkin = 'default';
+    daggerUnlocked = false; daggerStab.active = false; daggerStab.cooldownUntil = 0;
+    daggerMastery.xp = 0; daggerMastery.level = 0; daggerMasterySkin = 'default';
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
     voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity; voidSentinel.dashHit = false;
     voidSentinelDeathTime = -Infinity;
     gameTime = 0;
+}
+
+function newGame(slot) {
+    resetGameState();
+    player.x = 14.5 * T; player.y = 6 * T;
     currentSlot = slot;
-    buildMap();
 }
 
 function drawMainMenu() {

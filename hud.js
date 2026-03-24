@@ -270,6 +270,7 @@ function getShopItems() {
     if (!weaponryBuilt) items.push({ name: 'Weaponry', cost: 20, action: () => buildWeaponryRoom() });
     if (!guestRoomBuilt) items.push({ name: 'Guest Room', cost: 30, action: () => buildGuestRoom() });
     if (!designRoomBuilt) items.push({ name: 'Design Room', cost: 100, action: () => buildDesignRoom() });
+    if (!daggerUnlocked) items.push({ name: 'Dagger (3 dmg + Stab)', cost: 300, action: () => { goldCount -= 300; daggerUnlocked = true; currentSword = 'dagger'; swordDamage = 3; addNotification('Dagger acquired! Press ' + kl('Y') + ' to stab!', 5000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'); } });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
     if (!voidStarUnlocked) items.push({ name: 'Void Star (4x buff)', cost: 2500, action: () => { goldCount -= 2500; voidStarUnlocked = true; addNotification('Void Star unlocked! Press V to activate!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)'); } });
     return items;
@@ -400,16 +401,18 @@ function drawPauseButton() {
 // ── Pause Menu ──────────────────────────────────────────────
 
 let pauseSelection = 0;
-let pauseScreen = 'main'; // 'main' or 'quests'
+let pauseScreen = 'main'; // 'main', 'quests', 'mastery', 'mastery_sword', 'mastery_dagger'
 let questSelection = 0;
+let masterySelection = 0;
+const PAUSE_ITEMS = ['Resume', 'Quests', 'Mastery', 'Quit to Menu'];
 
 function drawPauseMenu() {
-    if (pauseScreen === 'quests') {
-        drawQuestSelectMenu();
-        return;
-    }
+    if (pauseScreen === 'quests') { drawQuestSelectMenu(); return; }
+    if (pauseScreen === 'mastery') { drawMasteryPickerScreen(); return; }
+    if (pauseScreen === 'mastery_sword') { drawSwordMasteryScreen(); return; }
+    if (pauseScreen === 'mastery_dagger') { drawDaggerMasteryScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const bw = 280, bh = 240;
+    const bw = 280, bh = 280;
     const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
     ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
@@ -417,19 +420,145 @@ function drawPauseMenu() {
     ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillStyle = '#FFD700'; ctx.fillText('PAUSED', bx + bw/2, by + 20);
 
-    const items = ['Resume', 'Quests', 'Quit to Menu'];
     ctx.font = 'bold 16px monospace';
-    for (let i = 0; i < items.length; i++) {
-        const iy = by + 70 + i * 44;
+    for (let i = 0; i < PAUSE_ITEMS.length; i++) {
+        const iy = by + 65 + i * 40;
         if (i === pauseSelection) {
             ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 20, iy - 6, bw - 40, 32);
-            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + items[i] + ' <', bx + bw/2, iy);
+            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + PAUSE_ITEMS[i] + ' <', bx + bw/2, iy);
         } else {
-            ctx.fillStyle = '#ccc'; ctx.fillText(items[i], bx + bw/2, iy);
+            ctx.fillStyle = '#ccc'; ctx.fillText(PAUSE_ITEMS[i], bx + bw/2, iy);
         }
     }
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';
     ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
+}
+
+function getMasteryPickerItems() {
+    const items = [{ label: 'Sword Mastery (Lv ' + swordMastery.level + ')', key: 'sword' }];
+    if (daggerUnlocked) items.push({ label: 'Dagger Mastery (Lv ' + daggerMastery.level + ')', key: 'dagger' });
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawMasteryPickerScreen() {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const items = getMasteryPickerItems();
+    const bw = 300, bh = 80 + items.length * 44 + 30;
+    const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
+    ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
+    ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#FFD700'; ctx.fillText('MASTERY', bx + bw/2, by + 16);
+    ctx.font = 'bold 15px monospace';
+    for (let i = 0; i < items.length; i++) {
+        const iy = by + 60 + i * 44;
+        if (i === masterySelection) {
+            ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 16, iy - 6, bw - 32, 32);
+            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + items[i].label + ' <', bx + bw/2, iy);
+        } else {
+            ctx.fillStyle = '#ccc'; ctx.fillText(items[i].label, bx + bw/2, iy);
+        }
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
+}
+
+function getSwordMasteryItems() {
+    const skins = getMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function getDaggerMasteryItems() {
+    const skins = getDaggerMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawWeaponMasteryDetail(title, mastery, milestones, mNames, mColors, items, equippedSkin, accentColor1, accentColor2) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const bw = 340, bh = 260 + items.length * 30;
+    const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
+    ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
+
+    ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = accentColor1; ctx.fillText(title, bx + bw/2, by + 14);
+
+    ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#fff';
+    ctx.fillText(`Level ${mastery.level} / 100`, bx + bw/2, by + 44);
+
+    // XP bar
+    const barX = bx + 20, barY = by + 70, barW = bw - 40, barH = 16;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
+    if (mastery.level < 100) {
+        const needed = xpForLevel(mastery.level + 1);
+        const ratio = Math.min(1, mastery.xp / needed);
+        const grad = ctx.createLinearGradient(barX, barY, barX + barW * ratio, barY);
+        grad.addColorStop(0, accentColor2); grad.addColorStop(1, accentColor1);
+        ctx.fillStyle = grad;
+        ctx.fillRect(barX + 2, barY + 2, (barW - 4) * ratio, barH - 4);
+        ctx.font = '10px monospace'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+        ctx.fillText(`${mastery.xp} / ${needed} XP`, bx + bw/2, barY + 2);
+    } else {
+        ctx.fillStyle = accentColor1; ctx.fillRect(barX + 2, barY + 2, barW - 4, barH - 4);
+        ctx.font = '10px monospace'; ctx.fillStyle = '#333'; ctx.textAlign = 'center';
+        ctx.fillText('MAX LEVEL', bx + bw/2, barY + 2);
+    }
+
+    // Milestone markers
+    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    const mY = by + 96;
+    for (let i = 0; i < milestones.length; i++) {
+        const mx = bx + 30 + i * ((bw - 60) / 3);
+        const unlocked = mastery.level >= milestones[i];
+        ctx.fillStyle = unlocked ? mColors[i] : '#555';
+        ctx.fillText(`Lv${milestones[i]}`, mx, mY);
+        ctx.font = '10px monospace';
+        ctx.fillText(unlocked ? mNames[i] : '???', mx, mY + 14);
+        ctx.font = 'bold 11px monospace';
+    }
+
+    // Skin selection
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#DAA520'; ctx.fillText('Skins:', bx + 16, by + 136);
+
+    ctx.font = '13px monospace';
+    for (let i = 0; i < items.length; i++) {
+        const iy = by + 160 + i * 30;
+        const isEquipped = items[i].key === equippedSkin;
+        if (i === masterySelection) {
+            ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 12, iy - 4, bw - 24, 24);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + items[i].label + (isEquipped ? ' [equipped]' : '') + ' <', bx + bw/2, iy);
+        } else {
+            ctx.textAlign = 'center';
+            ctx.fillStyle = isEquipped ? '#FFD700' : '#ccc';
+            ctx.fillText(items[i].label + (isEquipped ? ' [equipped]' : ''), bx + bw/2, iy);
+        }
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888'; ctx.textAlign = 'center';
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 20);
+}
+
+function drawSwordMasteryScreen() {
+    const items = getSwordMasteryItems();
+    drawWeaponMasteryDetail('SWORD MASTERY', swordMastery,
+        [25, 50, 75, 100], ['Bronze', 'Silver', 'Gold', 'Diamond'],
+        ['#cd7f32', '#C0C0C0', '#FFD700', '#b9f2ff'],
+        items, masterySkin, '#FFD700', '#4488ff');
+}
+
+function drawDaggerMasteryScreen() {
+    const items = getDaggerMasteryItems();
+    drawWeaponMasteryDetail('DAGGER MASTERY', daggerMastery,
+        [25, 50, 75, 100], ['Shadow', 'Crimson', 'Phantom', 'Nightblade'],
+        ['#555577', '#cc3333', '#8899aa', '#7744cc'],
+        items, daggerMasterySkin, '#FF9933', '#cc6600');
 }
 
 function getQuestItems() {
@@ -526,6 +655,32 @@ function getAdminItems() {
         { name: adminGhostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF', action: () => {
             adminGhostMode = !adminGhostMode;
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
+        }},
+        { name: 'Set Mastery Level', action: () => {
+            const weapon = prompt('Which weapon? (sword / dagger)');
+            if (weapon === null) return;
+            const w = weapon.trim().toLowerCase();
+            if (w !== 'sword' && w !== 'dagger') { addNotification('Enter "sword" or "dagger"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            const val = prompt('Enter level (0-100):');
+            if (val === null) return;
+            const n = Number(val);
+            if (isNaN(n) || n < 0 || n > 100) { addNotification('Enter 0-100', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            const lvl = Math.floor(n);
+            if (w === 'sword') {
+                swordMastery.level = lvl; swordMastery.xp = 0;
+                const ms = [100, 75, 50, 25];
+                const sk = ['diamond', 'gold', 'silver', 'bronze'];
+                masterySkin = 'default';
+                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { masterySkin = sk[i]; break; } }
+                addNotification('Sword mastery set to ' + lvl, 2000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
+            } else {
+                daggerMastery.level = lvl; daggerMastery.xp = 0;
+                const ms = [100, 75, 50, 25];
+                const sk = ['nightblade', 'phantom', 'crimson', 'shadow'];
+                daggerMasterySkin = 'default';
+                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { daggerMasterySkin = sk[i]; break; } }
+                addNotification('Dagger mastery set to ' + lvl, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
+            }
         }},
         { name: 'Close', action: () => { adminOpen = false; } },
     ];

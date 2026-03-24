@@ -17,6 +17,11 @@ function isNPCSolid(px, py, pw, ph) {
     // Camp leader collision
     if (px < campLeader.x + campLeader.width && px + pw > campLeader.x &&
         py < campLeader.y + campLeader.height && py + ph > campLeader.y) return true;
+    // Camp member collisions
+    for (const cm of campMembers) {
+        if (px < cm.x + cm.width && px + pw > cm.x &&
+            py < cm.y + cm.height && py + ph > cm.y) return true;
+    }
     // Guest room NPC collisions
     if (typeof guestRoomBuilt !== 'undefined' && guestRoomBuilt) {
         if (px < guestWizard.x + guestWizard.width && px + pw > guestWizard.x &&
@@ -39,6 +44,26 @@ const campLeader = { x: 17 * T + 8, y: 115 * T + 8, width: 16, height: 16 };
 
 const guestWizard = { x: 25 * T + 8, y: 7 * T + 8, width: 16, height: 16 };
 const guestCampLeader = { x: 27 * T + 8, y: 8 * T + 8, width: 16, height: 16 };
+
+// ── Camp Members ────────────────────────────────────────────
+
+const campScout = { x: 7 * T + 8, y: 114 * T + 8, width: 16, height: 16 };
+const campBlacksmith = { x: 22 * T + 8, y: 114 * T + 8, width: 16, height: 16 };
+const campHealer = { x: 7 * T + 8, y: 117 * T + 8, width: 16, height: 16 };
+const campMembers = [campScout, campBlacksmith, campHealer];
+
+function isNearCampScout() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    return Math.hypot(pcx - (campScout.x + 8), pcy - (campScout.y + 8)) < T * 1.8;
+}
+function isNearCampBlacksmith() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    return Math.hypot(pcx - (campBlacksmith.x + 8), pcy - (campBlacksmith.y + 8)) < T * 1.8;
+}
+function isNearCampHealer() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    return Math.hypot(pcx - (campHealer.x + 8), pcy - (campHealer.y + 8)) < T * 1.8;
+}
 
 // ── Noli (arena boss) ───────────────────────────────────────
 

@@ -411,34 +411,87 @@ function drawVoidRush(ox, oy) {
 
 // ── King Drawing ────────────────────────────────────────────
 
+// ── Mastery Skin Colors ─────────────────────────────────────
+
+const SKIN_COLORS = {
+    default: { body: '#8B0000', trim: '#DAA520', crown: '#FFD700', gem: '#FF0000', legs: '#4a2800', arms: '#f5c6a0' },
+    bronze:  { body: '#8B5A2B', trim: '#cd7f32', crown: '#cd7f32', gem: '#FF6600', legs: '#5a3a1a', arms: '#d4a574', pauldron: '#a0692a' },
+    silver:  { body: '#5a6a7a', trim: '#C0C0C0', crown: '#C0C0C0', gem: '#4488FF', legs: '#4a4a5a', arms: '#8a9aaa', cape: 'rgba(100,120,160,0.6)' },
+    gold:    { body: '#8a6a10', trim: '#FFD700', crown: '#FFD700', gem: '#FF0000', legs: '#6a5a10', arms: '#DAA520', glow: 'rgba(255,215,0,0.25)' },
+    diamond: { body: '#4a6a8a', trim: '#b9f2ff', crown: '#b9f2ff', gem: '#ffffff', legs: '#3a5a7a', arms: '#7aaabb', glow: 'rgba(185,242,255,0.3)', aura: true },
+    // Dagger mastery skins
+    shadow:     { body: '#2a2a3a', trim: '#555577', crown: '#444466', gem: '#8844aa', legs: '#1a1a2a', arms: '#4a4a5a', cape: 'rgba(30,30,50,0.6)' },
+    crimson:    { body: '#6a1010', trim: '#cc3333', crown: '#aa2222', gem: '#ff4444', legs: '#4a0808', arms: '#8a3030', glow: 'rgba(255,50,50,0.2)' },
+    phantom:    { body: '#3a4a5a', trim: '#8899aa', crown: '#7788aa', gem: '#aaccff', legs: '#2a3a4a', arms: '#6a7a8a', cape: 'rgba(100,130,180,0.4)', glow: 'rgba(150,180,220,0.2)' },
+    nightblade: { body: '#1a1a2e', trim: '#6633cc', crown: '#5522aa', gem: '#cc88ff', legs: '#0a0a1e', arms: '#3a3a5e', glow: 'rgba(100,50,200,0.3)', aura: true },
+};
+
+const DAGGER_BLADE_COLORS = {
+    default:    { blade: '#D0D0D0', tip: '#D0D0D0', guard: '#DAA520', handle: '#654321', pommel: '#B8860B' },
+    shadow:     { blade: '#4a4a6a', tip: '#4a4a6a', guard: '#333355', handle: '#1a1a2a', pommel: '#555577' },
+    crimson:    { blade: '#cc4444', tip: '#ff6666', guard: '#882222', handle: '#441111', pommel: '#aa3333' },
+    phantom:    { blade: '#8899bb', tip: '#aabbdd', guard: '#667799', handle: '#334466', pommel: '#7788aa' },
+    nightblade: { blade: '#7744cc', tip: '#aa77ff', guard: '#5522aa', handle: '#220066', pommel: '#6633bb' },
+};
+
 function drawKing(ox, oy) {
     if (activeAction) return;
     const sx = Math.round(player.x - ox), sy = Math.round(player.y - oy);
     const cx = sx + player.width / 2;
+    const activeSkin = (typeof getActiveMasterySkin === 'function') ? getActiveMasterySkin() : 'default';
+    const skin = SKIN_COLORS[activeSkin] || SKIN_COLORS.default;
+    const isVoid = typeof voidStarActive !== 'undefined' && voidStarActive;
 
     // Walk bob
     const walkBob = playerWalking ? Math.sin(playerWalkPhase * Math.PI) * 2 : 0;
     const legSwing = playerWalking ? Math.sin(playerWalkPhase * Math.PI) * 4 : 0;
     const bodyY = sy + walkBob;
 
+    // Aura (diamond skin)
+    if (skin.aura) {
+        const pulse = 0.15 + 0.1 * Math.sin(performance.now() / 400);
+        ctx.fillStyle = `rgba(185,242,255,${pulse})`;
+        ctx.beginPath(); ctx.arc(cx, bodyY + 8, 16, 0, Math.PI * 2); ctx.fill();
+    }
+    // Glow (gold/diamond skins)
+    if (skin.glow) {
+        ctx.fillStyle = skin.glow;
+        ctx.beginPath(); ctx.arc(cx, bodyY + 8, 13, 0, Math.PI * 2); ctx.fill();
+    }
+
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(cx, sy+player.height+2, 8, 3, 0, 0, Math.PI*2); ctx.fill();
+
+    // Cape (silver+ skins)
+    if (skin.cape) {
+        ctx.fillStyle = skin.cape;
+        const capeSwing = playerWalking ? Math.sin(playerWalkPhase * Math.PI * 0.5) * 2 : 0;
+        ctx.fillRect(sx + 3, bodyY + 10, 10, 9 + capeSwing);
+    }
+
     // Body
-    ctx.fillStyle = '#8B0000'; ctx.fillRect(sx+2, bodyY+8, 12, 10);
-    ctx.fillStyle = '#DAA520'; ctx.fillRect(sx+2, bodyY+8, 12, 2);
+    ctx.fillStyle = skin.body; ctx.fillRect(sx+2, bodyY+8, 12, 10);
+    ctx.fillStyle = skin.trim; ctx.fillRect(sx+2, bodyY+8, 12, 2);
+
+    // Pauldrons (bronze+ skins)
+    if (skin.pauldron) {
+        ctx.fillStyle = skin.pauldron;
+        ctx.fillRect(sx, bodyY + 7, 4, 4); ctx.fillRect(sx + 12, bodyY + 7, 4, 4);
+    }
+
     // Head
     ctx.fillStyle = '#f5c6a0'; ctx.beginPath(); ctx.arc(cx, bodyY+6, 5, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#333'; ctx.fillRect(cx-3, bodyY+5, 2, 2); ctx.fillRect(cx+1, bodyY+5, 2, 2);
     // Crown
-    ctx.fillStyle = (typeof voidStarActive !== 'undefined' && voidStarActive) ? '#4B0082' : '#FFD700';
+    ctx.fillStyle = isVoid ? '#4B0082' : skin.crown;
     ctx.fillRect(sx+3, bodyY-1, 10, 4);
     ctx.fillRect(sx+3, bodyY-4, 2, 3); ctx.fillRect(sx+7, bodyY-5, 2, 4); ctx.fillRect(sx+11, bodyY-4, 2, 3);
-    ctx.fillStyle = (typeof voidStarActive !== 'undefined' && voidStarActive) ? '#C88FFF' : '#FF0000';
+    ctx.fillStyle = isVoid ? '#C88FFF' : skin.gem;
     ctx.fillRect(sx+7, bodyY-1, 2, 2);
     // Arms
-    ctx.fillStyle = '#f5c6a0'; ctx.fillRect(sx, bodyY+9, 3, 6); ctx.fillRect(sx+13, bodyY+9, 3, 6);
+    ctx.fillStyle = skin.arms; ctx.fillRect(sx, bodyY+9, 3, 6); ctx.fillRect(sx+13, bodyY+9, 3, 6);
     // Legs (animated when walking)
-    ctx.fillStyle = '#4a2800';
+    ctx.fillStyle = skin.legs;
     ctx.fillRect(sx+3, sy+17 + legSwing, 4, 3);
     ctx.fillRect(sx+9, sy+17 - legSwing, 4, 3);
 
@@ -469,6 +522,25 @@ function drawKing(ox, oy) {
             ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#fff';
             ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
+        } else if (currentSword === 'dagger') {
+            // Dagger — short blade with crossguard, skinned
+            const ds = DAGGER_BLADE_COLORS[daggerMasterySkin] || DAGGER_BLADE_COLORS.default;
+            ctx.fillStyle = ds.blade; ctx.fillRect(-1, -8, 3, 6);
+            // Tip
+            ctx.fillStyle = ds.tip;
+            ctx.beginPath(); ctx.moveTo(-1, -8); ctx.lineTo(0.5, -11); ctx.lineTo(2, -8); ctx.fill();
+            // Guard
+            ctx.fillStyle = ds.guard; ctx.fillRect(-3, -2, 7, 2);
+            // Handle
+            ctx.fillStyle = ds.handle; ctx.fillRect(-1, 0, 3, 3);
+            // Pommel
+            ctx.fillStyle = ds.pommel; ctx.fillRect(0, 3, 1, 1);
+            // Nightblade glow
+            if (daggerMasterySkin === 'nightblade') {
+                const gp = 0.3 + 0.2 * Math.sin(performance.now() / 250);
+                ctx.fillStyle = `rgba(120,60,220,${gp})`;
+                ctx.beginPath(); ctx.arc(0.5, -5, 5, 0, Math.PI * 2); ctx.fill();
+            }
         } else {
             // Sword blade
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
