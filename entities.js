@@ -65,6 +65,14 @@ function isNearCampHealer() {
     return Math.hypot(pcx - (campHealer.x + 8), pcy - (campHealer.y + 8)) < T * 1.8;
 }
 
+// ── Ice Traveler ────────────────────────────────────────────
+const iceTraveler = { x: 22 * T, y: 117 * T, width: 16, height: 20 };
+function isNearIceTraveler() {
+    if (!isIceTravelerPresent()) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    return Math.hypot(pcx - (iceTraveler.x + 8), pcy - (iceTraveler.y + 8)) < T * 1.8;
+}
+
 // ── Noli (arena boss) ───────────────────────────────────────
 
 const voidSentinel = {

@@ -73,6 +73,10 @@ function saveGame(slot) {
         daggerUnlocked,
         daggerMastery: { xp: daggerMastery.xp, level: daggerMastery.level },
         daggerMasterySkin,
+        iceSpearUnlocked,
+        spearMastery: { xp: spearMastery.xp, level: spearMastery.level },
+        spearMasterySkin,
+        snowflakeCount,
         extraLevels,
         gameTime,
         savedAt: new Date().toLocaleString(),
@@ -165,6 +169,10 @@ function loadGame(slot) {
     if (s.daggerUnlocked !== undefined) daggerUnlocked = s.daggerUnlocked;
     if (s.daggerMastery) { daggerMastery.xp = s.daggerMastery.xp; daggerMastery.level = s.daggerMastery.level; }
     if (s.daggerMasterySkin !== undefined) daggerMasterySkin = s.daggerMasterySkin;
+    if (s.iceSpearUnlocked !== undefined) iceSpearUnlocked = s.iceSpearUnlocked;
+    if (s.spearMastery) { spearMastery.xp = s.spearMastery.xp; spearMastery.level = s.spearMastery.level; }
+    if (s.spearMasterySkin !== undefined) spearMasterySkin = s.spearMasterySkin;
+    if (s.snowflakeCount !== undefined) snowflakeCount = s.snowflakeCount;
     if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
@@ -234,6 +242,9 @@ function resetGameState() {
     swordMastery.xp = 0; swordMastery.level = 0; masterySkin = 'default';
     daggerUnlocked = false; daggerStab.active = false; daggerStab.cooldownUntil = 0; abilityInvincibleUntil = 0;
     daggerMastery.xp = 0; daggerMastery.level = 0; daggerMasterySkin = 'default';
+    iceSpearUnlocked = false; spearMastery.xp = 0; spearMastery.level = 0; spearMasterySkin = 'default';
+    snowflakeCount = 0; iceTravelerDialog.active = false; iceTravelerShopOpen = false; iceTravelerWasPresent = false; snowWasActive = false;
+    iceTrap.active = false; iceTrap.hits = 0;
     extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;

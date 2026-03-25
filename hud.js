@@ -170,19 +170,24 @@ function drawHUD() {
     if (typeof dragon !== 'undefined' && dragon.alive) {
         const py = player.y / T;
         if (py >= 165 && py <= 195) {
+            const snow = isSnowing();
             const barW = 400, barH = 24;
             const bx = canvas.width / 2 - barW / 2, by = 16;
             // Label
             ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-            ctx.fillStyle = '#FF4444';
-            ctx.fillText('DRAGON', canvas.width / 2, by - 4);
+            ctx.fillStyle = snow ? '#66bbff' : '#FF4444';
+            ctx.fillText(snow ? 'ICE DRAGON' : 'DRAGON', canvas.width / 2, by - 4);
             // Background
             ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(bx, by, barW, barH);
-            ctx.strokeStyle = '#8B0000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, barW, barH);
+            ctx.strokeStyle = snow ? '#2a5a8a' : '#8B0000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, barW, barH);
             // Fill
             const ratio = dragon.hp / dragon.maxHp;
             const pulse = dragon.hp <= dragon.maxHp * 0.25 ? 0.7 + 0.3 * Math.sin(performance.now() / 200) : 1;
-            ctx.fillStyle = ratio > 0.5 ? `rgba(200,30,30,${pulse})` : ratio > 0.25 ? `rgba(220,120,0,${pulse})` : `rgba(200,0,0,${pulse})`;
+            if (snow) {
+                ctx.fillStyle = ratio > 0.5 ? `rgba(40,100,200,${pulse})` : ratio > 0.25 ? `rgba(60,140,220,${pulse})` : `rgba(30,80,180,${pulse})`;
+            } else {
+                ctx.fillStyle = ratio > 0.5 ? `rgba(200,30,30,${pulse})` : ratio > 0.25 ? `rgba(220,120,0,${pulse})` : `rgba(200,0,0,${pulse})`;
+            }
             ctx.fillRect(bx + 2, by + 2, (barW - 4) * ratio, barH - 4);
             // HP text
             ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -191,24 +196,33 @@ function drawHUD() {
         }
     }
 
-    // Dragon fire windup warning
+    // Dragon fire/ice windup warning
     if (typeof dragon !== 'undefined' && dragon.alive && dragon.windingUp) {
+        const snow = isSnowing();
         const progress = Math.min((gameTime - dragon.windupStart) / dragon.windupDuration, 1);
         const pulse = 0.6 + 0.4 * Math.sin(performance.now() / (200 - progress * 150));
         ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        ctx.fillStyle = `rgba(255,${Math.floor(100 + (1 - progress) * 100)},0,${pulse})`;
-        ctx.fillText('! DRAGON FIRE INCOMING !', canvas.width / 2, 80);
+        if (snow) {
+            ctx.fillStyle = `rgba(100,${Math.floor(150 + (1 - progress) * 105)},255,${pulse})`;
+            ctx.fillText('! ICE BALL INCOMING !', canvas.width / 2, 80);
+        } else {
+            ctx.fillStyle = `rgba(255,${Math.floor(100 + (1 - progress) * 100)},0,${pulse})`;
+            ctx.fillText('! DRAGON FIRE INCOMING !', canvas.width / 2, 80);
+        }
     }
 
     // Gold counter (bottom right)
     ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#FFD700';
     ctx.fillText(`Gold: ${goldCount}`, canvas.width - 16, canvas.height - 46 - touchOffsetR);
+    // Snowflake counter
+    ctx.fillStyle = '#aaddff';
+    ctx.fillText(`Snowflakes: ${snowflakeCount}`, canvas.width - 16, canvas.height - 62 - touchOffsetR);
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
@@ -401,7 +415,7 @@ function drawPauseButton() {
 // ── Pause Menu ──────────────────────────────────────────────
 
 let pauseSelection = 0;
-let pauseScreen = 'main'; // 'main', 'quests', 'mastery', 'mastery_sword', 'mastery_dagger', 'settings'
+let pauseScreen = 'main'; // 'main', 'quests', 'mastery', 'mastery_sword', 'mastery_dagger', 'mastery_spear', 'settings'
 let questSelection = 0;
 let masterySelection = 0;
 let settingsSelection = 0;
@@ -412,6 +426,7 @@ function drawPauseMenu() {
     if (pauseScreen === 'mastery') { drawMasteryPickerScreen(); return; }
     if (pauseScreen === 'mastery_sword') { drawSwordMasteryScreen(); return; }
     if (pauseScreen === 'mastery_dagger') { drawDaggerMasteryScreen(); return; }
+    if (pauseScreen === 'mastery_spear') { drawSpearMasteryScreen(); return; }
     if (pauseScreen === 'settings') { drawSettingsScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     const bw = 280, bh = 280;
@@ -469,6 +484,7 @@ function drawSettingsScreen() {
 function getMasteryPickerItems() {
     const items = [{ label: 'Sword Mastery (Lv ' + swordMastery.level + ')', key: 'sword' }];
     if (daggerUnlocked) items.push({ label: 'Dagger Mastery (Lv ' + daggerMastery.level + ')', key: 'dagger' });
+    if (iceSpearUnlocked) items.push({ label: 'Spear Mastery (Lv ' + spearMastery.level + ')', key: 'spear' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }
@@ -593,6 +609,21 @@ function drawDaggerMasteryScreen() {
         items, daggerMasterySkin, '#FF9933', '#cc6600');
 }
 
+function getSpearMasteryItems() {
+    const skins = getSpearMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawSpearMasteryScreen() {
+    const items = getSpearMasteryItems();
+    drawWeaponMasteryDetail('SPEAR MASTERY', spearMastery,
+        [25, 50, 75, 100], ['Frost', 'Blizzard', 'Glacier', 'Aurora'],
+        ['#88bbdd', '#ffffff', '#3388cc', '#44ddaa'],
+        items, spearMasterySkin, '#88ccff', '#4488cc');
+}
+
 function getQuestItems() {
     const items = [{ label: 'Main Quest', key: 'main' }];
     if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
@@ -684,15 +715,23 @@ function getAdminItems() {
             goldCount = Math.floor(n);
             addNotification('Gold set to ' + goldCount, 1500, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
         }},
+        { name: 'Set Snowflakes', action: () => {
+            const val = prompt('Enter snowflake amount:');
+            if (val === null) return;
+            const n = Number(val);
+            if (isNaN(n) || n < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            snowflakeCount = Math.floor(n);
+            addNotification('Snowflakes set to ' + snowflakeCount, 1500, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
+        }},
         { name: adminGhostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF', action: () => {
             adminGhostMode = !adminGhostMode;
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
         { name: 'Set Mastery Level', action: () => {
-            const weapon = prompt('Which weapon? (sword / dagger)');
+            const weapon = prompt('Which weapon? (sword / dagger / spear)');
             if (weapon === null) return;
             const w = weapon.trim().toLowerCase();
-            if (w !== 'sword' && w !== 'dagger') { addNotification('Enter "sword" or "dagger"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            if (w !== 'sword' && w !== 'dagger' && w !== 'spear') { addNotification('Enter "sword", "dagger" or "spear"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
             const maxLvl = extraLevels ? 99999 : 100;
             const val = prompt('Enter level (0-' + maxLvl + '):');
             if (val === null) return;
@@ -706,13 +745,20 @@ function getAdminItems() {
                 masterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { masterySkin = sk[i]; break; } }
                 addNotification('Sword mastery set to ' + lvl, 2000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
-            } else {
+            } else if (w === 'dagger') {
                 daggerMastery.level = lvl; daggerMastery.xp = 0;
                 const ms = [100, 75, 50, 25];
                 const sk = ['nightblade', 'phantom', 'crimson', 'shadow'];
                 daggerMasterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { daggerMasterySkin = sk[i]; break; } }
                 addNotification('Dagger mastery set to ' + lvl, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
+            } else {
+                spearMastery.level = lvl; spearMastery.xp = 0;
+                const ms = [100, 75, 50, 25];
+                const sk = ['aurora', 'glacier', 'blizzard', 'frost'];
+                spearMasterySkin = 'default';
+                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { spearMasterySkin = sk[i]; break; } }
+                addNotification('Spear mastery set to ' + lvl, 2000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
             }
         }},
         { name: 'Set Ability Damage', action: () => {

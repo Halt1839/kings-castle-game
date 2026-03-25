@@ -66,6 +66,11 @@ window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') settingsSelection = (settingsSelection - 1 + setItems.length) % setItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') settingsSelection = (settingsSelection + 1) % setItems.length;
             if (e.key === 'Escape') { pauseScreen = 'main'; settingsSelection = 0; }
+        } else if (pauseScreen === 'mastery_spear') {
+            const mspItems = getSpearMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mspItems.length) % mspItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mspItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
         } else {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % PAUSE_ITEMS.length;
@@ -129,7 +134,17 @@ window.addEventListener('keydown', (e) => {
         else if (campScoutDialog.active) { campScoutDialog.active = false; }
         else if (campBlacksmithDialog.active) { campBlacksmithDialog.active = false; }
         else if (campHealerDialog.active) { campHealerDialog.active = false; }
+        else if (iceTravelerDialog.active) { iceTravelerDialog.active = false; iceTravelerDialog.stage = null; iceTravelerShopOpen = false; }
         else { gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main'; if (currentSlot) saveGame(currentSlot); }
+        return;
+    }
+
+    // Ice Traveler shop navigation
+    if (iceTravelerShopOpen) {
+        const items = getIceTravelerShopItems();
+        if (e.key === 'Escape') { iceTravelerDialog.active = false; iceTravelerDialog.stage = null; iceTravelerShopOpen = false; }
+        else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') iceTravelerShopSelection = (iceTravelerShopSelection - 1 + items.length) % items.length;
+        else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') iceTravelerShopSelection = (iceTravelerShopSelection + 1) % items.length;
         return;
     }
 
@@ -256,6 +271,8 @@ function gameLoop(now) {
                     pauseScreen = 'mastery_sword'; masterySelection = 0;
                 } else if (mSelected.key === 'dagger') {
                     pauseScreen = 'mastery_dagger'; masterySelection = 0;
+                } else if (mSelected.key === 'spear') {
+                    pauseScreen = 'mastery_spear'; masterySelection = 0;
                 }
             } else if (pauseScreen === 'mastery_sword') {
                 const msItems = getSwordMasteryItems();
@@ -264,6 +281,14 @@ function gameLoop(now) {
                     pauseScreen = 'mastery'; masterySelection = 0;
                 } else {
                     masterySkin = msSelected.key;
+                }
+            } else if (pauseScreen === 'mastery_spear') {
+                const mspItems = getSpearMasteryItems();
+                const mspSelected = mspItems[masterySelection];
+                if (mspSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    spearMasterySkin = mspSelected.key;
                 }
             } else if (pauseScreen === 'mastery_dagger') {
                 const mdItems = getDaggerMasteryItems();
@@ -326,6 +351,9 @@ function gameLoop(now) {
     // ── PLAYING ──
     const dt = realDt / 1000;
     gameTime += realDt;
+
+    updateSnowParticles(realDt);
+    updateIceTrap();
 
     updateHunger();
     updateHealth();
@@ -396,6 +424,26 @@ function gameLoop(now) {
     // Update dagger stab
     updateDaggerStab();
 
+    // Ice Traveler arrival/departure notification
+    if (typeof iceTravelerWasPresent === 'undefined') iceTravelerWasPresent = false;
+    const travelerHere = isIceTravelerPresent();
+    if (travelerHere && !iceTravelerWasPresent) {
+        addNotification('The Ice Traveler has arrived at camp!', 5000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.9)');
+    } else if (!travelerHere && iceTravelerWasPresent) {
+        addNotification('The Ice Traveler has departed...', 3000, 'rgba(150,180,200,1)', 'rgba(20,30,40,0.8)');
+    }
+    iceTravelerWasPresent = travelerHere;
+
+    // Snow weather arrival/departure notification
+    if (typeof snowWasActive === 'undefined') snowWasActive = false;
+    const snowNow = isSnowing();
+    if (snowNow && !snowWasActive) {
+        addNotification('Snow is falling across the land!', 4000, 'rgba(220,235,255,1)', 'rgba(20,30,50,0.9)');
+    } else if (!snowNow && snowWasActive) {
+        addNotification('The snow has stopped.', 3000, 'rgba(180,200,220,1)', 'rgba(20,30,40,0.8)');
+    }
+    snowWasActive = snowNow;
+
     // Check for death
     if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
@@ -423,6 +471,12 @@ function gameLoop(now) {
             boatSandWarnTime = gameTime;
             addNotification('Try landing on the dock', 1500, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.8)');
         }
+    }
+
+    // Handle H press — ice trap breaking
+    if (hPressed && iceTrap.active) {
+        hitIceTrap();
+        hPressed = false;
     }
 
     // Handle H press (attack)
@@ -497,6 +551,12 @@ function gameLoop(now) {
             advanceCampBlacksmithDialog();
         } else if (campHealerDialog.active) {
             advanceCampHealerDialog();
+        } else if (iceTravelerDialog.active) {
+            if (iceTravelerShopOpen) {
+                buyIceTravelerItem();
+            } else {
+                advanceIceTravelerDialog();
+            }
         } else if (activeAction) {
             // Track quest tasks on exit
             if (activeAction.name === 'toilet') {
@@ -549,6 +609,8 @@ function gameLoop(now) {
                 openCampBlacksmithDialog();
             } else if (isNearCampHealer()) {
                 openCampHealerDialog();
+            } else if (isNearIceTraveler()) {
+                openIceTravelerDialog();
             } else if (isNearBoat()) {
                 boardBoat();
             } else if (nearCook) {
@@ -573,7 +635,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -628,6 +690,8 @@ function gameLoop(now) {
         for (let col = startCol; col <= endCol; col++)
             drawTile(col, row, camX, camY);
 
+    drawSnowOverlay(camX, camY, startCol, endCol, startRow, endRow);
+
     drawGuard(guard1, camX, camY);
     drawGuard(guard2, camX, camY);
     drawButler(camX, camY);
@@ -641,6 +705,7 @@ function gameLoop(now) {
     drawCampScout(camX, camY);
     drawCampBlacksmith(camX, camY);
     drawCampHealer(camX, camY);
+    drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
     drawTroll(camX, camY);
     drawDragon(camX, camY);
@@ -676,7 +741,9 @@ function gameLoop(now) {
 
     drawVoidRush(camX, camY);
     drawShieldEffect(camX, camY);
+    drawIceTrap(camX, camY);
     drawSleepOverlay();
+    drawSnowParticles();
 
     // HUD prompts
     if (dialog.active) drawDialog();
@@ -687,6 +754,7 @@ function gameLoop(now) {
     else if (campScoutDialog.active) drawCampScoutDialog();
     else if (campBlacksmithDialog.active) drawCampBlacksmithDialog();
     else if (campHealerDialog.active) drawCampHealerDialog();
+    else if (iceTravelerDialog.active) drawIceTravelerDialog();
     else if (activeAction) drawActionMessage();
     else if (isNearDesignRack()) {
         const next = currentDesign === 'default' ? (goldDesignUnlocked ? 'Gold' : (voidDesignUnlocked ? 'Void' : 'Default')) :
@@ -707,7 +775,7 @@ function gameLoop(now) {
         drawPrompt(`${kl('H')} to attack Noli${stabHint}`);
     } else if (isNearDragon()) {
         const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
-        drawPrompt(`${kl('H')} to attack the dragon!${stabHint}`);
+        drawPrompt(`${kl('H')} to attack the ${isSnowing() ? 'Ice Dragon' : 'dragon'}!${stabHint}`);
     } else if (isNearTroll()) {
         const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
         drawPrompt(`${kl('H')} to attack the troll!${stabHint}`);
@@ -722,6 +790,8 @@ function gameLoop(now) {
         drawPrompt(`${kl('E')} to talk to the Blacksmith`);
     } else if (isNearCampHealer()) {
         drawPrompt(`${kl('E')} to talk to the Healer`);
+    } else if (isNearIceTraveler()) {
+        drawPrompt(`${kl('E')} to talk to the Ice Traveler`);
     } else if (isNearSeaSnake()) {
         const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
         drawPrompt(`${kl('H')} to attack the sea snake!${stabHint}`);

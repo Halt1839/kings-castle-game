@@ -347,32 +347,99 @@ function drawCampHealer(ox, oy) {
     ctx.fillStyle = '#8a7a6a'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
 }
 
+function drawIceTraveler(ox, oy) {
+    if (!isIceTravelerPresent()) return;
+    const sx = Math.round(iceTraveler.x - ox), sy = Math.round(iceTraveler.y - oy);
+    const cx = sx + iceTraveler.width / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + iceTraveler.height + 2, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Icy glow
+    const pulse = 0.1 + 0.05 * Math.sin(performance.now() / 500);
+    ctx.fillStyle = `rgba(150,200,255,${pulse})`;
+    ctx.beginPath(); ctx.arc(cx, sy + 10, 14, 0, Math.PI * 2); ctx.fill();
+    // Heavy cloak (icy blue)
+    ctx.fillStyle = '#4a6a8a'; ctx.fillRect(sx + 1, sy + 6, 14, 13);
+    ctx.fillStyle = '#5a7a9a'; ctx.fillRect(sx + 3, sy + 7, 10, 11);
+    // Fur trim on cloak
+    ctx.fillStyle = '#c8d8e8'; ctx.fillRect(sx + 1, sy + 6, 14, 2);
+    ctx.fillRect(sx + 1, sy + 6, 2, 13); ctx.fillRect(sx + 13, sy + 6, 2, 13);
+    // Hood
+    ctx.fillStyle = '#3a5a7a'; ctx.fillRect(sx + 2, sy - 2, 12, 8);
+    ctx.fillStyle = '#4a6a8a'; ctx.fillRect(sx + 4, sy - 1, 8, 6);
+    // Face in hood
+    ctx.fillStyle = '#d4a574'; ctx.fillRect(sx + 5, sy + 2, 6, 4);
+    // Eyes (bright blue)
+    ctx.fillStyle = '#66ccff'; ctx.fillRect(cx - 2, sy + 3, 2, 1); ctx.fillRect(cx + 1, sy + 3, 2, 1);
+    // Ice staff (held to the side)
+    ctx.fillStyle = '#88aacc'; ctx.fillRect(sx + 15, sy - 3, 2, 20);
+    // Crystal on staff
+    ctx.fillStyle = '#aaddff';
+    ctx.beginPath(); ctx.moveTo(sx + 16, sy - 6); ctx.lineTo(sx + 14, sy - 3); ctx.lineTo(sx + 18, sy - 3); ctx.fill();
+    // Snowflake sparkle on crystal
+    const sp = 0.5 + 0.5 * Math.sin(performance.now() / 300);
+    ctx.fillStyle = `rgba(200,230,255,${sp})`;
+    ctx.beginPath(); ctx.arc(sx + 16, sy - 5, 2, 0, Math.PI * 2); ctx.fill();
+    // Boots
+    ctx.fillStyle = '#5a4a3a'; ctx.fillRect(sx + 3, sy + 18, 4, 3); ctx.fillRect(sx + 9, sy + 18, 4, 3);
+}
+
 function drawOrc(orc, ox, oy) {
     if (!orc.alive) return;
     const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);
     const cx = sx + orc.width / 2, cy = sy + orc.height / 2;
+    const snow = isSnowing();
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath(); ctx.ellipse(cx, sy + orc.height + 1, 7, 2, 0, 0, Math.PI * 2); ctx.fill();
-    // Body (dark leather)
-    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(sx + 3, sy + 7, 14, 9);
-    ctx.fillStyle = '#4a3a2a'; ctx.fillRect(sx + 5, sy + 8, 10, 7);
-    // Head (green)
-    ctx.fillStyle = '#4a8a3a'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
-    // Darker green patches
-    ctx.fillStyle = '#3a6a2a'; ctx.fillRect(cx - 4, sy + 3, 3, 3);
-    // Eyes (red)
-    ctx.fillStyle = '#FF3333'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
-    // Jaw/tusks
-    ctx.fillStyle = '#F5F5DC'; ctx.fillRect(cx - 2, sy + 8, 2, 2); ctx.fillRect(cx + 1, sy + 8, 2, 2);
-    // Arm with weapon
-    ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 1, sy + 8, 3, 5);
-    ctx.fillStyle = '#654321'; ctx.fillRect(sx - 1, sy + 5, 2, 8); // club handle
-    ctx.fillStyle = '#555'; ctx.fillRect(sx - 2, sy + 3, 4, 4); // club head
-    // Other arm
-    ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 16, sy + 8, 3, 5);
-    // Feet
-    ctx.fillStyle = '#2a1a0a'; ctx.fillRect(sx + 4, sy + 15, 4, 3); ctx.fillRect(sx + 12, sy + 15, 4, 3);
+    if (snow) {
+        // Caveman look — fur clothing, messy hair, bone club
+        // Body (fur tunic)
+        ctx.fillStyle = '#8a6a3a'; ctx.fillRect(sx + 3, sy + 7, 14, 9);
+        ctx.fillStyle = '#a08050'; ctx.fillRect(sx + 5, sy + 8, 10, 7);
+        // Fur trim (jagged bottom)
+        ctx.fillStyle = '#6a4a2a';
+        for (let i = 0; i < 4; i++) ctx.fillRect(sx + 4 + i * 3, sy + 15, 2, 2);
+        // Head (tan skin)
+        ctx.fillStyle = '#c8a070'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+        // Messy hair
+        ctx.fillStyle = '#4a3020';
+        ctx.fillRect(cx - 5, sy, 10, 3);
+        ctx.fillRect(cx - 6, sy + 1, 3, 3); ctx.fillRect(cx + 4, sy + 1, 3, 3);
+        // Eyes (dark)
+        ctx.fillStyle = '#222'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+        // Beard
+        ctx.fillStyle = '#5a4030'; ctx.fillRect(cx - 3, sy + 8, 6, 3);
+        // Arm with bone club
+        ctx.fillStyle = '#c8a070'; ctx.fillRect(sx + 1, sy + 8, 3, 5);
+        ctx.fillStyle = '#e8dcc0'; ctx.fillRect(sx - 1, sy + 4, 2, 9); // bone shaft
+        ctx.fillStyle = '#d0c4a8'; ctx.fillRect(sx - 3, sy + 2, 5, 4); // bone knob
+        // Other arm
+        ctx.fillStyle = '#c8a070'; ctx.fillRect(sx + 16, sy + 8, 3, 5);
+        // Bare feet
+        ctx.fillStyle = '#b08860'; ctx.fillRect(sx + 4, sy + 15, 4, 3); ctx.fillRect(sx + 12, sy + 15, 4, 3);
+    } else {
+        // Normal orc
+        // Body (dark leather)
+        ctx.fillStyle = '#3a2a1a'; ctx.fillRect(sx + 3, sy + 7, 14, 9);
+        ctx.fillStyle = '#4a3a2a'; ctx.fillRect(sx + 5, sy + 8, 10, 7);
+        // Head (green)
+        ctx.fillStyle = '#4a8a3a'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+        // Darker green patches
+        ctx.fillStyle = '#3a6a2a'; ctx.fillRect(cx - 4, sy + 3, 3, 3);
+        // Eyes (red)
+        ctx.fillStyle = '#FF3333'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+        // Jaw/tusks
+        ctx.fillStyle = '#F5F5DC'; ctx.fillRect(cx - 2, sy + 8, 2, 2); ctx.fillRect(cx + 1, sy + 8, 2, 2);
+        // Arm with weapon
+        ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 1, sy + 8, 3, 5);
+        ctx.fillStyle = '#654321'; ctx.fillRect(sx - 1, sy + 5, 2, 8); // club handle
+        ctx.fillStyle = '#555'; ctx.fillRect(sx - 2, sy + 3, 4, 4); // club head
+        // Other arm
+        ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 16, sy + 8, 3, 5);
+        // Feet
+        ctx.fillStyle = '#2a1a0a'; ctx.fillRect(sx + 4, sy + 15, 4, 3); ctx.fillRect(sx + 12, sy + 15, 4, 3);
+    }
     // Stun stars
     if (orc.stunned) {
         const st = performance.now() / 200;
@@ -454,54 +521,69 @@ function drawDragon(ox, oy) {
     if (typeof dragon === 'undefined' || !dragon.alive) return;
     const sx = Math.round(dragon.x - ox), sy = Math.round(dragon.y - oy);
     const cx = sx + dragon.width / 2, cy = sy + dragon.height / 2;
+    const snow = isSnowing();
 
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(cx, sy + dragon.height + 4, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
 
+    // Colors based on mode
+    const wingDark = snow ? '#1a4a6a' : '#6a1a1a';
+    const wingLight = snow ? '#2a6a8a' : '#8a2a2a';
+    const bodyMain = snow ? '#2a5a7a' : '#8B0000';
+    const bodyLight = snow ? '#3a7a9a' : '#aa2020';
+    const belly = snow ? '#6abadd' : '#cc6600';
+    const legColor = snow ? '#1a4a6a' : '#7a1010';
+    const tailTip = snow ? '#1a4a6a' : '#6a1a1a';
+
     // Wings
     const wingFlap = Math.sin(performance.now() / 400) * 8;
-    ctx.fillStyle = '#6a1a1a';
-    // Left wing
+    ctx.fillStyle = wingDark;
     ctx.beginPath(); ctx.moveTo(cx - 8, cy - 4);
     ctx.lineTo(cx - 32, cy - 20 + wingFlap); ctx.lineTo(cx - 24, cy + 4);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#8a2a2a';
+    ctx.fillStyle = wingLight;
     ctx.beginPath(); ctx.moveTo(cx - 8, cy - 2);
     ctx.lineTo(cx - 28, cy - 16 + wingFlap); ctx.lineTo(cx - 20, cy + 2);
     ctx.closePath(); ctx.fill();
-    // Right wing
-    ctx.fillStyle = '#6a1a1a';
+    ctx.fillStyle = wingDark;
     ctx.beginPath(); ctx.moveTo(cx + 8, cy - 4);
     ctx.lineTo(cx + 32, cy - 20 + wingFlap); ctx.lineTo(cx + 24, cy + 4);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#8a2a2a';
+    ctx.fillStyle = wingLight;
     ctx.beginPath(); ctx.moveTo(cx + 8, cy - 2);
     ctx.lineTo(cx + 28, cy - 16 + wingFlap); ctx.lineTo(cx + 20, cy + 2);
     ctx.closePath(); ctx.fill();
 
     // Body
-    ctx.fillStyle = '#8B0000';
+    ctx.fillStyle = bodyMain;
     ctx.beginPath(); ctx.ellipse(cx, cy + 2, 14, 12, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#aa2020';
+    ctx.fillStyle = bodyLight;
     ctx.beginPath(); ctx.ellipse(cx, cy + 2, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
     // Belly scales
-    ctx.fillStyle = '#cc6600';
+    ctx.fillStyle = belly;
     ctx.beginPath(); ctx.ellipse(cx, cy + 6, 6, 5, 0, 0, Math.PI * 2); ctx.fill();
 
+    // Ice dragon frost shimmer
+    if (snow) {
+        const shimmer = 0.1 + 0.08 * Math.sin(performance.now() / 500);
+        ctx.fillStyle = `rgba(180,220,255,${shimmer})`;
+        ctx.beginPath(); ctx.ellipse(cx, cy + 2, 16, 14, 0, 0, Math.PI * 2); ctx.fill();
+    }
+
     // Neck
-    ctx.fillStyle = '#8B0000'; ctx.fillRect(cx - 4, cy - 14, 8, 12);
+    ctx.fillStyle = bodyMain; ctx.fillRect(cx - 4, cy - 14, 8, 12);
     // Head
-    ctx.fillStyle = '#8B0000';
+    ctx.fillStyle = bodyMain;
     ctx.beginPath(); ctx.ellipse(cx, cy - 16, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#aa2020';
+    ctx.fillStyle = bodyLight;
     ctx.beginPath(); ctx.ellipse(cx, cy - 16, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
-    // Horns
-    ctx.fillStyle = '#444';
+    // Horns (icy blue when snow)
+    ctx.fillStyle = snow ? '#88ccee' : '#444';
     ctx.beginPath(); ctx.moveTo(cx - 6, cy - 22); ctx.lineTo(cx - 10, cy - 30); ctx.lineTo(cx - 4, cy - 20); ctx.fill();
     ctx.beginPath(); ctx.moveTo(cx + 6, cy - 22); ctx.lineTo(cx + 10, cy - 30); ctx.lineTo(cx + 4, cy - 20); ctx.fill();
     // Eyes
-    ctx.fillStyle = '#FFD700';
+    ctx.fillStyle = snow ? '#66ccff' : '#FFD700';
     ctx.beginPath(); ctx.arc(cx - 4, cy - 18, 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + 4, cy - 18, 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#000';
@@ -509,32 +591,36 @@ function drawDragon(ox, oy) {
     // Nostrils (glow when winding up)
     if (dragon.windingUp) {
         const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 100);
-        ctx.fillStyle = `rgba(255,${Math.floor(100 + pulse * 100)},0,${pulse})`;
+        if (snow) {
+            ctx.fillStyle = `rgba(100,180,255,${pulse})`;
+        } else {
+            ctx.fillStyle = `rgba(255,${Math.floor(100 + pulse * 100)},0,${pulse})`;
+        }
         ctx.beginPath(); ctx.arc(cx - 3, cy - 12, 3, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(cx + 3, cy - 12, 3, 0, Math.PI * 2); ctx.fill();
     } else {
-        ctx.fillStyle = '#550000';
+        ctx.fillStyle = snow ? '#1a3a5a' : '#550000';
         ctx.beginPath(); ctx.arc(cx - 3, cy - 12, 1.5, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(cx + 3, cy - 12, 1.5, 0, Math.PI * 2); ctx.fill();
     }
 
     // Tail
-    ctx.strokeStyle = '#8B0000'; ctx.lineWidth = 4;
+    ctx.strokeStyle = bodyMain; ctx.lineWidth = 4;
     const tailWag = Math.sin(performance.now() / 300) * 6;
     ctx.beginPath(); ctx.moveTo(cx, cy + 12);
     ctx.quadraticCurveTo(cx + 10 + tailWag, cy + 20, cx + 6 + tailWag, cy + 28);
     ctx.stroke();
-    ctx.fillStyle = '#6a1a1a';
+    ctx.fillStyle = tailTip;
     ctx.beginPath(); ctx.moveTo(cx + 6 + tailWag, cy + 28);
     ctx.lineTo(cx + 2 + tailWag, cy + 32); ctx.lineTo(cx + 10 + tailWag, cy + 32);
     ctx.closePath(); ctx.fill();
 
     // Legs
-    ctx.fillStyle = '#7a1010';
+    ctx.fillStyle = legColor;
     ctx.fillRect(sx + 4, sy + dragon.height - 4, 6, 8);
     ctx.fillRect(sx + dragon.width - 10, sy + dragon.height - 4, 6, 8);
     // Claws
-    ctx.fillStyle = '#444';
+    ctx.fillStyle = snow ? '#88ccee' : '#444';
     ctx.fillRect(sx + 2, sy + dragon.height + 3, 3, 2);
     ctx.fillRect(sx + 8, sy + dragon.height + 3, 3, 2);
     ctx.fillRect(sx + dragon.width - 12, sy + dragon.height + 3, 3, 2);
@@ -557,7 +643,8 @@ function drawDragon(ox, oy) {
     const hpBarW = 60, hpBarH = 6;
     const hpBarX = cx - hpBarW / 2, hpBarY = sy - 36;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
-    ctx.fillStyle = '#e53935'; ctx.fillRect(hpBarX + 1, hpBarY + 1, (hpBarW - 2) * (dragon.hp / dragon.maxHp), hpBarH - 2);
+    ctx.fillStyle = snow ? '#4488cc' : '#e53935';
+    ctx.fillRect(hpBarX + 1, hpBarY + 1, (hpBarW - 2) * (dragon.hp / dragon.maxHp), hpBarH - 2);
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(hpBarX, hpBarY, hpBarW, hpBarH);
 }
 
@@ -709,48 +796,89 @@ function drawFireBreath(ox, oy) {
     const dcx = dragon.x + dragon.width / 2 - ox;
     const dcy = dragon.y + dragon.height / 2 - oy;
     const tx = dragon.fireTargetX - ox, ty = dragon.fireTargetY - oy;
+    const snow = isSnowing();
 
     if (dragon.windingUp) {
-        // Aiming line (dashed, flickering)
         const progress = (gameTime - dragon.windupStart) / dragon.windupDuration;
         const pulse = 0.3 + 0.4 * Math.sin(performance.now() / 80);
-        ctx.strokeStyle = `rgba(255,${Math.floor(150 * progress)},0,${pulse})`;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
-        ctx.setLineDash([]);
-        // Target indicator
-        ctx.strokeStyle = `rgba(255,100,0,${pulse})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(tx, ty, 10, 0, Math.PI * 2); ctx.stroke();
+        if (snow) {
+            // Ice aiming line — blue dashed with snowflake trail
+            ctx.strokeStyle = `rgba(100,${Math.floor(150 + 105 * progress)},255,${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            ctx.setLineDash([]);
+            // Snow windup particles along line
+            const dx = tx - dcx, dy = ty - (dcy - 12);
+            for (let i = 0; i < 4; i++) {
+                const t = (performance.now() / 800 + i / 4) % 1;
+                const px = dcx + dx * t * progress;
+                const py = (dcy - 12) + dy * t * progress + (Math.random() - 0.5) * 8;
+                ctx.fillStyle = `rgba(200,230,255,${0.3 + Math.random() * 0.4})`;
+                ctx.beginPath(); ctx.arc(px, py, 1.5 + Math.random() * 2, 0, Math.PI * 2); ctx.fill();
+            }
+            // Target indicator (icy)
+            ctx.strokeStyle = `rgba(100,180,255,${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(tx, ty, 10, 0, Math.PI * 2); ctx.stroke();
+        } else {
+            ctx.strokeStyle = `rgba(255,${Math.floor(150 * progress)},0,${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = `rgba(255,100,0,${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(tx, ty, 10, 0, Math.PI * 2); ctx.stroke();
+        }
     }
 
     if (dragon.firing) {
-        // Fire stream
         const dx = tx - dcx, dy = ty - (dcy - 12);
         const dist = Math.hypot(dx, dy);
-        const nx = dx / dist, ny = dy / dist;
-        // Multiple fire particles along the line
         const fireAge = (gameTime - dragon.fireStart) / dragon.fireDuration;
-        ctx.lineWidth = 8 + Math.sin(performance.now() / 50) * 3;
-        const grad = ctx.createLinearGradient(dcx, dcy - 12, tx, ty);
-        grad.addColorStop(0, 'rgba(255,200,0,0.9)');
-        grad.addColorStop(0.3, 'rgba(255,100,0,0.8)');
-        grad.addColorStop(0.7, 'rgba(255,50,0,0.6)');
-        grad.addColorStop(1, 'rgba(200,0,0,0.3)');
-        ctx.strokeStyle = grad;
-        ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
-        // Inner bright core
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(255,255,150,0.7)';
-        ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
-        // Fire particles along line
-        for (let i = 0; i < 6; i++) {
-            const t = i / 6;
-            const px = dcx + dx * t + (Math.random() - 0.5) * 12;
-            const py = (dcy - 12) + dy * t + (Math.random() - 0.5) * 12;
-            ctx.fillStyle = `rgba(255,${Math.floor(100 + Math.random() * 155)},0,${0.5 + Math.random() * 0.3})`;
-            ctx.beginPath(); ctx.arc(px, py, 2 + Math.random() * 3, 0, Math.PI * 2); ctx.fill();
+
+        if (snow) {
+            // Ice ball stream — blue/white gradient with snow trail
+            ctx.lineWidth = 8 + Math.sin(performance.now() / 50) * 3;
+            const grad = ctx.createLinearGradient(dcx, dcy - 12, tx, ty);
+            grad.addColorStop(0, 'rgba(150,200,255,0.9)');
+            grad.addColorStop(0.3, 'rgba(100,170,255,0.8)');
+            grad.addColorStop(0.7, 'rgba(60,140,220,0.6)');
+            grad.addColorStop(1, 'rgba(30,80,180,0.3)');
+            ctx.strokeStyle = grad;
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            // Inner bright icy core
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(220,240,255,0.8)';
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            // Snow/ice particles along line
+            for (let i = 0; i < 8; i++) {
+                const t = i / 8;
+                const px = dcx + dx * t + (Math.random() - 0.5) * 14;
+                const py = (dcy - 12) + dy * t + (Math.random() - 0.5) * 14;
+                ctx.fillStyle = `rgba(${180 + Math.floor(Math.random() * 75)},${220 + Math.floor(Math.random() * 35)},255,${0.4 + Math.random() * 0.4})`;
+                ctx.beginPath(); ctx.arc(px, py, 1.5 + Math.random() * 3, 0, Math.PI * 2); ctx.fill();
+            }
+        } else {
+            ctx.lineWidth = 8 + Math.sin(performance.now() / 50) * 3;
+            const grad = ctx.createLinearGradient(dcx, dcy - 12, tx, ty);
+            grad.addColorStop(0, 'rgba(255,200,0,0.9)');
+            grad.addColorStop(0.3, 'rgba(255,100,0,0.8)');
+            grad.addColorStop(0.7, 'rgba(255,50,0,0.6)');
+            grad.addColorStop(1, 'rgba(200,0,0,0.3)');
+            ctx.strokeStyle = grad;
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(255,255,150,0.7)';
+            ctx.beginPath(); ctx.moveTo(dcx, dcy - 12); ctx.lineTo(tx, ty); ctx.stroke();
+            for (let i = 0; i < 6; i++) {
+                const t = i / 6;
+                const px = dcx + dx * t + (Math.random() - 0.5) * 12;
+                const py = (dcy - 12) + dy * t + (Math.random() - 0.5) * 12;
+                ctx.fillStyle = `rgba(255,${Math.floor(100 + Math.random() * 155)},0,${0.5 + Math.random() * 0.3})`;
+                ctx.beginPath(); ctx.arc(px, py, 2 + Math.random() * 3, 0, Math.PI * 2); ctx.fill();
+            }
         }
     }
 }

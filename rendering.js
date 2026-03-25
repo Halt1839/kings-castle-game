@@ -424,6 +424,11 @@ const SKIN_COLORS = {
     crimson:    { body: '#6a1010', trim: '#cc3333', crown: '#aa2222', gem: '#ff4444', legs: '#4a0808', arms: '#8a3030', glow: 'rgba(255,50,50,0.2)' },
     phantom:    { body: '#3a4a5a', trim: '#8899aa', crown: '#7788aa', gem: '#aaccff', legs: '#2a3a4a', arms: '#6a7a8a', cape: 'rgba(100,130,180,0.4)', glow: 'rgba(150,180,220,0.2)' },
     nightblade: { body: '#1a1a2e', trim: '#6633cc', crown: '#5522aa', gem: '#cc88ff', legs: '#0a0a1e', arms: '#3a3a5e', glow: 'rgba(100,50,200,0.3)' },
+    // Ice Spear mastery skins
+    frost:    { body: '#4a6a8a', trim: '#88bbdd', crown: '#77aacc', gem: '#aaddff', legs: '#3a5a7a', arms: '#6a8aaa', glow: 'rgba(150,200,255,0.15)' },
+    blizzard: { body: '#e8e8f0', trim: '#ffffff', crown: '#f0f0ff', gem: '#88ccff', legs: '#c0c0d0', arms: '#d0d0e0', cape: 'rgba(200,220,255,0.5)' },
+    glacier:  { body: '#1a3a5a', trim: '#3388cc', crown: '#2277bb', gem: '#44aaff', legs: '#0a2a4a', arms: '#2a5a8a', glow: 'rgba(50,130,220,0.25)', cape: 'rgba(30,80,150,0.5)' },
+    aurora:   { body: '#2a3a4a', trim: '#44ddaa', crown: '#33ccbb', gem: '#88ffdd', legs: '#1a2a3a', arms: '#4a6a7a', glow: 'rgba(100,255,200,0.2)' },
 };
 
 const DAGGER_BLADE_COLORS = {
@@ -432,6 +437,14 @@ const DAGGER_BLADE_COLORS = {
     crimson:    { blade: '#cc4444', tip: '#ff6666', guard: '#882222', handle: '#441111', pommel: '#aa3333' },
     phantom:    { blade: '#8899bb', tip: '#aabbdd', guard: '#667799', handle: '#334466', pommel: '#7788aa' },
     nightblade: { blade: '#7744cc', tip: '#aa77ff', guard: '#5522aa', handle: '#220066', pommel: '#6633bb' },
+};
+
+const SPEAR_BLADE_COLORS = {
+    default:  { shaft: '#8B7355', tip: '#b0c4de', glow: null },
+    frost:    { shaft: '#6a8aaa', tip: '#aaddff', glow: 'rgba(150,200,255,0.3)' },
+    blizzard: { shaft: '#c0c0d0', tip: '#ffffff', glow: 'rgba(220,240,255,0.3)' },
+    glacier:  { shaft: '#2a5a8a', tip: '#44aaff', glow: 'rgba(50,130,220,0.4)' },
+    aurora:   { shaft: '#3a5a5a', tip: '#88ffdd', glow: 'rgba(100,255,200,0.35)' },
 };
 
 // ── Dagger Mastery Particles ────────────────────────────────
@@ -646,6 +659,20 @@ function drawKing(ox, oy) {
                 ctx.fillStyle = `rgba(120,60,220,${gp})`;
                 ctx.beginPath(); ctx.arc(0.5, -5, 5, 0, Math.PI * 2); ctx.fill();
             }
+        } else if (currentSword === 'icespear') {
+            // Ice Spear — long shaft with icy tip
+            const ss = SPEAR_BLADE_COLORS[spearMasterySkin] || SPEAR_BLADE_COLORS.default;
+            // Shaft
+            ctx.fillStyle = ss.shaft; ctx.fillRect(-1, -16, 2, 16);
+            // Spearhead (diamond shape)
+            ctx.fillStyle = ss.tip;
+            ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(-2, -16); ctx.lineTo(0, -15); ctx.lineTo(2, -16); ctx.closePath(); ctx.fill();
+            // Icy glow on tip
+            if (ss.glow) {
+                const gp = 0.5 + 0.3 * Math.sin(performance.now() / 350);
+                ctx.fillStyle = ss.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0, -18, 4, 0, Math.PI * 2); ctx.fill();
+            }
         } else {
             // Sword blade
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
@@ -745,6 +772,20 @@ function drawKingInBoat(ox, oy) {
             ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#fff';
             ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
+        } else if (currentSword === 'icespear') {
+            const ss = SPEAR_BLADE_COLORS[spearMasterySkin] || SPEAR_BLADE_COLORS.default;
+            ctx.fillStyle = ss.shaft; ctx.fillRect(-1, -16, 2, 16);
+            ctx.fillStyle = ss.tip;
+            ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(-2, -16); ctx.lineTo(0, -15); ctx.lineTo(2, -16); ctx.closePath(); ctx.fill();
+            if (ss.glow) {
+                const gp = 0.5 + 0.3 * Math.sin(performance.now() / 350);
+                ctx.fillStyle = ss.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0, -18, 4, 0, Math.PI * 2); ctx.fill();
+            }
+        } else if (currentSword === 'dagger') {
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
+            ctx.fillStyle = '#DAA520'; ctx.fillRect(-2, -1, 5, 2);
+            ctx.fillStyle = '#C0C0C0'; ctx.fillRect(-1, -8, 3, 7);
         } else {
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
             ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
@@ -786,4 +827,134 @@ function drawSleepOverlay() {
     const elapsed = performance.now() - activeAction.realStart;
     const darkness = Math.min(elapsed / 1000, 1) * 0.6;
     ctx.fillStyle = `rgba(0,0,20,${darkness})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// ── Snow Weather Rendering ───────────────────────────────────
+function drawSnowOverlay(camX, camY, startCol, endCol, startRow, endRow) {
+    if (!isSnowing()) return;
+    ctx.save();
+    const snowStartRow = Math.max(startRow, SNOW_CASTLE_ROW + 1);
+    if (snowStartRow <= endRow) {
+        for (let row = snowStartRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                const tile = map[row][col];
+                const tx = col * T - camX;
+                const ty = row * T - camY;
+                // Outdoor ground tiles get snow accumulation
+                if (tile === GRASS || tile === PATH || tile === SAND || tile === BRIDGE ||
+                    tile === MOUNTAIN || tile === MOUNTAIN_PATH || tile === TENT ||
+                    tile === CAMPFIRE || tile === DOCK || tile === PEAK_FLOOR ||
+                    tile === HUT_FLOOR || tile === HUT_WALL) {
+                    ctx.fillStyle = 'rgba(230,240,255,0.3)';
+                    ctx.fillRect(tx, ty, T, T);
+                    // Snow drift line at top of tile
+                    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                    ctx.fillRect(tx, ty, T, 3);
+                } else if (tile === TREE) {
+                    // Snow on treetops
+                    ctx.fillStyle = 'rgba(240,245,255,0.35)';
+                    ctx.fillRect(tx, ty, T, T);
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.fillRect(tx + 4, ty + 2, T - 8, 4);
+                } else if (tile === WATER) {
+                    // Light frost on water
+                    ctx.fillStyle = 'rgba(200,220,245,0.12)';
+                    ctx.fillRect(tx, ty, T, T);
+                }
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawSnowParticles() {
+    if (!isSnowing() || snowParticles.length === 0) return;
+    // Only show falling snow when player is outside the castle
+    const playerRow = Math.floor(player.y / T);
+    if (playerRow <= SNOW_CASTLE_ROW) return;
+    ctx.save();
+    for (let i = 0; i < snowParticles.length; i++) {
+        const p = snowParticles[i];
+        ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ── Ice Trap Rendering ───────────────────────────────────────
+function drawIceTrap(ox, oy) {
+    if (!iceTrap.active) return;
+    const sx = Math.round(player.x - ox);
+    const sy = Math.round(player.y - oy);
+    const cx = sx + player.width / 2;
+    const cy = sy + player.height / 2;
+    const elapsed = gameTime - iceTrap.startTime;
+    const timeRatio = Math.min(elapsed / iceTrap.duration, 1);
+
+    ctx.save();
+    // Ice block around player
+    const bw = player.width + 16, bh = player.height + 16;
+    const bx = cx - bw / 2, by = cy - bh / 2;
+
+    // Outer ice block
+    const pulse = 0.6 + 0.15 * Math.sin(performance.now() / 300);
+    ctx.fillStyle = `rgba(140,200,240,${pulse * 0.4})`;
+    ctx.fillRect(bx, by, bw, bh);
+
+    // Ice edges (thicker, brighter)
+    ctx.strokeStyle = `rgba(180,220,255,${pulse * 0.8})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    // Inner highlight (shiny ice look)
+    ctx.strokeStyle = `rgba(220,240,255,${pulse * 0.5})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+
+    // Frost cracks (decorative lines inside)
+    ctx.strokeStyle = `rgba(200,230,255,${0.3 + 0.1 * Math.sin(performance.now() / 400)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, by + 4); ctx.lineTo(cx - 2, cy - 4);
+    ctx.moveTo(bx + bw - 4, by + 4); ctx.lineTo(cx + 2, cy - 2);
+    ctx.moveTo(bx + 4, by + bh - 4); ctx.lineTo(cx - 3, cy + 3);
+    ctx.stroke();
+
+    // Cracks appear as player hits more
+    const crackProgress = iceTrap.hits / iceTrap.hitsNeeded;
+    if (crackProgress > 0.2) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx, by); ctx.lineTo(cx + 3, cy - 5); ctx.lineTo(cx - 2, cy); ctx.stroke();
+    }
+    if (crackProgress > 0.5) {
+        ctx.beginPath(); ctx.moveTo(bx, cy); ctx.lineTo(cx - 5, cy + 2); ctx.lineTo(cx - 3, cy + 6); ctx.stroke();
+    }
+    if (crackProgress > 0.8) {
+        ctx.beginPath(); ctx.moveTo(cx + 4, by + 2); ctx.lineTo(bx + bw - 2, cy - 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, by + bh); ctx.lineTo(cx + 2, cy + 4); ctx.stroke();
+    }
+
+    // Snowflake icon on the ice block
+    ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = `rgba(220,240,255,${0.5 + 0.3 * Math.sin(performance.now() / 250)})`;
+    ctx.fillText('*', bx + 6, by + 6);
+    ctx.fillText('*', bx + bw - 6, by + bh - 6);
+
+    // Timer bar at top (red as time runs out)
+    const barW = bw, barH = 4;
+    const barX = bx, barY = by - 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, barH);
+    const remaining = 1 - timeRatio;
+    const r = Math.floor(255 * timeRatio), g = Math.floor(150 * remaining);
+    ctx.fillStyle = `rgb(${r},${g},255)`;
+    ctx.fillRect(barX + 1, barY + 1, (barW - 2) * remaining, barH - 2);
+
+    // Hit counter
+    ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${iceTrap.hits}/${iceTrap.hitsNeeded}`, cx, by - 10);
+
+    ctx.restore();
 }

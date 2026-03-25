@@ -925,6 +925,7 @@ function handleStabKill(mob) {
         spider.alive = false; spiderDeathTime = gameTime; spider.maxHp += 10; addWeaponXP(25);
         const gld = 3 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         const gc = Math.floor((spider.x + spider.width / 2) / T), gr = Math.floor((spider.y + spider.height / 2) / T);
         map[gr][gc] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
@@ -933,6 +934,7 @@ function handleStabKill(mob) {
         seaSnake.alive = false; seaSnakeDeathTime = gameTime; seaSnake.maxHp += 10; addWeaponXP(30);
         const gld = 5 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
@@ -942,6 +944,7 @@ function handleStabKill(mob) {
         troll.alive = false; trollDeathTime = gameTime; troll.maxHp += 10; addWeaponXP(45);
         const gld = 8 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
@@ -953,6 +956,7 @@ function handleStabKill(mob) {
         dragon.alive = false; dragonKills++; addWeaponXP(100);
         const gld = 15 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         dragon.maxHp += 30; dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
         if (dragonKills === 1) {
             kingSwordUnlocked = true; currentSword = 'kings'; swordDamage = 3;
@@ -978,12 +982,135 @@ function handleStabKill(mob) {
             addNotification('Press R to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
         }
         if (!voidDesignUnlocked) { voidDesignUnlocked = true; addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'); }
+        dropSnowflakes();
     } else {
         mob.alive = false; addWeaponXP(10);
         const gld = 2 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
     }
 }
+
+// ── Snowflake Currency & Ice Traveler ────────────────────────
+let snowflakeCount = 0;
+const ICE_TRAVELER_CYCLE = 40 * 60 * 1000; // 40 min full cycle
+const ICE_TRAVELER_AWAY = 30 * 60 * 1000;  // first 30 min = away
+function isIceTravelerPresent() {
+    return (gameTime % ICE_TRAVELER_CYCLE) >= ICE_TRAVELER_AWAY;
+}
+function getIceTravelerTimeLeft() {
+    const phase = gameTime % ICE_TRAVELER_CYCLE;
+    if (phase >= ICE_TRAVELER_AWAY) return ICE_TRAVELER_CYCLE - phase; // time until leaves
+    return 0;
+}
+function getIceTravelerNextArrival() {
+    const phase = gameTime % ICE_TRAVELER_CYCLE;
+    if (phase >= ICE_TRAVELER_AWAY) return 0; // already here
+    return ICE_TRAVELER_AWAY - phase;
+}
+function dropSnowflakes() {
+    const amt = 1 + Math.floor(Math.random() * 3); // 1-3
+    snowflakeCount += amt;
+    addNotification(`+${amt} Snowflake${amt > 1 ? 's' : ''}`, 1200, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
+}
+
+// ── Snow Weather ─────────────────────────────────────────────
+const SNOW_CYCLE = 30 * 60 * 1000;    // 30 min full cycle
+const SNOW_DURATION = 15 * 60 * 1000; // snows for last 15 min of cycle
+const SNOW_CASTLE_ROW = 28;           // rows <= this are indoors (no snow)
+
+function isSnowing() {
+    return (gameTime % SNOW_CYCLE) >= (SNOW_CYCLE - SNOW_DURATION);
+}
+function getSnowTimeLeft() {
+    const phase = gameTime % SNOW_CYCLE;
+    if (phase >= SNOW_CYCLE - SNOW_DURATION) return SNOW_CYCLE - phase;
+    return 0;
+}
+function getNextSnowfall() {
+    const phase = gameTime % SNOW_CYCLE;
+    if (phase >= SNOW_CYCLE - SNOW_DURATION) return 0;
+    return (SNOW_CYCLE - SNOW_DURATION) - phase;
+}
+
+// ── Ice Trap (Ice Dragon's ice ball hit) ─────────────────────
+const iceTrap = {
+    active: false,
+    startTime: 0,
+    hits: 0,
+    hitsNeeded: 20,
+    duration: 6000,   // 6 seconds to break free
+    dmgOnHit: 2,
+    dmgOnFail: 2,
+};
+
+function startIceTrap() {
+    iceTrap.active = true;
+    iceTrap.startTime = gameTime;
+    iceTrap.hits = 0;
+    health.value = Math.max(0, health.value - iceTrap.dmgOnHit);
+    addNotification(`Frozen! Press ${kl('H')} 20 times to break free!`, 3000, 'rgba(100,180,255,1)', 'rgba(10,20,40,0.9)');
+}
+
+function hitIceTrap() {
+    if (!iceTrap.active) return;
+    iceTrap.hits++;
+    if (iceTrap.hits >= iceTrap.hitsNeeded) {
+        iceTrap.active = false;
+        addNotification('You broke free from the ice!', 2000, 'rgba(150,220,255,1)', 'rgba(20,40,60,0.85)');
+    }
+}
+
+function updateIceTrap() {
+    if (!iceTrap.active) return;
+    if (gameTime - iceTrap.startTime >= iceTrap.duration) {
+        iceTrap.active = false;
+        health.value = Math.max(0, health.value - iceTrap.dmgOnFail);
+        addNotification('The ice explodes! -2 HP', 2000, 'rgba(100,150,255,1)', 'rgba(10,20,50,0.9)');
+    }
+}
+
+// Snowflake particles (visual only)
+const snowParticles = [];
+const MAX_SNOW_PARTICLES = 120;
+
+function updateSnowParticles(dt) {
+    if (!isSnowing()) { snowParticles.length = 0; return; }
+    // Spawn new particles
+    while (snowParticles.length < MAX_SNOW_PARTICLES) {
+        snowParticles.push({
+            x: Math.random() * canvas.width,
+            y: -Math.random() * canvas.height,
+            size: 1 + Math.random() * 3,
+            speed: 20 + Math.random() * 40,
+            drift: -15 + Math.random() * 30,
+            opacity: 0.4 + Math.random() * 0.5
+        });
+    }
+    // Update positions
+    for (let i = snowParticles.length - 1; i >= 0; i--) {
+        const p = snowParticles[i];
+        p.y += p.speed * (dt / 1000);
+        p.x += p.drift * (dt / 1000);
+        if (p.y > canvas.height || p.x < -10 || p.x > canvas.width + 10) {
+            snowParticles[i] = {
+                x: Math.random() * canvas.width,
+                y: -5,
+                size: 1 + Math.random() * 3,
+                speed: 20 + Math.random() * 40,
+                drift: -15 + Math.random() * 30,
+                opacity: 0.4 + Math.random() * 0.5
+            };
+        }
+    }
+}
+
+// Ice Spear
+let iceSpearUnlocked = false;
+
+// Ice Traveler dialog
+const iceTravelerDialog = { active: false, stage: null };
+let iceTravelerShopOpen = false;
 
 // ── Mastery System ──────────────────────────────────────────
 
@@ -998,6 +1125,11 @@ const daggerMastery = { xp: 0, level: 0 };
 let daggerMasterySkin = 'default';
 const DAGGER_MASTERY_SKINS = ['default', 'shadow', 'crimson', 'phantom', 'nightblade'];
 const DAGGER_MASTERY_MILESTONES = { 25: 'shadow', 50: 'crimson', 75: 'phantom', 100: 'nightblade' };
+
+const spearMastery = { xp: 0, level: 0 };
+let spearMasterySkin = 'default';
+const SPEAR_MASTERY_SKINS = ['default', 'frost', 'blizzard', 'glacier', 'aurora'];
+const SPEAR_MASTERY_MILESTONES = { 25: 'frost', 50: 'blizzard', 75: 'glacier', 100: 'aurora' };
 
 function xpForLevel(level) {
     return Math.floor(100 * Math.pow(1.1, level - 1));
@@ -1049,8 +1181,32 @@ function addDaggerXP(amount) {
     if (daggerMastery.level >= 100 && !extraLevels) daggerMastery.xp = 0;
 }
 
+function addSpearXP(amount) {
+    if (spearMastery.level >= 100 && !extraLevels) return;
+    spearMastery.xp += amount;
+    let leveled = false;
+    while (spearMastery.level < 100 || extraLevels) {
+        const needed = xpForLevel(spearMastery.level + 1);
+        if (spearMastery.xp >= needed) {
+            spearMastery.xp -= needed;
+            spearMastery.level++;
+            leveled = true;
+            const milestone = SPEAR_MASTERY_MILESTONES[spearMastery.level];
+            if (milestone) {
+                spearMasterySkin = milestone;
+                addNotification(`Spear Mastery ${spearMastery.level}! ${milestone.charAt(0).toUpperCase() + milestone.slice(1)} skin unlocked!`, 6000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.9)');
+            }
+        } else break;
+    }
+    if (leveled && !SPEAR_MASTERY_MILESTONES[spearMastery.level]) {
+        addNotification(`Spear Mastery Level ${spearMastery.level}!`, 2000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
+    }
+    if (spearMastery.level >= 100 && !extraLevels) spearMastery.xp = 0;
+}
+
 function addWeaponXP(amount) {
     if (currentSword === 'dagger') addDaggerXP(amount);
+    else if (currentSword === 'icespear') addSpearXP(amount);
     else addSwordXP(amount);
 }
 
@@ -1072,8 +1228,18 @@ function getDaggerMasteryUnlockedSkins() {
     return skins;
 }
 
+function getSpearMasteryUnlockedSkins() {
+    const skins = ['default'];
+    if (spearMastery.level >= 25) skins.push('frost');
+    if (spearMastery.level >= 50) skins.push('blizzard');
+    if (spearMastery.level >= 75) skins.push('glacier');
+    if (spearMastery.level >= 100) skins.push('aurora');
+    return skins;
+}
+
 function getActiveMasterySkin() {
     if (currentSword === 'dagger') return daggerMasterySkin;
+    if (currentSword === 'icespear') return spearMasterySkin;
     return masterySkin;
 }
 
@@ -1096,13 +1262,14 @@ function respawnMonsters() {
     if (!peakPassageOpen) openPeakPassage();
 }
 
-const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, dragon: 5, voidstar: 7, admin: 10 };
-const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', dragon: 'Dragon Sword (5 dmg)', voidstar: 'Void Star (7 dmg)', admin: 'Admin Sword (10 dmg)' };
-const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
+const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, voidstar: 7, admin: 10 };
+const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', voidstar: 'Void Star (7 dmg)', admin: 'Admin Sword (10 dmg)' };
+const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
 
 function getSwordOrder() {
     const order = ['legendary', 'kings'];
     if (daggerUnlocked) order.push('dagger');
+    if (iceSpearUnlocked) order.push('icespear');
     if (dragonSwordUnlocked) order.push('dragon');
     if (voidStarSwordUnlocked) order.push('voidstar');
     if (adminSwordEquipped) order.push('admin');
@@ -1288,6 +1455,7 @@ function hitSpider() {
         const gld = 3 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         // Drop gold block at spider position
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
         const goldRow = Math.floor((spider.y + spider.height / 2) / T);
@@ -1451,6 +1619,7 @@ function hitSeaSnake() {
         const gld = 5 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
@@ -1711,6 +1880,98 @@ function drawCampHealerDialog() {
     ctx.fillText(`${kl('E')} to close`, bx + 16, by + bh - 24);
 }
 
+// ── Ice Traveler Dialog & Shop ───────────────────────────────
+
+function openIceTravelerDialog() {
+    iceTravelerDialog.active = true;
+    iceTravelerDialog.stage = 'greeting';
+    iceTravelerShopOpen = false;
+}
+function advanceIceTravelerDialog() {
+    if (iceTravelerShopOpen) return; // shop handles its own input
+    if (iceTravelerDialog.stage === 'greeting') {
+        iceTravelerDialog.stage = 'shop';
+        iceTravelerShopOpen = true;
+    } else {
+        iceTravelerDialog.active = false;
+        iceTravelerDialog.stage = null;
+        iceTravelerShopOpen = false;
+    }
+}
+function getIceTravelerShopItems() {
+    const items = [];
+    if (!iceSpearUnlocked) items.push({ name: 'Ice Spear (5 dmg)', cost: 20 });
+    items.push({ name: 'Close', cost: 0 });
+    return items;
+}
+let iceTravelerShopSelection = 0;
+function buyIceTravelerItem() {
+    const items = getIceTravelerShopItems();
+    const item = items[iceTravelerShopSelection];
+    if (item.name === 'Close') {
+        iceTravelerDialog.active = false;
+        iceTravelerDialog.stage = null;
+        iceTravelerShopOpen = false;
+        return;
+    }
+    if (item.name.startsWith('Ice Spear') && !iceSpearUnlocked) {
+        if (snowflakeCount < item.cost) {
+            addNotification('Not enough snowflakes!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+            return;
+        }
+        snowflakeCount -= item.cost;
+        iceSpearUnlocked = true;
+        currentSword = 'icespear';
+        swordDamage = 5;
+        addNotification('Ice Spear acquired! 5 damage per hit!', 5000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.9)');
+        iceTravelerDialog.active = false;
+        iceTravelerDialog.stage = null;
+        iceTravelerShopOpen = false;
+    }
+}
+function drawIceTravelerDialog() {
+    if (!iceTravelerDialog.active) return;
+    if (iceTravelerShopOpen) { drawIceTravelerShop(); return; }
+    const bw = 380, bh = 140;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(10,20,30,0.92)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#66aadd'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#88ccff';
+    ctx.fillText('Ice Traveler:', bx + 16, by + 14);
+    ctx.font = '13px monospace'; ctx.fillStyle = '#ddeeff';
+    ctx.fillText('"Greetings, traveler. I come from"', bx + 16, by + 40);
+    ctx.fillText('"the frozen north with rare wares."', bx + 16, by + 60);
+    ctx.fillText('"Snowflakes are my currency."', bx + 16, by + 80);
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('E')} to browse`, bx + 16, by + bh - 24);
+}
+function drawIceTravelerShop() {
+    const items = getIceTravelerShopItems();
+    const bw = 340, bh = 90 + items.length * 36;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(10,20,30,0.95)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#66aadd'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#88ccff'; ctx.fillText('ICE TRAVELER SHOP', bx + bw / 2, by + 12);
+    ctx.font = '12px monospace'; ctx.fillStyle = '#aaddff';
+    ctx.fillText(`Snowflakes: ${snowflakeCount}`, bx + bw / 2, by + 36);
+    ctx.font = 'bold 14px monospace';
+    for (let i = 0; i < items.length; i++) {
+        const iy = by + 58 + i * 36;
+        const label = items[i].cost > 0 ? `${items[i].name} — ${items[i].cost} flakes` : items[i].name;
+        if (i === iceTravelerShopSelection) {
+            ctx.fillStyle = 'rgba(100,180,255,0.25)'; ctx.fillRect(bx + 16, iy - 4, bw - 32, 28);
+            ctx.fillStyle = '#88ccff'; ctx.fillText('> ' + label + ' <', bx + bw / 2, iy);
+        } else {
+            ctx.fillStyle = '#ccc'; ctx.fillText(label, bx + bw / 2, iy);
+        }
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888'; ctx.textAlign = 'center';
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to buy`, bx + bw / 2, by + bh - 20);
+}
+
 // Guard combat state
 const guardCombat = {
     active: false,
@@ -1943,6 +2204,7 @@ function hitNearestOrc() {
         const gld = 2 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
     }
 }
 
@@ -2059,6 +2321,7 @@ function hitTroll() {
         const gld = 8 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
@@ -2152,7 +2415,9 @@ function updateDragon(dt) {
         dragon.stunned = false; dragon.windingUp = false; dragon.firing = false;
         dragon.fireTimer = 0; dragon.lastMeleeAttack = 0;
         dragonRespawnTime = -Infinity;
-        addNotification('The dragon has returned!', 5000, 'rgba(255,100,100,1)', 'rgba(80,0,0,0.9)');
+        addNotification(isSnowing() ? 'The Ice Dragon has appeared!' : 'The dragon has returned!', 5000,
+        isSnowing() ? 'rgba(100,180,255,1)' : 'rgba(255,100,100,1)',
+        isSnowing() ? 'rgba(10,30,60,0.9)' : 'rgba(80,0,0,0.9)');
     }
     if (!dragon.alive) return;
     // Only active when player is in peak area
@@ -2198,7 +2463,7 @@ function updateDragon(dt) {
     }
 
     if (dragon.firing) {
-        // Check if player is hit by fire line
+        // Check if player is hit by fire/ice line
         if (!dragon.fireHit) {
             const dist = pointToSegmentDist(pcx, pcy, dcx, dcy, dragon.fireTargetX, dragon.fireTargetY);
             if (dist < T * 0.8) {
@@ -2207,7 +2472,10 @@ function updateDragon(dt) {
                 } else if (shieldActive) {
                     dragon.stunned = true;
                     dragon.stunUntil = gameTime + 4000;
-                    addNotification('Shield blocks the fire! Dragon stunned!', 2000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.8)');
+                    addNotification(isSnowing() ? 'Shield blocks the ice! Dragon stunned!' : 'Shield blocks the fire! Dragon stunned!', 2000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.8)');
+                } else if (isSnowing()) {
+                    // Ice ball traps the player
+                    startIceTrap();
                 } else {
                     health.value = Math.max(0, health.value - dragon.fireDamage);
                     addNotification('Dragon fire! -3 HP', 1200, 'rgba(255,100,0,1)', 'rgba(80,20,0,0.9)');
@@ -2269,6 +2537,7 @@ function hitDragon() {
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
         dragon.maxHp += 30;
         dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
         if (dragonKills === 1) {
@@ -2480,6 +2749,7 @@ function hitVoidSentinel() {
             voidDesignUnlocked = true;
             addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
         }
+        dropSnowflakes();
     }
 }
 
