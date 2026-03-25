@@ -838,6 +838,13 @@ const DAGGER_STAB_RANGE = 80;
 let stabFrontDmg = 5;
 let stabBackDmg = 8;
 
+// Ability invincibility — active during void rush/stab + 1 second after
+let abilityInvincibleUntil = 0;
+const ABILITY_INVINCIBLE_GRACE = 1000; // 1 second after ability ends
+function isAbilityInvincible() {
+    return daggerStab.active || (voidRush.state !== 'idle') || gameTime < abilityInvincibleUntil;
+}
+
 function findNearestStabTarget() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     let nearest = null, nearestDist = Infinity;
@@ -893,6 +900,7 @@ function updateDaggerStab() {
 function completeDaggerStab() {
     const mob = daggerStab.targetMob;
     daggerStab.active = false;
+    abilityInvincibleUntil = gameTime + ABILITY_INVINCIBLE_GRACE;
     if (!mob || !mob.alive) return;
     // Aggro Noli on first hit
     if (mob === voidSentinel && !voidSentinel.aggro) {
@@ -1305,7 +1313,9 @@ function updateSpider() {
     if (isNearSpider()) {
         if (gameTime - spider.lastAttack >= spider.attackCooldown) {
             spider.lastAttack = gameTime;
-            if (!shieldActive) {
+            if (isAbilityInvincible()) {
+                // invincible during ability
+            } else if (!shieldActive) {
                 health.value = Math.max(0, health.value - spider.damage);
                 addNotification('Spider bites! -1 HP', 800, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
             } else {
@@ -1407,7 +1417,9 @@ function updateSeaSnake(dt) {
     if (isNearSeaSnake()) {
         if (gameTime - seaSnake.lastAttack >= seaSnake.attackCooldown) {
             seaSnake.lastAttack = gameTime;
-            if (!shieldActive) {
+            if (isAbilityInvincible()) {
+                // invincible during ability
+            } else if (!shieldActive) {
                 health.value = Math.max(0, health.value - seaSnake.damage);
                 addNotification('Sea snake bites! -1 HP', 800, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
             } else {
@@ -1818,7 +1830,9 @@ function updateOrcs(dt) {
         if (dist < T * 1.5) {
             if (gameTime - orc.lastAttack >= orc.attackCooldown) {
                 orc.lastAttack = gameTime;
-                if (!shieldActive) {
+                if (isAbilityInvincible()) {
+                    // invincible during ability
+                } else if (!shieldActive) {
                     health.value = Math.max(0, health.value - orc.damage);
                     addNotification('Orc hits! -1 HP', 600, 'rgba(255,80,80,1)', 'rgba(60,0,0,0.8)');
                 } else {
@@ -2010,7 +2024,9 @@ function updateTroll(dt) {
     if (isNearTroll()) {
         if (gameTime - troll.lastAttack >= troll.attackCooldown) {
             troll.lastAttack = gameTime;
-            if (shieldActive) {
+            if (isAbilityInvincible()) {
+                // invincible during ability
+            } else if (shieldActive) {
                 // Shield block stuns the troll
                 troll.stunned = true;
                 troll.stunUntil = gameTime + 2000;
@@ -2186,7 +2202,9 @@ function updateDragon(dt) {
         if (!dragon.fireHit) {
             const dist = pointToSegmentDist(pcx, pcy, dcx, dcy, dragon.fireTargetX, dragon.fireTargetY);
             if (dist < T * 0.8) {
-                if (shieldActive) {
+                if (isAbilityInvincible()) {
+                    // invincible during ability
+                } else if (shieldActive) {
                     dragon.stunned = true;
                     dragon.stunUntil = gameTime + 4000;
                     addNotification('Shield blocks the fire! Dragon stunned!', 2000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.8)');
@@ -2218,7 +2236,9 @@ function updateDragon(dt) {
     if (isNearDragon()) {
         if (gameTime - dragon.lastMeleeAttack >= dragon.meleeCooldown) {
             dragon.lastMeleeAttack = gameTime;
-            if (shieldActive) {
+            if (isAbilityInvincible()) {
+                // invincible during ability
+            } else if (shieldActive) {
                 dragon.stunned = true;
                 dragon.stunUntil = gameTime + 4000;
                 addNotification('Shield stuns the dragon!', 2000, 'rgba(100,150,255,1)', 'rgba(0,20,60,0.8)');
@@ -2329,16 +2349,19 @@ function updateVoidSentinel(dt) {
             // Check if hits player during dash
             if (!voidSentinel.dashHit && isNearVoidSentinel()) {
                 voidSentinel.dashHit = true;
-                if (shieldActive) {
+                if (isAbilityInvincible()) {
+                    // invincible during ability
+                } else if (shieldActive) {
                     voidSentinel.stunned = true;
                     voidSentinel.stunUntil = gameTime + 2000;
                     voidSentinel.dashState = 'idle';
                     voidSentinel.lastDashTime = gameTime;
                     addNotification('Shield blocks the dash!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
                     return;
+                } else {
+                    health.value = Math.max(0, health.value - 10);
+                    addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
                 }
-                health.value = Math.max(0, health.value - 10);
-                addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
             }
         } else {
             // Reached target — start second windup
@@ -2371,16 +2394,19 @@ function updateVoidSentinel(dt) {
             voidSentinel.y = Math.max(211 * T, Math.min(voidSentinel.y, 229 * T - voidSentinel.height));
             if (!voidSentinel.dashHit && isNearVoidSentinel()) {
                 voidSentinel.dashHit = true;
-                if (shieldActive) {
+                if (isAbilityInvincible()) {
+                    // invincible during ability
+                } else if (shieldActive) {
                     voidSentinel.stunned = true;
                     voidSentinel.stunUntil = gameTime + 2000;
                     voidSentinel.dashState = 'idle';
                     voidSentinel.lastDashTime = gameTime;
                     addNotification('Shield blocks the dash!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
                     return;
+                } else {
+                    health.value = Math.max(0, health.value - 10);
+                    addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
                 }
-                health.value = Math.max(0, health.value - 10);
-                addNotification('Sentinel dash! -10 HP', 1000, 'rgba(200,100,255,1)', 'rgba(40,0,60,0.8)');
             }
         } else {
             // Done — back to normal
@@ -2404,7 +2430,9 @@ function updateVoidSentinel(dt) {
     if (isNearVoidSentinel()) {
         if (gameTime - voidSentinel.lastAttack >= voidSentinel.attackCooldown) {
             voidSentinel.lastAttack = gameTime;
-            if (shieldActive) {
+            if (isAbilityInvincible()) {
+                // invincible during ability
+            } else if (shieldActive) {
                 voidSentinel.stunned = true;
                 voidSentinel.stunUntil = gameTime + 2000;
                 addNotification('Shield stuns the Sentinel!', 1500, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.8)');
@@ -2542,7 +2570,7 @@ function updateVoidRush(dt) {
             if (dragon.alive) checkTarget2(dragon.x + dragon.width / 2, dragon.y + dragon.height / 2, true);
             if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) checkTarget2(orc.x + orc.width / 2, orc.y + orc.height / 2, true); }
             if (tx2 !== null) { voidRush.targetX = tx2; voidRush.targetY = ty2; }
-            else { voidRush.state = 'idle'; voidRush.lastUseTime = gameTime; }
+            else { voidRush.state = 'idle'; voidRush.lastUseTime = gameTime; abilityInvincibleUntil = gameTime + ABILITY_INVINCIBLE_GRACE; }
         }
         return;
     }
@@ -2564,6 +2592,7 @@ function updateVoidRush(dt) {
         } else {
             voidRush.state = 'idle';
             voidRush.lastUseTime = gameTime;
+            abilityInvincibleUntil = gameTime + ABILITY_INVINCIBLE_GRACE;
         }
         return;
     }

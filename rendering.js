@@ -523,9 +523,9 @@ function drawKing(ox, oy) {
             // Pull back
             stabLean = stabFacingRight ? -(stabT / 0.3) * 3 : (stabT / 0.3) * 3;
         } else {
-            // Thrust forward
+            // Thrust forward, hold extended
             const thrustT = (stabT - 0.3) / 0.7;
-            const eased = thrustT < 0.4 ? thrustT / 0.4 : 1 - (thrustT - 0.4) / 0.6;
+            const eased = thrustT < 0.2 ? thrustT / 0.2 : thrustT < 0.85 ? 1 : 1 - (thrustT - 0.85) / 0.15 * 0.15;
             stabLean = stabFacingRight ? eased * 5 : -eased * 5;
         }
     }
@@ -597,9 +597,9 @@ function drawKing(ox, oy) {
                 const pullAngle = stabFacingRight ? (-0.3 - windT * 1.2) : (0.3 + windT * 1.2);
                 ctx.rotate(pullAngle);
             } else {
-                // Thrust: stab forward
+                // Thrust: stab forward, hold extended
                 const thrustT = (stabT - 0.3) / 0.7;
-                const eased = thrustT < 0.4 ? thrustT / 0.4 : 1 - (thrustT - 0.4) / 0.6 * 0.3;
+                const eased = thrustT < 0.2 ? thrustT / 0.2 : thrustT < 0.85 ? 1 : 1 - (thrustT - 0.85) / 0.15 * 0.15;
                 const thrustAngle = stabFacingRight ? (-1.5 + eased * 2.1) : (1.5 - eased * 2.1);
                 ctx.rotate(thrustAngle);
             }

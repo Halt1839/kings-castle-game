@@ -232,7 +232,7 @@ function resetGameState() {
     deathCount = 0;
     activeQuest = 'main'; voidQuestFoundEntrance = false; voidQuestNoliDefeated = false;
     swordMastery.xp = 0; swordMastery.level = 0; masterySkin = 'default';
-    daggerUnlocked = false; daggerStab.active = false; daggerStab.cooldownUntil = 0;
+    daggerUnlocked = false; daggerStab.active = false; daggerStab.cooldownUntil = 0; abilityInvincibleUntil = 0;
     daggerMastery.xp = 0; daggerMastery.level = 0; daggerMasterySkin = 'default';
     extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
