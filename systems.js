@@ -441,9 +441,126 @@ function pickUpSword() {
 
 // ── Quest System ────────────────────────────────────────────
 
-let activeQuest = 'main'; // 'main' or 'void'
+let activeQuest = 'main'; // 'main', 'void', or 'frost'
 let voidQuestFoundEntrance = false;
 let voidQuestNoliDefeated = false;
+
+// Jack Frost quest
+let jackFrostQuestActive = false;
+let jackFrostQuestComplete = false;
+let icePalaceUnlocked = false;
+const jackFrostKills = {
+    spider: false,
+    seaSnake: false,
+    orcs: false,
+    troll: false,
+    dragon: false,
+};
+const jackFrostDialog = { active: false, stage: null };
+
+function openJackFrostDialog() {
+    jackFrostDialog.active = true;
+    if (jackFrostQuestComplete) {
+        jackFrostDialog.stage = 'done';
+    } else if (jackFrostQuestActive) {
+        jackFrostDialog.stage = 'progress';
+    } else {
+        jackFrostDialog.stage = 'intro';
+    }
+}
+
+function advanceJackFrostDialog() {
+    if (jackFrostDialog.stage === 'intro') {
+        jackFrostDialog.stage = 'quest_offer';
+    } else if (jackFrostDialog.stage === 'quest_offer') {
+        jackFrostQuestActive = true;
+        activeQuest = 'frost';
+        jackFrostDialog.active = false;
+        addNotification('Jack Frost Quest started!', 3000, 'rgba(150,210,255,1)', 'rgba(10,30,60,0.9)');
+    } else {
+        jackFrostDialog.active = false;
+    }
+}
+
+function checkJackFrostQuestComplete() {
+    if (!jackFrostQuestActive || jackFrostQuestComplete) return;
+    if (jackFrostKills.spider && jackFrostKills.seaSnake && jackFrostKills.orcs && jackFrostKills.troll && jackFrostKills.dragon) {
+        jackFrostQuestComplete = true;
+        snowflakeCount += 500;
+        icePalaceUnlocked = true;
+        addNotification('Jack Frost Quest complete! +500 Snowflakes!', 6000, 'rgba(150,220,255,1)', 'rgba(10,30,60,0.9)');
+        addNotification('Ice Palace castle skin unlocked!', 6000, 'rgba(180,230,255,1)', 'rgba(20,40,70,0.9)');
+    }
+}
+
+function drawJackFrostDialog() {
+    if (!jackFrostDialog.active) return;
+    const bw = 360, bh = 150;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(10,20,40,0.94)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#66bbff'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#4488cc'; ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+
+    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#88ddff';
+    ctx.fillText('Jack Frost', bx + 16, by + 14);
+
+    ctx.font = '13px monospace'; ctx.fillStyle = '#ddeeff';
+    if (jackFrostDialog.stage === 'intro') {
+        ctx.fillText('"The evil Ice Dragon has taken over"', bx + 16, by + 44);
+        ctx.fillText('"the land! Every monster has been"', bx + 16, by + 64);
+        ctx.fillText('"corrupted by its icy power..."', bx + 16, by + 84);
+    } else if (jackFrostDialog.stage === 'quest_offer') {
+        ctx.fillText('"Defeat every monster on your road"', bx + 16, by + 44);
+        ctx.fillText('"to break the curse. Slay them all!"', bx + 16, by + 64);
+        ctx.fillText('"I will reward you handsomely."', bx + 16, by + 84);
+    } else if (jackFrostDialog.stage === 'progress') {
+        const count = [jackFrostKills.spider, jackFrostKills.seaSnake, jackFrostKills.orcs, jackFrostKills.troll, jackFrostKills.dragon].filter(Boolean).length;
+        ctx.fillText(`"Keep going! ${count}/5 monsters slain."`, bx + 16, by + 44);
+        ctx.fillText('"Rid the land of every last one!"', bx + 16, by + 64);
+    } else if (jackFrostDialog.stage === 'done') {
+        ctx.fillText('"You have freed the land from"', bx + 16, by + 44);
+        ctx.fillText('"the icy curse! A true hero!"', bx + 16, by + 64);
+        ctx.fillText('"Enjoy the Ice Palace, friend."', bx + 16, by + 84);
+    }
+
+    ctx.font = '11px monospace'; ctx.fillStyle = '#88aacc';
+    ctx.fillText(`${kl('E')} to continue`, bx + 16, by + bh - 24);
+}
+
+function drawFrostQuestTasks() {
+    const tx = canvas.width - 250, ty = 54;
+    const tasks = [
+        { label: 'Defeat the spider', done: jackFrostKills.spider },
+        { label: 'Defeat the sea snake', done: jackFrostKills.seaSnake },
+        { label: 'Defeat the orcs', done: jackFrostKills.orcs },
+        { label: 'Defeat the troll', done: jackFrostKills.troll },
+        { label: 'Defeat the Ice Dragon', done: jackFrostKills.dragon },
+    ];
+
+    const panelH = 40 + tasks.length * 22 + (jackFrostQuestComplete ? 26 : 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(tx - 8, ty - 4, 240, panelH);
+    ctx.strokeStyle = '#66bbff'; ctx.lineWidth = 1;
+    ctx.strokeRect(tx - 8, ty - 4, 240, panelH);
+
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#88ddff';
+    ctx.fillText('Jack Frost Quest', tx, ty);
+
+    ctx.font = '12px monospace';
+    for (let i = 0; i < tasks.length; i++) {
+        const iy = ty + 22 + i * 22;
+        const check = tasks[i].done ? '[x]' : '[ ]';
+        ctx.fillStyle = tasks[i].done ? '#4CAF50' : '#aaa';
+        ctx.fillText(`${check} ${tasks[i].label}`, tx + 4, iy);
+    }
+
+    if (jackFrostQuestComplete) {
+        ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#4CAF50';
+        ctx.fillText('Quest complete!', tx + 4, ty + 22 + tasks.length * 22 + 4);
+    }
+}
 
 const questTasks = {
     ateFood: false,
@@ -480,6 +597,10 @@ function checkAllTasks() {
 }
 
 function drawQuestTasks() {
+    if (activeQuest === 'frost' && jackFrostQuestActive) {
+        drawFrostQuestTasks();
+        return;
+    }
     if (activeQuest === 'void' && dragonKills > 0) {
         drawVoidQuestTasks();
         return;
@@ -929,6 +1050,7 @@ function handleStabKill(mob) {
         const gc = Math.floor((spider.x + spider.width / 2) / T), gr = Math.floor((spider.y + spider.height / 2) / T);
         map[gr][gc] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.spider = true; checkJackFrostQuestComplete(); }
         addNotification('The giant spider is defeated! It dropped a gold block!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
     } else if (mob === seaSnake) {
         seaSnake.alive = false; seaSnakeDeathTime = gameTime; seaSnake.maxHp += 10; addWeaponXP(30);
@@ -938,6 +1060,7 @@ function handleStabKill(mob) {
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.seaSnake = true; checkJackFrostQuestComplete(); }
         addNotification('The sea snake is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification(`Health increased to ${health.max}/${health.max}!`, 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
     } else if (mob === troll) {
@@ -948,6 +1071,7 @@ function handleStabKill(mob) {
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.troll = true; checkJackFrostQuestComplete(); }
         addNotification('The mountain troll is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification('Health increased to 30/30!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
         addNotification('A secret passage to the peak opens!', 5000, 'rgba(255,200,100,1)', 'rgba(60,40,0,0.9)');
@@ -966,6 +1090,7 @@ function handleStabKill(mob) {
         if (!goldDesignUnlocked) { goldDesignUnlocked = true; addNotification('Gold design unlocked!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'); }
         respawnMonsters();
         questTasks.dragonDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.dragon = true; checkJackFrostQuestComplete(); }
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
@@ -1399,19 +1524,17 @@ function isNearDesignRoomBuildSite() {
 }
 
 function switchDesign() {
-    if (currentDesign === 'default' && goldDesignUnlocked) {
-        currentDesign = 'gold';
-        addNotification('Switched to Gold design!', 2000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
-    } else if (currentDesign === 'default' && voidDesignUnlocked) {
-        currentDesign = 'void';
-        addNotification('Switched to Void design!', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
-    } else if (currentDesign === 'gold' && voidDesignUnlocked) {
-        currentDesign = 'void';
-        addNotification('Switched to Void design!', 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
-    } else {
-        currentDesign = 'default';
-        addNotification('Switched to Default design!', 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
-    }
+    const designs = ['default'];
+    if (goldDesignUnlocked) designs.push('gold');
+    if (voidDesignUnlocked) designs.push('void');
+    if (icePalaceUnlocked) designs.push('ice');
+    const idx = designs.indexOf(currentDesign);
+    const next = designs[(idx + 1) % designs.length];
+    currentDesign = next;
+    const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace' };
+    const colors = { default: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], gold: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], void: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], ice: ['rgba(150,210,255,1)', 'rgba(10,30,60,0.9)'] };
+    const c = colors[next] || colors.default;
+    addNotification(`Switched to ${names[next]} design!`, 2000, c[0], c[1]);
 }
 
 function isNearWeaponryBuildSite() {
@@ -1461,6 +1584,7 @@ function hitSpider() {
         const goldRow = Math.floor((spider.y + spider.height / 2) / T);
         map[goldRow][goldCol] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.spider = true; checkJackFrostQuestComplete(); }
         addNotification('The giant spider is defeated! It dropped a gold block!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
     }
 }
@@ -1623,6 +1747,7 @@ function hitSeaSnake() {
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.seaSnake = true; checkJackFrostQuestComplete(); }
         addNotification('The sea snake is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification(`Health increased to ${health.max}/${health.max}!`, 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
     }
@@ -2037,6 +2162,7 @@ function updateOrcs(dt) {
             orcSiege.complete = true;
             orcs = [];
             questTasks.campHelped = true;
+            if (isSnowing() && jackFrostQuestActive) { jackFrostKills.orcs = true; checkJackFrostQuestComplete(); }
             // Return guards home
             guardCombat.active = false;
             guardCombat.guard1Target = null;
@@ -2325,6 +2451,7 @@ function hitTroll() {
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.troll = true; checkJackFrostQuestComplete(); }
         addNotification('The mountain troll is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification('Health increased to 30/30!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
         addNotification('A secret passage to the peak opens!', 5000, 'rgba(255,200,100,1)', 'rgba(60,40,0,0.9)');
@@ -2552,6 +2679,7 @@ function hitDragon() {
         }
         respawnMonsters();
         questTasks.dragonDefeated = true;
+        if (isSnowing() && jackFrostQuestActive) { jackFrostKills.dragon = true; checkJackFrostQuestComplete(); }
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');

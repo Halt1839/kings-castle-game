@@ -78,6 +78,10 @@ function saveGame(slot) {
         spearMasterySkin,
         snowflakeCount,
         extraLevels,
+        jackFrostQuestActive,
+        jackFrostQuestComplete,
+        jackFrostKills: { ...jackFrostKills },
+        icePalaceUnlocked,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -174,6 +178,10 @@ function loadGame(slot) {
     if (s.spearMasterySkin !== undefined) spearMasterySkin = s.spearMasterySkin;
     if (s.snowflakeCount !== undefined) snowflakeCount = s.snowflakeCount;
     if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
+    if (s.jackFrostQuestActive !== undefined) jackFrostQuestActive = s.jackFrostQuestActive;
+    if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
+    if (s.jackFrostKills) Object.assign(jackFrostKills, s.jackFrostKills);
+    if (s.icePalaceUnlocked !== undefined) icePalaceUnlocked = s.icePalaceUnlocked;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -245,6 +253,9 @@ function resetGameState() {
     iceSpearUnlocked = false; spearMastery.xp = 0; spearMastery.level = 0; spearMasterySkin = 'default';
     snowflakeCount = 0; iceTravelerDialog.active = false; iceTravelerShopOpen = false; iceTravelerWasPresent = false; snowWasActive = false;
     iceTrap.active = false; iceTrap.hits = 0;
+    jackFrostQuestActive = false; jackFrostQuestComplete = false; icePalaceUnlocked = false;
+    jackFrostKills.spider = false; jackFrostKills.seaSnake = false; jackFrostKills.orcs = false; jackFrostKills.troll = false; jackFrostKills.dragon = false;
+    jackFrostDialog.active = false;
     extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;

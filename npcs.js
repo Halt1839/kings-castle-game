@@ -347,6 +347,61 @@ function drawCampHealer(ox, oy) {
     ctx.fillStyle = '#8a7a6a'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
 }
 
+function drawJackFrost(ox, oy) {
+    if (!isSnowing()) return;
+    const sx = Math.round(jackFrost.x - ox), sy = Math.round(jackFrost.y - oy);
+    const cx = sx + jackFrost.width / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + jackFrost.height + 1, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Frost aura
+    const aura = 0.08 + 0.06 * Math.sin(performance.now() / 600);
+    ctx.fillStyle = `rgba(150,210,255,${aura})`;
+    ctx.beginPath(); ctx.arc(cx, sy + 10, 18, 0, Math.PI * 2); ctx.fill();
+    // Body — icy white robe
+    ctx.fillStyle = '#d0e8f8'; ctx.fillRect(sx + 2, sy + 8, 12, 10);
+    ctx.fillStyle = '#e8f4ff'; ctx.fillRect(sx + 4, sy + 9, 8, 8);
+    // Frost trim at bottom
+    ctx.fillStyle = '#88ccff';
+    for (let i = 0; i < 4; i++) ctx.fillRect(sx + 2 + i * 3, sy + 17, 2, 2);
+    // Head — pale blue skin
+    ctx.fillStyle = '#c0d8ee';
+    ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    // Spiky ice hair
+    ctx.fillStyle = '#88ccff';
+    ctx.beginPath(); ctx.moveTo(cx - 4, sy + 1); ctx.lineTo(cx - 6, sy - 5); ctx.lineTo(cx - 2, sy); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx, sy); ctx.lineTo(cx, sy - 7); ctx.lineTo(cx + 2, sy); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + 2, sy + 1); ctx.lineTo(cx + 6, sy - 4); ctx.lineTo(cx + 4, sy); ctx.fill();
+    // Eyes — bright cyan
+    ctx.fillStyle = '#00ddff';
+    ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+    // Smile
+    ctx.strokeStyle = '#8ab8d8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, sy + 7, 2, 0, Math.PI); ctx.stroke();
+    // Arms
+    ctx.fillStyle = '#c0d8ee'; ctx.fillRect(sx, sy + 9, 3, 5); ctx.fillRect(sx + 13, sy + 9, 3, 5);
+    // Ice staff (left hand)
+    ctx.fillStyle = '#aaddff'; ctx.fillRect(sx - 2, sy - 2, 2, 18);
+    // Snowflake crystal on staff tip
+    const sparkle = 0.6 + 0.4 * Math.sin(performance.now() / 300);
+    ctx.fillStyle = `rgba(200,240,255,${sparkle})`;
+    ctx.beginPath(); ctx.arc(sx - 1, sy - 4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('*', sx - 1, sy - 4);
+    // Boots
+    ctx.fillStyle = '#7aaace'; ctx.fillRect(sx + 3, sy + 17, 4, 3); ctx.fillRect(sx + 9, sy + 17, 4, 3);
+    // Floating snowflakes around
+    const t = performance.now() / 1500;
+    for (let i = 0; i < 3; i++) {
+        const angle = t + i * (Math.PI * 2 / 3);
+        const fx = cx + Math.cos(angle) * 14;
+        const fy = sy + 8 + Math.sin(angle) * 8;
+        ctx.fillStyle = `rgba(200,230,255,${0.4 + 0.3 * Math.sin(t * 3 + i)})`;
+        ctx.beginPath(); ctx.arc(fx, fy, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
 function drawIceTraveler(ox, oy) {
     if (!isIceTravelerPresent()) return;
     const sx = Math.round(iceTraveler.x - ox), sy = Math.round(iceTraveler.y - oy);

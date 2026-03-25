@@ -73,6 +73,14 @@ function isNearIceTraveler() {
     return Math.hypot(pcx - (iceTraveler.x + 8), pcy - (iceTraveler.y + 8)) < T * 1.8;
 }
 
+// ── Jack Frost (ice quest NPC) ──────────────────────────────
+const jackFrost = { x: 8 * T, y: 35 * T, width: 16, height: 20 };
+function isNearJackFrost() {
+    if (!isSnowing()) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    return Math.hypot(pcx - (jackFrost.x + 8), pcy - (jackFrost.y + 10)) < T * 1.8;
+}
+
 // ── Noli (arena boss) ───────────────────────────────────────
 
 const voidSentinel = {

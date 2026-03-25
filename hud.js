@@ -627,6 +627,7 @@ function drawSpearMasteryScreen() {
 function getQuestItems() {
     const items = [{ label: 'Main Quest', key: 'main' }];
     if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
+    if (jackFrostQuestActive) items.push({ label: 'Jack Frost Quest', key: 'frost' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }

@@ -16,6 +16,11 @@ const DESIGN_COLORS = {
                door1: '#4a2a6e', door2: '#6a4a8e',
                carpet1: '#2a0a4e', carpet2: '#8a5abf', carpet3: '#2a0a4e',
                throne1: '#4a1a7e', throne2: '#C88FFF', throne3: '#E0C0FF' },
+    ice:     { wall1: '#8ab0cc', wall2: '#7aa0bc', wallStroke: '#6090ac',
+               floor1: '#c8ddef', floorStroke: '#b0c8de',
+               door1: '#5a8aaa', door2: '#6a9aba',
+               carpet1: '#4a7a9a', carpet2: '#a0d0ee', carpet3: '#4a7a9a',
+               throne1: '#3a6a8a', throne2: '#88ccff', throne3: '#bbddff' },
 };
 
 function dc() {

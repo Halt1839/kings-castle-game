@@ -139,6 +139,11 @@ window.addEventListener('keydown', (e) => {
         return;
     }
 
+    // Jack Frost dialog close
+    if (jackFrostDialog.active && e.key === 'Escape') {
+        jackFrostDialog.active = false; jackFrostDialog.stage = null;
+    }
+
     // Ice Traveler shop navigation
     if (iceTravelerShopOpen) {
         const items = getIceTravelerShopItems();
@@ -551,6 +556,8 @@ function gameLoop(now) {
             advanceCampBlacksmithDialog();
         } else if (campHealerDialog.active) {
             advanceCampHealerDialog();
+        } else if (jackFrostDialog.active) {
+            advanceJackFrostDialog();
         } else if (iceTravelerDialog.active) {
             if (iceTravelerShopOpen) {
                 buyIceTravelerItem();
@@ -609,6 +616,8 @@ function gameLoop(now) {
                 openCampBlacksmithDialog();
             } else if (isNearCampHealer()) {
                 openCampHealerDialog();
+            } else if (isNearJackFrost()) {
+                openJackFrostDialog();
             } else if (isNearIceTraveler()) {
                 openIceTravelerDialog();
             } else if (isNearBoat()) {
@@ -705,6 +714,7 @@ function gameLoop(now) {
     drawCampScout(camX, camY);
     drawCampBlacksmith(camX, camY);
     drawCampHealer(camX, camY);
+    drawJackFrost(camX, camY);
     drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
     drawTroll(camX, camY);
@@ -754,12 +764,18 @@ function gameLoop(now) {
     else if (campScoutDialog.active) drawCampScoutDialog();
     else if (campBlacksmithDialog.active) drawCampBlacksmithDialog();
     else if (campHealerDialog.active) drawCampHealerDialog();
+    else if (jackFrostDialog.active) drawJackFrostDialog();
     else if (iceTravelerDialog.active) drawIceTravelerDialog();
     else if (activeAction) drawActionMessage();
     else if (isNearDesignRack()) {
-        const next = currentDesign === 'default' ? (goldDesignUnlocked ? 'Gold' : (voidDesignUnlocked ? 'Void' : 'Default')) :
-                     currentDesign === 'gold' ? (voidDesignUnlocked ? 'Void' : 'Default') : 'Default';
-        drawPrompt(`${kl('E')} to switch to ${next} design`);
+        const designs = ['default'];
+        if (goldDesignUnlocked) designs.push('gold');
+        if (voidDesignUnlocked) designs.push('void');
+        if (icePalaceUnlocked) designs.push('ice');
+        const idx = designs.indexOf(currentDesign);
+        const nextKey = designs[(idx + 1) % designs.length];
+        const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace' };
+        drawPrompt(`${kl('E')} to switch to ${names[nextKey]} design`);
     } else if (isNearDesignRoomBuildSite()) {
         drawPrompt(`${kl('E')} to build Design Room (100 gold) [${goldCount} gold]`);
     } else if (isNearWeaponRack()) {
@@ -790,6 +806,8 @@ function gameLoop(now) {
         drawPrompt(`${kl('E')} to talk to the Blacksmith`);
     } else if (isNearCampHealer()) {
         drawPrompt(`${kl('E')} to talk to the Healer`);
+    } else if (isNearJackFrost()) {
+        drawPrompt(`${kl('E')} to talk to Jack Frost`);
     } else if (isNearIceTraveler()) {
         drawPrompt(`${kl('E')} to talk to the Ice Traveler`);
     } else if (isNearSeaSnake()) {
