@@ -832,9 +832,11 @@ const daggerStab = {
     playerSideX: 0, // -1 = player left of mob, 1 = right
     cooldownUntil: 0,
 };
-const DAGGER_STAB_DURATION = 250;
+const DAGGER_STAB_DURATION = 500;
 const DAGGER_STAB_COOLDOWN = 800;
 const DAGGER_STAB_RANGE = 80;
+let stabFrontDmg = 5;
+let stabBackDmg = 8;
 
 function findNearestStabTarget() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
@@ -901,7 +903,7 @@ function completeDaggerStab() {
     const mobCX = mob.x + mob.width / 2;
     const currentSide = pcx < mobCX ? -1 : 1;
     const isBackstab = (currentSide === daggerStab.playerSideX);
-    const dmg = isBackstab ? 8 : 5;
+    const dmg = isBackstab ? stabBackDmg : stabFrontDmg;
     swordSwingTime = performance.now();
     mob.hp -= dmg;
     addNotification(isBackstab ? `Backstab! -${dmg} HP` : `Dagger stab! -${dmg} HP`, 1000,
@@ -977,6 +979,8 @@ function handleStabKill(mob) {
 
 // ── Mastery System ──────────────────────────────────────────
 
+let extraLevels = false;
+
 const swordMastery = { xp: 0, level: 0 };
 let masterySkin = 'default';
 const MASTERY_SKINS = ['default', 'bronze', 'silver', 'gold', 'diamond'];
@@ -992,10 +996,10 @@ function xpForLevel(level) {
 }
 
 function addSwordXP(amount) {
-    if (swordMastery.level >= 100) return;
+    if (swordMastery.level >= 100 && !extraLevels) return;
     swordMastery.xp += amount;
     let leveled = false;
-    while (swordMastery.level < 100) {
+    while (swordMastery.level < 100 || extraLevels) {
         const needed = xpForLevel(swordMastery.level + 1);
         if (swordMastery.xp >= needed) {
             swordMastery.xp -= needed;
@@ -1011,14 +1015,14 @@ function addSwordXP(amount) {
     if (leveled && !MASTERY_MILESTONES[swordMastery.level]) {
         addNotification(`Sword Mastery Level ${swordMastery.level}!`, 2000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.8)');
     }
-    if (swordMastery.level >= 100) swordMastery.xp = 0;
+    if (swordMastery.level >= 100 && !extraLevels) swordMastery.xp = 0;
 }
 
 function addDaggerXP(amount) {
-    if (daggerMastery.level >= 100) return;
+    if (daggerMastery.level >= 100 && !extraLevels) return;
     daggerMastery.xp += amount;
     let leveled = false;
-    while (daggerMastery.level < 100) {
+    while (daggerMastery.level < 100 || extraLevels) {
         const needed = xpForLevel(daggerMastery.level + 1);
         if (daggerMastery.xp >= needed) {
             daggerMastery.xp -= needed;
@@ -1034,7 +1038,7 @@ function addDaggerXP(amount) {
     if (leveled && !DAGGER_MASTERY_MILESTONES[daggerMastery.level]) {
         addNotification(`Dagger Mastery Level ${daggerMastery.level}!`, 2000, 'rgba(255,200,150,1)', 'rgba(40,20,0,0.8)');
     }
-    if (daggerMastery.level >= 100) daggerMastery.xp = 0;
+    if (daggerMastery.level >= 100 && !extraLevels) daggerMastery.xp = 0;
 }
 
 function addWeaponXP(amount) {
@@ -2452,6 +2456,8 @@ function hitVoidSentinel() {
 }
 
 // ── Void Rush (player dash ability) ─────────────────────────
+let voidRushDmg1 = 20;
+let voidRushDmg2 = 30;
 
 const voidRush = {
     state: 'idle', // 'idle', 'windup1', 'dashing1', 'windup2', 'dashing2'
@@ -2515,7 +2521,7 @@ function updateVoidRush(dt) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
             // Hit ALL enemies along the line of fire
-            voidRushHitEnemies(20);
+            voidRushHitEnemies(voidRushDmg1);
         } else {
             // Reached target — start second windup, retarget nearest enemy
             voidRush.state = 'windup2';
@@ -2554,7 +2560,7 @@ function updateVoidRush(dt) {
         if (dist > 6) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
-            voidRushHitEnemies(30); // 20 + 10 extra
+            voidRushHitEnemies(voidRushDmg2);
         } else {
             voidRush.state = 'idle';
             voidRush.lastUseTime = gameTime;

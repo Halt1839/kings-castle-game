@@ -207,8 +207,8 @@ function drawHUD() {
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
@@ -401,16 +401,18 @@ function drawPauseButton() {
 // ── Pause Menu ──────────────────────────────────────────────
 
 let pauseSelection = 0;
-let pauseScreen = 'main'; // 'main', 'quests', 'mastery', 'mastery_sword', 'mastery_dagger'
+let pauseScreen = 'main'; // 'main', 'quests', 'mastery', 'mastery_sword', 'mastery_dagger', 'settings'
 let questSelection = 0;
 let masterySelection = 0;
-const PAUSE_ITEMS = ['Resume', 'Quests', 'Mastery', 'Quit to Menu'];
+let settingsSelection = 0;
+const PAUSE_ITEMS = ['Resume', 'Quests', 'Mastery', 'Settings', 'Quit to Menu'];
 
 function drawPauseMenu() {
     if (pauseScreen === 'quests') { drawQuestSelectMenu(); return; }
     if (pauseScreen === 'mastery') { drawMasteryPickerScreen(); return; }
     if (pauseScreen === 'mastery_sword') { drawSwordMasteryScreen(); return; }
     if (pauseScreen === 'mastery_dagger') { drawDaggerMasteryScreen(); return; }
+    if (pauseScreen === 'settings') { drawSettingsScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     const bw = 280, bh = 280;
     const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
@@ -432,6 +434,36 @@ function drawPauseMenu() {
     }
     ctx.font = '11px monospace'; ctx.fillStyle = '#888';
     ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
+}
+
+function getSettingsItems() {
+    return [
+        { label: 'Extra Levels: ' + (extraLevels ? 'ON' : 'OFF'), key: 'extraLevels' },
+        { label: 'Back', key: 'back' },
+    ];
+}
+
+function drawSettingsScreen() {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const items = getSettingsItems();
+    const bw = 300, bh = 80 + items.length * 44 + 30;
+    const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
+    ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
+    ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#FFD700'; ctx.fillText('SETTINGS', bx + bw/2, by + 16);
+    ctx.font = 'bold 15px monospace';
+    for (let i = 0; i < items.length; i++) {
+        const iy = by + 60 + i * 44;
+        if (i === settingsSelection) {
+            ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 20, iy - 6, bw - 40, 32);
+            ctx.fillStyle = '#FFD700'; ctx.fillText('> ' + items[i].label + ' <', bx + bw/2, iy);
+        } else {
+            ctx.fillStyle = '#ccc'; ctx.fillText(items[i].label, bx + bw/2, iy);
+        }
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
+    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to toggle`, bx + bw/2, by + bh - 24);
 }
 
 function getMasteryPickerItems() {
@@ -489,13 +521,13 @@ function drawWeaponMasteryDetail(title, mastery, milestones, mNames, mColors, it
     ctx.fillStyle = accentColor1; ctx.fillText(title, bx + bw/2, by + 14);
 
     ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#fff';
-    ctx.fillText(`Level ${mastery.level} / 100`, bx + bw/2, by + 44);
+    ctx.fillText(extraLevels ? `Level ${mastery.level}` : `Level ${mastery.level} / 100`, bx + bw/2, by + 44);
 
     // XP bar
     const barX = bx + 20, barY = by + 70, barW = bw - 40, barH = 16;
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, barH);
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
-    if (mastery.level < 100) {
+    if (mastery.level < 100 || extraLevels) {
         const needed = xpForLevel(mastery.level + 1);
         const ratio = Math.min(1, mastery.xp / needed);
         const grad = ctx.createLinearGradient(barX, barY, barX + barW * ratio, barY);
@@ -661,10 +693,11 @@ function getAdminItems() {
             if (weapon === null) return;
             const w = weapon.trim().toLowerCase();
             if (w !== 'sword' && w !== 'dagger') { addNotification('Enter "sword" or "dagger"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            const val = prompt('Enter level (0-100):');
+            const maxLvl = extraLevels ? 99999 : 100;
+            const val = prompt('Enter level (0-' + maxLvl + '):');
             if (val === null) return;
             const n = Number(val);
-            if (isNaN(n) || n < 0 || n > 100) { addNotification('Enter 0-100', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            if (isNaN(n) || n < 0 || n > maxLvl) { addNotification('Enter 0-' + maxLvl, 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
             const lvl = Math.floor(n);
             if (w === 'sword') {
                 swordMastery.level = lvl; swordMastery.xp = 0;
@@ -681,6 +714,42 @@ function getAdminItems() {
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { daggerMasterySkin = sk[i]; break; } }
                 addNotification('Dagger mastery set to ' + lvl, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
             }
+        }},
+        { name: 'Set Ability Damage', action: () => {
+            const ability = prompt('Which ability? (void rush / stab)');
+            if (ability === null) return;
+            const a = ability.trim().toLowerCase();
+            if (a === 'void rush' || a === 'voidrush' || a === 'void') {
+                const v1 = prompt('First hit damage (current: ' + voidRushDmg1 + '):');
+                if (v1 === null) return;
+                const n1 = Number(v1);
+                if (isNaN(n1) || n1 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+                const v2 = prompt('Second hit damage (current: ' + voidRushDmg2 + '):');
+                if (v2 === null) return;
+                const n2 = Number(v2);
+                if (isNaN(n2) || n2 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+                voidRushDmg1 = Math.floor(n1);
+                voidRushDmg2 = Math.floor(n2);
+                addNotification('Void Rush: hit1=' + voidRushDmg1 + ' hit2=' + voidRushDmg2, 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
+            } else if (a === 'stab' || a === 'dagger') {
+                const v1 = prompt('Front stab damage (current: ' + stabFrontDmg + '):');
+                if (v1 === null) return;
+                const n1 = Number(v1);
+                if (isNaN(n1) || n1 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+                const v2 = prompt('Backstab damage (current: ' + stabBackDmg + '):');
+                if (v2 === null) return;
+                const n2 = Number(v2);
+                if (isNaN(n2) || n2 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+                stabFrontDmg = Math.floor(n1);
+                stabBackDmg = Math.floor(n2);
+                addNotification('Stab: front=' + stabFrontDmg + ' back=' + stabBackDmg, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
+            } else {
+                addNotification('Enter "void rush" or "stab"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
+            }
+        }},
+        { name: extraLevels ? 'Extra Levels: ON' : 'Extra Levels: OFF', action: () => {
+            extraLevels = !extraLevels;
+            addNotification(extraLevels ? 'Extra levels enabled!' : 'Extra levels disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
         { name: 'Close', action: () => { adminOpen = false; } },
     ];

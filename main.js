@@ -61,6 +61,11 @@ window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mdItems.length) % mdItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mdItems.length;
             if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
+        } else if (pauseScreen === 'settings') {
+            const setItems = getSettingsItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') settingsSelection = (settingsSelection - 1 + setItems.length) % setItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') settingsSelection = (settingsSelection + 1) % setItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'main'; settingsSelection = 0; }
         } else {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % PAUSE_ITEMS.length;
@@ -268,6 +273,15 @@ function gameLoop(now) {
                 } else {
                     daggerMasterySkin = mdSelected.key;
                 }
+            } else if (pauseScreen === 'settings') {
+                const setItems = getSettingsItems();
+                const setSelected = setItems[settingsSelection];
+                if (setSelected.key === 'back') {
+                    pauseScreen = 'main'; settingsSelection = 0;
+                } else if (setSelected.key === 'extraLevels') {
+                    extraLevels = !extraLevels;
+                    addNotification(extraLevels ? 'Extra levels enabled!' : 'Extra levels disabled', 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+                }
             } else {
                 if (pauseSelection === 0) {
                     gameState = 'playing'; lastTime = performance.now();
@@ -275,6 +289,8 @@ function gameLoop(now) {
                     pauseScreen = 'quests'; questSelection = 0;
                 } else if (pauseSelection === 2) {
                     pauseScreen = 'mastery'; masterySelection = 0;
+                } else if (pauseSelection === 3) {
+                    pauseScreen = 'settings'; settingsSelection = 0;
                 } else {
                     if (currentSlot) saveGame(currentSlot);
                     gameState = 'menu'; menuScreen = 'main'; menuSelection = 0;
@@ -573,10 +589,10 @@ function gameLoop(now) {
         if (playerWalking) playerWalkPhase += dt * 10;
         else playerWalkPhase = 0;
 
-        // Secret arena teleport: step on tree at row 44, col 12
+        // Secret arena teleport: step on tree at row 44, col 28
         const pRow = Math.floor((player.y + player.height / 2) / T);
         const pCol = Math.floor((player.x + player.width / 2) / T);
-        if (!inArena && pRow === 44 && pCol === 12) {
+        if (!inArena && pRow === 44 && pCol === 28) {
             arenaReturnX = player.x;
             arenaReturnY = player.y;
             player.x = 14 * T;
@@ -586,9 +602,9 @@ function gameLoop(now) {
             addNotification('You entered a secret arena!', 3000, 'rgba(200,150,255,1)', 'rgba(40,0,60,0.85)');
         }
         // Return from arena: step on door tiles at row 210, cols 14-15
-        if (inArena && pRow === 210 && (pCol === 14 || pCol === 15)) {
+        if (inArena && (pRow === 210 || pRow === 211) && (pCol === 14 || pCol === 15)) {
             player.x = arenaReturnX;
-            player.y = arenaReturnY;
+            player.y = arenaReturnY - T;
             inArena = false;
             addNotification('You returned from the arena.', 2000, 'rgba(150,200,255,1)', 'rgba(0,30,60,0.85)');
         }

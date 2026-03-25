@@ -73,6 +73,7 @@ function saveGame(slot) {
         daggerUnlocked,
         daggerMastery: { xp: daggerMastery.xp, level: daggerMastery.level },
         daggerMasterySkin,
+        extraLevels,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -164,6 +165,7 @@ function loadGame(slot) {
     if (s.daggerUnlocked !== undefined) daggerUnlocked = s.daggerUnlocked;
     if (s.daggerMastery) { daggerMastery.xp = s.daggerMastery.xp; daggerMastery.level = s.daggerMastery.level; }
     if (s.daggerMasterySkin !== undefined) daggerMasterySkin = s.daggerMasterySkin;
+    if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -232,6 +234,7 @@ function resetGameState() {
     swordMastery.xp = 0; swordMastery.level = 0; masterySkin = 'default';
     daggerUnlocked = false; daggerStab.active = false; daggerStab.cooldownUntil = 0;
     daggerMastery.xp = 0; daggerMastery.level = 0; daggerMasterySkin = 'default';
+    extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;

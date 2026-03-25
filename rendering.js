@@ -423,7 +423,7 @@ const SKIN_COLORS = {
     shadow:     { body: '#2a2a3a', trim: '#555577', crown: '#444466', gem: '#8844aa', legs: '#1a1a2a', arms: '#4a4a5a', cape: 'rgba(30,30,50,0.6)' },
     crimson:    { body: '#6a1010', trim: '#cc3333', crown: '#aa2222', gem: '#ff4444', legs: '#4a0808', arms: '#8a3030', glow: 'rgba(255,50,50,0.2)' },
     phantom:    { body: '#3a4a5a', trim: '#8899aa', crown: '#7788aa', gem: '#aaccff', legs: '#2a3a4a', arms: '#6a7a8a', cape: 'rgba(100,130,180,0.4)', glow: 'rgba(150,180,220,0.2)' },
-    nightblade: { body: '#1a1a2e', trim: '#6633cc', crown: '#5522aa', gem: '#cc88ff', legs: '#0a0a1e', arms: '#3a3a5e', glow: 'rgba(100,50,200,0.3)', aura: true },
+    nightblade: { body: '#1a1a2e', trim: '#6633cc', crown: '#5522aa', gem: '#cc88ff', legs: '#0a0a1e', arms: '#3a3a5e', glow: 'rgba(100,50,200,0.3)' },
 };
 
 const DAGGER_BLADE_COLORS = {
@@ -433,6 +433,51 @@ const DAGGER_BLADE_COLORS = {
     phantom:    { blade: '#8899bb', tip: '#aabbdd', guard: '#667799', handle: '#334466', pommel: '#7788aa' },
     nightblade: { blade: '#7744cc', tip: '#aa77ff', guard: '#5522aa', handle: '#220066', pommel: '#6633bb' },
 };
+
+// ── Dagger Mastery Particles ────────────────────────────────
+const DAGGER_PARTICLES = {
+    shadow: { count: 4, radius: 14, size: 2, speed: 1.5, color: [80, 70, 120], trail: false },
+    crimson: { count: 5, radius: 16, size: 2.5, speed: 2, color: [220, 50, 50], trail: true },
+    phantom: { count: 6, radius: 18, size: 2, speed: 1.2, color: [140, 170, 220], trail: true },
+    nightblade: { count: 8, radius: 20, size: 3, speed: 2.5, color: [140, 80, 255], trail: true },
+};
+
+function drawDaggerParticles(cx, cy) {
+    const skinKey = (typeof daggerMasterySkin !== 'undefined') ? daggerMasterySkin : 'default';
+    const cfg = DAGGER_PARTICLES[skinKey];
+    if (!cfg) return;
+    const t = performance.now() / 1000;
+    ctx.save();
+    for (let i = 0; i < cfg.count; i++) {
+        const angle = (i / cfg.count) * Math.PI * 2 + t * cfg.speed;
+        const wobble = Math.sin(t * 3 + i * 1.7) * 3;
+        const r = cfg.radius + wobble;
+        const px = cx + Math.cos(angle) * r;
+        const py = cy + Math.sin(angle) * r * 0.6; // squash vertically
+        // Trail
+        if (cfg.trail) {
+            for (let j = 1; j <= 3; j++) {
+                const ta = angle - j * 0.15;
+                const tr = cfg.radius + Math.sin(t * 3 + i * 1.7 - j * 0.1) * 3;
+                const tx = cx + Math.cos(ta) * tr;
+                const ty = cy + Math.sin(ta) * tr * 0.6;
+                ctx.globalAlpha = 0.15 - j * 0.04;
+                ctx.fillStyle = `rgb(${cfg.color[0]},${cfg.color[1]},${cfg.color[2]})`;
+                ctx.beginPath(); ctx.arc(tx, ty, cfg.size * (1 - j * 0.2), 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        // Main particle
+        const pulse = 0.6 + 0.4 * Math.sin(t * 5 + i * 2);
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = `rgb(${cfg.color[0]},${cfg.color[1]},${cfg.color[2]})`;
+        ctx.beginPath(); ctx.arc(px, py, cfg.size, 0, Math.PI * 2); ctx.fill();
+        // Bright core
+        ctx.globalAlpha = pulse * 0.8;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(px, py, cfg.size * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
 
 function drawKing(ox, oy) {
     if (activeAction) return;
@@ -447,6 +492,11 @@ function drawKing(ox, oy) {
     const legSwing = playerWalking ? Math.sin(playerWalkPhase * Math.PI) * 4 : 0;
     const bodyY = sy + walkBob;
 
+    // Dagger mastery particles (behind player)
+    if (currentSword === 'dagger' && DAGGER_PARTICLES[daggerMasterySkin]) {
+        drawDaggerParticles(cx, bodyY + 8);
+    }
+
     // Aura (diamond skin)
     if (skin.aura) {
         const pulse = 0.15 + 0.1 * Math.sin(performance.now() / 400);
@@ -459,55 +509,110 @@ function drawKing(ox, oy) {
         ctx.beginPath(); ctx.arc(cx, bodyY + 8, 13, 0, Math.PI * 2); ctx.fill();
     }
 
+    // Stab lean offset
+    let stabLean = 0;
+    const stabbing = currentSword === 'dagger' && daggerStab.active;
+    let stabFacingRight = true;
+    if (stabbing) {
+        const stabElapsed = gameTime - daggerStab.startTime;
+        const stabT = Math.min(1, stabElapsed / DAGGER_STAB_DURATION);
+        const mob = daggerStab.targetMob;
+        const mobCX = mob ? mob.x + mob.width / 2 : player.x + 32;
+        stabFacingRight = mobCX > (player.x + player.width / 2);
+        if (stabT < 0.3) {
+            // Pull back
+            stabLean = stabFacingRight ? -(stabT / 0.3) * 3 : (stabT / 0.3) * 3;
+        } else {
+            // Thrust forward
+            const thrustT = (stabT - 0.3) / 0.7;
+            const eased = thrustT < 0.4 ? thrustT / 0.4 : 1 - (thrustT - 0.4) / 0.6;
+            stabLean = stabFacingRight ? eased * 5 : -eased * 5;
+        }
+    }
+
     // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(cx, sy+player.height+2, 8, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(cx + stabLean, sy+player.height+2, 8, 3, 0, 0, Math.PI*2); ctx.fill();
 
     // Cape (silver+ skins)
     if (skin.cape) {
         ctx.fillStyle = skin.cape;
         const capeSwing = playerWalking ? Math.sin(playerWalkPhase * Math.PI * 0.5) * 2 : 0;
-        ctx.fillRect(sx + 3, bodyY + 10, 10, 9 + capeSwing);
+        ctx.fillRect(sx + 3 + stabLean, bodyY + 10, 10, 9 + capeSwing);
     }
 
     // Body
-    ctx.fillStyle = skin.body; ctx.fillRect(sx+2, bodyY+8, 12, 10);
-    ctx.fillStyle = skin.trim; ctx.fillRect(sx+2, bodyY+8, 12, 2);
+    ctx.fillStyle = skin.body; ctx.fillRect(sx+2+stabLean, bodyY+8, 12, 10);
+    ctx.fillStyle = skin.trim; ctx.fillRect(sx+2+stabLean, bodyY+8, 12, 2);
 
     // Pauldrons (bronze+ skins)
     if (skin.pauldron) {
         ctx.fillStyle = skin.pauldron;
-        ctx.fillRect(sx, bodyY + 7, 4, 4); ctx.fillRect(sx + 12, bodyY + 7, 4, 4);
+        ctx.fillRect(sx+stabLean, bodyY + 7, 4, 4); ctx.fillRect(sx + 12+stabLean, bodyY + 7, 4, 4);
     }
 
     // Head
-    ctx.fillStyle = '#f5c6a0'; ctx.beginPath(); ctx.arc(cx, bodyY+6, 5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#333'; ctx.fillRect(cx-3, bodyY+5, 2, 2); ctx.fillRect(cx+1, bodyY+5, 2, 2);
+    ctx.fillStyle = '#f5c6a0'; ctx.beginPath(); ctx.arc(cx+stabLean, bodyY+6, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#333'; ctx.fillRect(cx-3+stabLean, bodyY+5, 2, 2); ctx.fillRect(cx+1+stabLean, bodyY+5, 2, 2);
     // Crown
     ctx.fillStyle = isVoid ? '#4B0082' : skin.crown;
-    ctx.fillRect(sx+3, bodyY-1, 10, 4);
-    ctx.fillRect(sx+3, bodyY-4, 2, 3); ctx.fillRect(sx+7, bodyY-5, 2, 4); ctx.fillRect(sx+11, bodyY-4, 2, 3);
+    ctx.fillRect(sx+3+stabLean, bodyY-1, 10, 4);
+    ctx.fillRect(sx+3+stabLean, bodyY-4, 2, 3); ctx.fillRect(sx+7+stabLean, bodyY-5, 2, 4); ctx.fillRect(sx+11+stabLean, bodyY-4, 2, 3);
     ctx.fillStyle = isVoid ? '#C88FFF' : skin.gem;
-    ctx.fillRect(sx+7, bodyY-1, 2, 2);
+    ctx.fillRect(sx+7+stabLean, bodyY-1, 2, 2);
     // Arms
-    ctx.fillStyle = skin.arms; ctx.fillRect(sx, bodyY+9, 3, 6); ctx.fillRect(sx+13, bodyY+9, 3, 6);
+    ctx.fillStyle = skin.arms;
+    if (stabbing) {
+        // Stabbing arm extends, other arm stays
+        if (stabFacingRight) {
+            ctx.fillRect(sx+stabLean, bodyY+9, 3, 6);
+            ctx.fillRect(sx+13+stabLean, bodyY+8, 3, 7);
+        } else {
+            ctx.fillRect(sx+stabLean, bodyY+8, 3, 7);
+            ctx.fillRect(sx+13+stabLean, bodyY+9, 3, 6);
+        }
+    } else {
+        ctx.fillRect(sx, bodyY+9, 3, 6); ctx.fillRect(sx+13, bodyY+9, 3, 6);
+    }
     // Legs (animated when walking)
     ctx.fillStyle = skin.legs;
-    ctx.fillRect(sx+3, sy+17 + legSwing, 4, 3);
-    ctx.fillRect(sx+9, sy+17 - legSwing, 4, 3);
+    ctx.fillRect(sx+3+stabLean, sy+17 + legSwing, 4, 3);
+    ctx.fillRect(sx+9+stabLean, sy+17 - legSwing, 4, 3);
 
     // Sword (if picked up)
     if (swordPickedUp) {
         const swingElapsed = performance.now() - swordSwingTime;
         const swinging = swingElapsed < SWORD_SWING_DURATION;
         ctx.save();
-        ctx.translate(sx + 16, bodyY + 10);
-        if (swinging) {
-            // Swing arc: rotate from -60 to +60 degrees
-            const swingProgress = swingElapsed / SWORD_SWING_DURATION;
-            const angle = (-1 + swingProgress * 2) * Math.PI / 3;
-            ctx.rotate(angle);
+
+        if (stabbing) {
+            // Stab animation: stance → thrust
+            const stabElapsed = gameTime - daggerStab.startTime;
+            const stabT = Math.min(1, stabElapsed / DAGGER_STAB_DURATION);
+            const armX = stabFacingRight ? sx + 14 + stabLean : sx + 2 + stabLean;
+
+            ctx.translate(armX, bodyY + 10);
+            if (stabT < 0.3) {
+                // Stance: pull dagger back
+                const windT = stabT / 0.3;
+                const pullAngle = stabFacingRight ? (-0.3 - windT * 1.2) : (0.3 + windT * 1.2);
+                ctx.rotate(pullAngle);
+            } else {
+                // Thrust: stab forward
+                const thrustT = (stabT - 0.3) / 0.7;
+                const eased = thrustT < 0.4 ? thrustT / 0.4 : 1 - (thrustT - 0.4) / 0.6 * 0.3;
+                const thrustAngle = stabFacingRight ? (-1.5 + eased * 2.1) : (1.5 - eased * 2.1);
+                ctx.rotate(thrustAngle);
+            }
         } else {
-            ctx.rotate(-0.3); // idle angle
+            ctx.translate(sx + 16, bodyY + 10);
+            if (swinging) {
+                // Swing arc: rotate from -60 to +60 degrees
+                const swingProgress = swingElapsed / SWORD_SWING_DURATION;
+                const angle = (-1 + swingProgress * 2) * Math.PI / 3;
+                ctx.rotate(angle);
+            } else {
+                ctx.rotate(-0.3); // idle angle
+            }
         }
         if (currentSword === 'voidstar') {
             // Void Star weapon — star shape on a handle
