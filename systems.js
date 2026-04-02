@@ -1140,28 +1140,6 @@ function dropSnowflakes() {
     addNotification(`+${amt} Snowflake${amt > 1 ? 's' : ''}`, 1200, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
 }
 
-// ── AFK Island ───────────────────────────────────────────────
-let afkRoomUnlocked = false;
-let afkPortalOpen = false;
-let afkPortalCloseTime = 0;
-const AFK_PORTAL_DURATION = 3 * 60 * 1000; // 3 minutes
-let inAfkRoom = false;
-let afkReturnX = 0;
-let afkReturnY = 0;
-
-function openAfkPortal() {
-    afkPortalOpen = true;
-    afkPortalCloseTime = gameTime + AFK_PORTAL_DURATION;
-    addNotification('A portal to AFK Island has opened!', 4000, 'rgba(150,220,255,1)', 'rgba(10,30,60,0.9)');
-}
-
-function updateAfkPortal() {
-    if (afkPortalOpen && gameTime >= afkPortalCloseTime) {
-        afkPortalOpen = false;
-        addNotification('The portal to AFK Island has closed.', 3000, 'rgba(130,170,200,1)', 'rgba(10,20,40,0.8)');
-    }
-}
-
 // ── Snow Weather ─────────────────────────────────────────────
 const SNOW_CYCLE = 30 * 60 * 1000;    // 30 min full cycle
 const SNOW_DURATION = 15 * 60 * 1000; // snows for last 15 min of cycle
@@ -2049,8 +2027,6 @@ function advanceIceTravelerDialog() {
 function getIceTravelerShopItems() {
     const items = [];
     if (!iceSpearUnlocked) items.push({ name: 'Ice Spear (5 dmg)', cost: 20 });
-    if (!afkRoomUnlocked) items.push({ name: 'AFK Room', cost: 30 });
-    else if (!afkPortalOpen) items.push({ name: 'Open Portal (3 min)', cost: 5 });
     items.push({ name: 'Close', cost: 0 });
     return items;
 }
@@ -2074,19 +2050,6 @@ function buyIceTravelerItem() {
         currentSword = 'icespear';
         swordDamage = 5;
         addNotification('Ice Spear acquired! 5 damage per hit!', 5000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.9)');
-        iceTravelerDialog.active = false;
-        iceTravelerDialog.stage = null;
-        iceTravelerShopOpen = false;
-    } else if (item.name === 'AFK Room' && !afkRoomUnlocked) {
-        snowflakeCount -= item.cost;
-        afkRoomUnlocked = true;
-        openAfkPortal();
-        iceTravelerDialog.active = false;
-        iceTravelerDialog.stage = null;
-        iceTravelerShopOpen = false;
-    } else if (item.name.startsWith('Open Portal') && afkRoomUnlocked && !afkPortalOpen) {
-        snowflakeCount -= item.cost;
-        openAfkPortal();
         iceTravelerDialog.active = false;
         iceTravelerDialog.stage = null;
         iceTravelerShopOpen = false;
