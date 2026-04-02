@@ -82,6 +82,12 @@ function saveGame(slot) {
         jackFrostQuestComplete,
         jackFrostKills: { ...jackFrostKills },
         icePalaceUnlocked,
+        afkRoomUnlocked,
+        afkPortalOpen,
+        afkPortalCloseTime,
+        inAfkRoom,
+        afkReturnX,
+        afkReturnY,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -182,6 +188,12 @@ function loadGame(slot) {
     if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
     if (s.jackFrostKills) Object.assign(jackFrostKills, s.jackFrostKills);
     if (s.icePalaceUnlocked !== undefined) icePalaceUnlocked = s.icePalaceUnlocked;
+    if (s.afkRoomUnlocked !== undefined) afkRoomUnlocked = s.afkRoomUnlocked;
+    if (s.afkPortalOpen !== undefined) afkPortalOpen = s.afkPortalOpen;
+    if (s.afkPortalCloseTime !== undefined) afkPortalCloseTime = s.afkPortalCloseTime;
+    if (s.inAfkRoom !== undefined) inAfkRoom = s.inAfkRoom;
+    if (s.afkReturnX !== undefined) afkReturnX = s.afkReturnX;
+    if (s.afkReturnY !== undefined) afkReturnY = s.afkReturnY;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -256,6 +268,7 @@ function resetGameState() {
     jackFrostQuestActive = false; jackFrostQuestComplete = false; icePalaceUnlocked = false;
     jackFrostKills.spider = false; jackFrostKills.seaSnake = false; jackFrostKills.orcs = false; jackFrostKills.troll = false; jackFrostKills.dragon = false;
     jackFrostDialog.active = false;
+    afkRoomUnlocked = false; afkPortalOpen = false; afkPortalCloseTime = 0; inAfkRoom = false; afkReturnX = 0; afkReturnY = 0;
     extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;

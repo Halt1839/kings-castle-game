@@ -278,5 +278,15 @@ function buildMap() {
         for (let c = 4; c <= 25; c++) map[r][c] = ARENA_FLOOR;
     // Return teleport spot (marked with DOOR tile at arena entrance)
     map[210][14] = DOOR; map[210][15] = DOOR;
+
+    // ── AFK Island (rows 233-239, ice-themed room) ──
+    // Walls
+    for (let c = 12; c <= 18; c++) { map[233][c] = CAVE_WALL; map[239][c] = CAVE_WALL; }
+    for (let r = 233; r <= 239; r++) { map[r][12] = CAVE_WALL; map[r][18] = CAVE_WALL; }
+    // Ice floor (5x5 interior)
+    for (let r = 234; r <= 238; r++)
+        for (let c = 13; c <= 17; c++) map[r][c] = FLOOR;
+    // Return portal at top center
+    map[233][15] = DOOR;
 }
 buildMap();

@@ -359,6 +359,7 @@ function gameLoop(now) {
 
     updateSnowParticles(realDt);
     updateIceTrap();
+    updateAfkPortal();
 
     updateHunger();
     updateHealth();
@@ -681,6 +682,22 @@ function gameLoop(now) {
             inArena = false;
             addNotification('You returned from the arena.', 2000, 'rgba(150,200,255,1)', 'rgba(0,30,60,0.85)');
         }
+        // AFK Island portal (near Ice Traveler) — enter
+        if (!inAfkRoom && afkPortalOpen && pRow === 117 && pCol === 26) {
+            afkReturnX = player.x;
+            afkReturnY = player.y;
+            player.x = 15 * T;
+            player.y = 237 * T;
+            inAfkRoom = true;
+            addNotification('Welcome to AFK Island!', 3000, 'rgba(150,220,255,1)', 'rgba(10,30,60,0.85)');
+        }
+        // AFK Island portal — return (door at row 233, col 15)
+        if (inAfkRoom && pRow === 233 && pCol === 15) {
+            player.x = afkReturnX;
+            player.y = afkReturnY - T;
+            inAfkRoom = false;
+            addNotification('You left AFK Island.', 2000, 'rgba(130,180,220,1)', 'rgba(10,20,40,0.85)');
+        }
     } else {
         playerWalking = false; playerWalkPhase = 0;
     }
@@ -716,6 +733,8 @@ function gameLoop(now) {
     drawCampScout(camX, camY);
     drawCampBlacksmith(camX, camY);
     drawCampHealer(camX, camY);
+    drawAfkPortal(camX, camY);
+    drawAfkRoomPortal(camX, camY);
     drawJackFrost(camX, camY);
     drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
@@ -808,6 +827,8 @@ function gameLoop(now) {
         drawPrompt(`${kl('E')} to talk to the Blacksmith`);
     } else if (isNearCampHealer()) {
         drawPrompt(`${kl('E')} to talk to the Healer`);
+    } else if (afkPortalOpen && !inAfkRoom && Math.abs(player.x + player.width/2 - 26*T - T/2) < T*1.5 && Math.abs(player.y + player.height/2 - 117*T - T/2) < T*1.5) {
+        drawPrompt('Step into the portal to visit AFK Island');
     } else if (isNearJackFrost()) {
         drawPrompt(`${kl('E')} to talk to Jack Frost`);
     } else if (isNearIceTraveler()) {

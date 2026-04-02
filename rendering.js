@@ -23,7 +23,9 @@ const DESIGN_COLORS = {
                throne1: '#3a6a8a', throne2: '#88ccff', throne3: '#bbddff' },
 };
 
+let _forceIceDesign = false;
 function dc() {
+    if (_forceIceDesign) return DESIGN_COLORS.ice;
     const d = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
     return DESIGN_COLORS[d] || DESIGN_COLORS.default;
 }
@@ -33,8 +35,10 @@ function dc() {
 function drawTile(col, row, ox, oy) {
     const x = col * T - ox, y = row * T - oy;
     const tile = map[row][col];
-    // Apply design theme only inside castle (rows 1-28)
-    const inCastle = row >= 1 && row <= 28;
+    // Apply design theme inside castle (rows 1-28) or AFK room (rows 233-239)
+    const inAfkArea = row >= 233 && row <= 239 && col >= 12 && col <= 18;
+    const inCastle = (row >= 1 && row <= 28) || inAfkArea;
+    _forceIceDesign = inAfkArea;
     switch (tile) {
         case VOID: ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x, y, T, T); break;
         case FLOOR:
@@ -962,4 +966,55 @@ function drawIceTrap(ox, oy) {
     ctx.fillText(`${iceTrap.hits}/${iceTrap.hitsNeeded}`, cx, by - 10);
 
     ctx.restore();
+}
+
+// ── AFK Portal Rendering ─────────────────────────────────────
+function drawAfkPortal(ox, oy) {
+    if (!afkPortalOpen) return;
+    // Portal near Ice Traveler (col 26, row 117)
+    const px = 26 * T - ox + T / 2;
+    const py = 117 * T - oy + T / 2;
+    const t = performance.now() / 600;
+    const pulse = 0.6 + 0.3 * Math.sin(t);
+
+    // Outer glow
+    ctx.fillStyle = `rgba(100,180,255,${pulse * 0.2})`;
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI * 2); ctx.fill();
+    // Swirling ring
+    ctx.strokeStyle = `rgba(130,200,255,${pulse * 0.7})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, py, 14, t % (Math.PI * 2), t % (Math.PI * 2) + Math.PI * 1.5); ctx.stroke();
+    // Inner portal
+    ctx.fillStyle = `rgba(60,140,220,${pulse * 0.5})`;
+    ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI * 2); ctx.fill();
+    // Core
+    ctx.fillStyle = `rgba(200,230,255,${pulse * 0.6})`;
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    // Sparkles
+    for (let i = 0; i < 4; i++) {
+        const angle = t * 1.5 + i * Math.PI / 2;
+        const sx = px + Math.cos(angle) * 12;
+        const sy = py + Math.sin(angle) * 12;
+        ctx.fillStyle = `rgba(200,240,255,${0.3 + 0.4 * Math.sin(t * 2 + i)})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawAfkRoomPortal(ox, oy) {
+    if (!afkRoomUnlocked) return;
+    // Permanent portal in AFK room (col 15, row 233)
+    const px = 15 * T - ox + T / 2;
+    const py = 233 * T - oy + T / 2;
+    const t = performance.now() / 600;
+    const pulse = 0.6 + 0.3 * Math.sin(t);
+
+    ctx.fillStyle = `rgba(100,180,255,${pulse * 0.2})`;
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(130,200,255,${pulse * 0.7})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, py, 14, t % (Math.PI * 2), t % (Math.PI * 2) + Math.PI * 1.5); ctx.stroke();
+    ctx.fillStyle = `rgba(60,140,220,${pulse * 0.5})`;
+    ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(200,230,255,${pulse * 0.6})`;
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
 }
