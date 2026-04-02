@@ -1140,6 +1140,126 @@ function dropSnowflakes() {
     addNotification(`+${amt} Snowflake${amt > 1 ? 's' : ''}`, 1200, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
 }
 
+// ── ATM ─────────────────────────────────────────────────────
+let atmOpen = false;
+let atmScreen = 'menu'; // 'menu' or 'amount'
+let atmSelection = 0;
+let atmMode = ''; // 'goldToSnow' or 'snowToGold'
+let atmAmount = 1;
+
+function openATM() {
+    atmOpen = true;
+    atmScreen = 'menu';
+    atmSelection = 0;
+}
+
+function closeATM() {
+    atmOpen = false;
+    atmScreen = 'menu';
+    atmSelection = 0;
+    atmAmount = 1;
+}
+
+function getATMMax() {
+    if (atmMode === 'goldToSnow') return Math.floor(goldCount / 10);
+    return snowflakeCount;
+}
+
+function confirmATMTransfer() {
+    if (atmAmount <= 0) return;
+    if (atmMode === 'goldToSnow') {
+        const cost = atmAmount * 10;
+        if (goldCount < cost) { addNotification('Not enough gold!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)'); return; }
+        goldCount -= cost;
+        snowflakeCount += atmAmount;
+        addNotification(`Exchanged ${cost} gold → ${atmAmount} snowflake${atmAmount > 1 ? 's' : ''}`, 3000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.9)');
+    } else {
+        if (snowflakeCount < atmAmount) { addNotification('Not enough snowflakes!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)'); return; }
+        const gain = atmAmount * 10;
+        snowflakeCount -= atmAmount;
+        goldCount += gain;
+        addNotification(`Exchanged ${atmAmount} snowflake${atmAmount > 1 ? 's' : ''} → ${gain} gold`, 3000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
+    }
+    closeATM();
+}
+
+function drawATMMenu() {
+    ctx.save();
+    const bw = 340, bh = atmScreen === 'menu' ? 180 : 190;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(10,20,15,0.95)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#40cc80';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    // Title
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#40cc80';
+    ctx.fillText('ROYAL ATM', bx + bw / 2, by + 12);
+
+    // Balances
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#FFD700';
+    ctx.fillText(`Gold: ${goldCount}`, bx + bw / 4, by + 38);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillText(`Snowflakes: ${snowflakeCount}`, bx + 3 * bw / 4, by + 38);
+
+    if (atmScreen === 'menu') {
+        const items = ['Gold \u2192 Snowflakes (10:1)', 'Snowflakes \u2192 Gold (1:10)', 'Close'];
+        ctx.font = 'bold 14px monospace';
+        for (let i = 0; i < items.length; i++) {
+            const iy = by + 68 + i * 36;
+            if (i === atmSelection) {
+                ctx.fillStyle = 'rgba(64,204,128,0.25)';
+                ctx.fillRect(bx + 16, iy - 4, bw - 32, 28);
+                ctx.fillStyle = '#40cc80';
+                ctx.fillText('> ' + items[i] + ' <', bx + bw / 2, iy);
+            } else {
+                ctx.fillStyle = '#ccc';
+                ctx.fillText(items[i], bx + bw / 2, iy);
+            }
+        }
+        ctx.font = '11px monospace';
+        ctx.fillStyle = '#888';
+        ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw / 2, by + bh - 14);
+    } else {
+        // Amount screen
+        const max = getATMMax();
+        const label = atmMode === 'goldToSnow' ? 'Gold \u2192 Snowflakes' : 'Snowflakes \u2192 Gold';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = '#40cc80';
+        ctx.fillText(label, bx + bw / 2, by + 62);
+
+        ctx.font = 'bold 28px monospace';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(String(atmAmount), bx + bw / 2, by + 90);
+
+        ctx.font = '12px monospace';
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(`max: ${max}`, bx + bw / 2, by + 122);
+
+        // Cost/result preview
+        if (atmMode === 'goldToSnow') {
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText(`${atmAmount * 10} gold \u2192 ${atmAmount} snowflake${atmAmount > 1 ? 's' : ''}`, bx + bw / 2, by + 142);
+        } else {
+            ctx.fillStyle = '#88ccff';
+            ctx.fillText(`${atmAmount} snowflake${atmAmount > 1 ? 's' : ''} \u2192 ${atmAmount * 10} gold`, bx + bw / 2, by + 142);
+        }
+
+        ctx.font = '11px monospace';
+        ctx.fillStyle = '#888';
+        ctx.fillText(`${kl('nav')} +1/-1, A/D +10/-10, ${kl('E')} OK, Esc back`, bx + bw / 2, by + bh - 14);
+    }
+
+    ctx.restore();
+}
+
 // ── Snow Weather ─────────────────────────────────────────────
 const SNOW_CYCLE = 30 * 60 * 1000;    // 30 min full cycle
 const SNOW_DURATION = 15 * 60 * 1000; // snows for last 15 min of cycle

@@ -94,6 +94,8 @@ function buildMap() {
     }
     // Overwrite hallway bottom wall doors
     map[16][13] = FLOOR; map[16][14] = FLOOR; map[16][15] = FLOOR; map[16][16] = FLOOR;
+    // ATM in exit corridor
+    map[18][13] = ATM_TILE;
     // Castle gate at row 28
     map[28][12] = WALL; map[28][13] = DOOR; map[28][14] = DOOR;
     map[28][15] = DOOR; map[28][16] = DOOR; map[28][17] = WALL;

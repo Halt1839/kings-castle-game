@@ -113,7 +113,18 @@ const player = { x: 14.5 * T, y: 6 * T, width: 16, height: 16, speed: 120 };
 
 let swordPickedUp = false;
 
-const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK, DESIGN_RACK]);
+const SOLID = new Set([WALL, THRONE, BED_HEAD, BED_FOOT, PILLOW, TABLE, STOVE, BARREL, SHELF, WINDOW_TILE, NIGHTSTAND, TOILET, BATHTUB, SINK, WATER, GRASS, TREE, HUT_WALL, TENT, MOUNTAIN, CAVE_WALL, WEAPON_RACK, DESIGN_RACK, ATM_TILE]);
+
+function isNearATM() {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const col = Math.floor(pcx / T), row = Math.floor(pcy / T);
+    for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+            const r = row + dr, c = col + dc;
+            if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS && map[r][c] === ATM_TILE) return true;
+        }
+    return false;
+}
 
 // Secret passage tiles (cols 17-28, rows 42-43) — walkable grass leading to arena entrance
 function isSecretPassageTile(row, col) {

@@ -368,6 +368,22 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#6a3abf'; ctx.fillRect(x + 18, y + 6, 6, 8);
             ctx.fillStyle = '#c8b078'; ctx.fillRect(x + 13, y + 18, 6, 6);
             break;
+        case ATM_TILE:
+            ctx.fillStyle = dc().floor1; ctx.fillRect(x, y, T, T);
+            ctx.strokeStyle = dc().floorStroke; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
+            // ATM body
+            ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 4, y + 2, T - 8, T - 4);
+            ctx.fillStyle = '#4a4a5a'; ctx.fillRect(x + 6, y + 4, T - 12, T - 8);
+            // Screen
+            ctx.fillStyle = '#40cc80'; ctx.fillRect(x + 8, y + 5, T - 16, 10);
+            // Dollar sign
+            ctx.fillStyle = '#1a6a3a'; ctx.font = '8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('$', x + T / 2, y + 10);
+            // Keypad dots
+            ctx.fillStyle = '#888'; for (let kr = 0; kr < 2; kr++) for (let kc = 0; kc < 3; kc++) ctx.fillRect(x + 10 + kc * 4, y + 18 + kr * 4, 2, 2);
+            // Slot
+            ctx.fillStyle = '#222'; ctx.fillRect(x + T / 2 - 4, y + T - 5, 8, 2);
+            break;
         case ARENA_FLOOR:
             ctx.fillStyle = '#4a4a5a'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 8, y + 8, 4, 4); ctx.fillRect(x + 20, y + 20, 4, 4);

@@ -144,6 +144,26 @@ window.addEventListener('keydown', (e) => {
         jackFrostDialog.active = false; jackFrostDialog.stage = null;
     }
 
+    // ATM navigation
+    if (atmOpen) {
+        if (e.key === 'Escape') { if (atmScreen === 'amount') { atmScreen = 'menu'; atmSelection = 0; atmAmount = 1; } else closeATM(); }
+        else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            if (atmScreen === 'menu') atmSelection = (atmSelection - 1 + 3) % 3;
+            else { const max = getATMMax(); atmAmount = Math.min(atmAmount + 1, max); }
+        }
+        else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            if (atmScreen === 'menu') atmSelection = (atmSelection + 1) % 3;
+            else atmAmount = Math.max(atmAmount - 1, 1);
+        }
+        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            if (atmScreen === 'amount') { const max = getATMMax(); atmAmount = Math.min(atmAmount + 10, max); }
+        }
+        else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            if (atmScreen === 'amount') atmAmount = Math.max(atmAmount - 10, 1);
+        }
+        return;
+    }
+
     // Ice Traveler shop navigation
     if (iceTravelerShopOpen) {
         const items = getIceTravelerShopItems();
@@ -567,6 +587,22 @@ function gameLoop(now) {
             } else {
                 advanceIceTravelerDialog();
             }
+        } else if (atmOpen) {
+            if (atmScreen === 'menu') {
+                if (atmSelection === 0) {
+                    atmMode = 'goldToSnow';
+                    if (Math.floor(goldCount / 10) < 1) { addNotification('Not enough gold! Need at least 10.', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)'); }
+                    else { atmScreen = 'amount'; atmAmount = 1; }
+                }
+                else if (atmSelection === 1) {
+                    atmMode = 'snowToGold';
+                    if (snowflakeCount < 1) { addNotification('No snowflakes to exchange!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)'); }
+                    else { atmScreen = 'amount'; atmAmount = 1; }
+                }
+                else closeATM();
+            } else {
+                confirmATMTransfer();
+            }
         } else if (activeAction) {
             // Track quest tasks on exit
             if (activeAction.name === 'toilet') {
@@ -603,6 +639,8 @@ function gameLoop(now) {
             } else if (isNearDesignRoomBuildSite()) {
                 if (goldCount >= 100) buildDesignRoom();
                 else addNotification(`Need 100 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+            } else if (isNearATM()) {
+                openATM();
             } else if (isNearWeaponRack()) {
                 switchSword();
             } else if (isNearWeaponryBuildSite()) {
@@ -647,7 +685,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active && !atmOpen) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -769,8 +807,11 @@ function gameLoop(now) {
     else if (campHealerDialog.active) drawCampHealerDialog();
     else if (jackFrostDialog.active) drawJackFrostDialog();
     else if (iceTravelerDialog.active) drawIceTravelerDialog();
+    else if (atmOpen) drawATMMenu();
     else if (activeAction) drawActionMessage();
-    else if (isNearDesignRack()) {
+    else if (isNearATM()) {
+        drawPrompt(`${kl('E')} to use ATM`);
+    } else if (isNearDesignRack()) {
         const designs = ['default'];
         if (goldDesignUnlocked) designs.push('gold');
         if (voidDesignUnlocked) designs.push('void');
