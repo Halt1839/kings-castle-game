@@ -74,7 +74,7 @@ function isNearIceTraveler() {
 }
 
 // ── Jack Frost (ice quest NPC) ──────────────────────────────
-const jackFrost = { x: 8 * T, y: 35 * T, width: 16, height: 20 };
+const jackFrost = { x: 14 * T, y: 4 * T, width: 16, height: 20 };
 function isNearJackFrost() {
     if (!isSnowing()) return false;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;

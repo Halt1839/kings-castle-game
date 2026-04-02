@@ -1118,8 +1118,8 @@ function handleStabKill(mob) {
 
 // ── Snowflake Currency & Ice Traveler ────────────────────────
 let snowflakeCount = 0;
-const ICE_TRAVELER_CYCLE = 40 * 60 * 1000; // 40 min full cycle
-const ICE_TRAVELER_AWAY = 30 * 60 * 1000;  // first 30 min = away
+const ICE_TRAVELER_CYCLE = 20 * 60 * 1000; // 20 min full cycle
+const ICE_TRAVELER_AWAY = 10 * 60 * 1000;  // first 10 min = away, last 10 min = present
 function isIceTravelerPresent() {
     return (gameTime % ICE_TRAVELER_CYCLE) >= ICE_TRAVELER_AWAY;
 }
@@ -3009,7 +3009,13 @@ function voidRushHitEnemies(dmg) {
             if (enemy.hp <= 0) enemy.hp = 0;
         }
     }
-    if (inArena && voidSentinel.alive) tryHit(voidSentinel, 1.8, 'sentinel');
+    if (inArena && voidSentinel.alive) {
+        tryHit(voidSentinel, 1.8, 'sentinel');
+        if (!voidSentinel.aggro && voidRush.hitSet.has('sentinel')) {
+            voidSentinel.aggro = true;
+            addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+        }
+    }
     if (spider.alive && spider.active) tryHit(spider, 1.5, 'spider');
     if (typeof seaSnake !== 'undefined' && seaSnake.alive && seaSnake.active) tryHit(seaSnake, 1.5, 'seasnake');
     if (troll.alive) tryHit(troll, 1.5, 'troll');

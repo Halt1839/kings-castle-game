@@ -444,8 +444,10 @@ function gameLoop(now) {
     const snowNow = isSnowing();
     if (snowNow && !snowWasActive) {
         addNotification('Snow is falling across the land!', 4000, 'rgba(220,235,255,1)', 'rgba(20,30,50,0.9)');
+        addNotification('Jack Frost has arrived at the throne room!', 5000, 'rgba(150,220,255,1)', 'rgba(10,30,60,0.9)');
     } else if (!snowNow && snowWasActive) {
         addNotification('The snow has stopped.', 3000, 'rgba(180,200,220,1)', 'rgba(20,30,40,0.8)');
+        addNotification('Jack Frost has left the castle.', 3000, 'rgba(130,170,200,1)', 'rgba(10,20,40,0.8)');
     }
     snowWasActive = snowNow;
 
