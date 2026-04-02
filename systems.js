@@ -10,7 +10,7 @@ const dialog = {
 };
 
 const meals = ['Steak', 'Fish', 'Pasta'];
-const desserts = ['Pumpkin Pie'];
+const desserts = ['Pumpkin Pie', 'Ice Cream', 'Cake', 'Banana Split', 'Chocolate', 'Lollipop'];
 
 function openCookDialog() {
     if ((cookingState.active && !cookingState.done) || (cookingState.done && !cookingState.doneAcknowledged)) return;
@@ -43,7 +43,8 @@ function advanceDialog() {
 
 function drawDialog() {
     if (!dialog.active) return;
-    const bw = 320, bh = 180;
+    const listLen = dialog.stage === 'meal' ? meals.length : dialog.stage === 'dessert' ? desserts.length : 0;
+    const bw = 320, bh = Math.max(180, 100 + listLen * 26);
     const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
     ctx.fillStyle = 'rgba(20,10,5,0.92)'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh); ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
