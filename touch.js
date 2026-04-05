@@ -119,7 +119,7 @@ function handleTouchStart(e) {
         // Action buttons (one-shot)
         if (touchHitTest(tx, ty, actions.btnE)) {
             ePressed = true;
-            if (shopOpen || adminOpen) {
+            if (shopOpen) {
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
                 setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e', bubbles: true })), 50);
             }

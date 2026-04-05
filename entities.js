@@ -148,7 +148,6 @@ function isNPCBlocked(px, py, pw, ph) {
 }
 
 function isSolid(px, py, pw, ph) {
-    if (adminGhostMode) return false;
     const corners = [[px,py],[px+pw-1,py],[px,py+ph-1],[px+pw-1,py+ph-1]];
     for (const [cx, cy] of corners) {
         const col = Math.floor(cx / T), row = Math.floor(cy / T);

@@ -449,6 +449,11 @@ const SKIN_COLORS = {
     blizzard: { body: '#e8e8f0', trim: '#ffffff', crown: '#f0f0ff', gem: '#88ccff', legs: '#c0c0d0', arms: '#d0d0e0', cape: 'rgba(200,220,255,0.5)' },
     glacier:  { body: '#1a3a5a', trim: '#3388cc', crown: '#2277bb', gem: '#44aaff', legs: '#0a2a4a', arms: '#2a5a8a', glow: 'rgba(50,130,220,0.25)', cape: 'rgba(30,80,150,0.5)' },
     aurora:   { body: '#2a3a4a', trim: '#44ddaa', crown: '#33ccbb', gem: '#88ffdd', legs: '#1a2a3a', arms: '#4a6a7a', glow: 'rgba(100,255,200,0.2)' },
+    // Firemace mastery skins
+    ember:    { body: '#6a3010', trim: '#cc6620', crown: '#ff8830', gem: '#ff4400', legs: '#4a2008', arms: '#aa6030', glow: 'rgba(255,120,30,0.15)' },
+    inferno:  { body: '#5a1500', trim: '#dd4400', crown: '#ff5500', gem: '#ffaa00', legs: '#3a0a00', arms: '#aa3300', glow: 'rgba(255,80,0,0.25)', cape: 'rgba(200,60,0,0.4)' },
+    magma:    { body: '#3a1000', trim: '#cc2200', crown: '#ff3300', gem: '#ff6600', legs: '#2a0800', arms: '#882200', glow: 'rgba(255,50,0,0.3)', cape: 'rgba(180,30,0,0.5)' },
+    hellfire: { body: '#2a0500', trim: '#ff4400', crown: '#ffaa00', gem: '#ffffff', legs: '#1a0300', arms: '#aa2200', glow: 'rgba(255,150,0,0.4)', aura: true },
 };
 
 const DAGGER_BLADE_COLORS = {
@@ -465,6 +470,14 @@ const SPEAR_BLADE_COLORS = {
     blizzard: { shaft: '#c0c0d0', tip: '#ffffff', glow: 'rgba(220,240,255,0.3)' },
     glacier:  { shaft: '#2a5a8a', tip: '#44aaff', glow: 'rgba(50,130,220,0.4)' },
     aurora:   { shaft: '#3a5a5a', tip: '#88ffdd', glow: 'rgba(100,255,200,0.35)' },
+};
+
+const MACE_COLORS = {
+    default:  { shaft: '#654321', head: '#888', spike: '#aaa', glow: null },
+    ember:    { shaft: '#5a3010', head: '#cc5500', spike: '#ff8830', glow: 'rgba(255,120,30,0.25)' },
+    inferno:  { shaft: '#4a2000', head: '#dd3300', spike: '#ff5500', glow: 'rgba(255,80,0,0.35)' },
+    magma:    { shaft: '#3a1500', head: '#aa2200', spike: '#ff4400', glow: 'rgba(255,50,0,0.4)' },
+    hellfire: { shaft: '#2a0a00', head: '#ff2200', spike: '#ffaa00', glow: 'rgba(255,150,0,0.5)' },
 };
 
 // ── Dagger Mastery Particles ────────────────────────────────
@@ -693,6 +706,29 @@ function drawKing(ox, oy) {
                 ctx.fillStyle = ss.glow.replace(/[\d.]+\)$/, gp + ')');
                 ctx.beginPath(); ctx.arc(0, -18, 4, 0, Math.PI * 2); ctx.fill();
             }
+        } else if (currentSword === 'firemace') {
+            const mc = MACE_COLORS[maceMasterySkin] || MACE_COLORS.default;
+            // Shaft
+            ctx.fillStyle = mc.shaft; ctx.fillRect(-1, -4, 3, 8);
+            // Mace head (circle with spikes)
+            ctx.fillStyle = mc.head;
+            ctx.beginPath(); ctx.arc(0.5, -8, 5, 0, Math.PI * 2); ctx.fill();
+            // Spikes
+            ctx.fillStyle = mc.spike;
+            for (let s = 0; s < 6; s++) {
+                const a = s * Math.PI / 3 + performance.now() / 2000;
+                ctx.beginPath();
+                ctx.moveTo(0.5 + Math.cos(a) * 4, -8 + Math.sin(a) * 4);
+                ctx.lineTo(0.5 + Math.cos(a) * 7, -8 + Math.sin(a) * 7);
+                ctx.lineTo(0.5 + Math.cos(a + 0.3) * 4, -8 + Math.sin(a + 0.3) * 4);
+                ctx.fill();
+            }
+            // Fire glow
+            if (mc.glow) {
+                const gp = 0.5 + 0.3 * Math.sin(performance.now() / 200);
+                ctx.fillStyle = mc.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0.5, -8, 8, 0, Math.PI * 2); ctx.fill();
+            }
         } else {
             // Sword blade
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
@@ -806,6 +842,25 @@ function drawKingInBoat(ox, oy) {
             ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
             ctx.fillStyle = '#DAA520'; ctx.fillRect(-2, -1, 5, 2);
             ctx.fillStyle = '#C0C0C0'; ctx.fillRect(-1, -8, 3, 7);
+        } else if (currentSword === 'firemace') {
+            const mc = MACE_COLORS[maceMasterySkin] || MACE_COLORS.default;
+            ctx.fillStyle = mc.shaft; ctx.fillRect(-1, -4, 3, 8);
+            ctx.fillStyle = mc.head;
+            ctx.beginPath(); ctx.arc(0.5, -8, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = mc.spike;
+            for (let s = 0; s < 6; s++) {
+                const a = s * Math.PI / 3 + performance.now() / 2000;
+                ctx.beginPath();
+                ctx.moveTo(0.5 + Math.cos(a) * 4, -8 + Math.sin(a) * 4);
+                ctx.lineTo(0.5 + Math.cos(a) * 7, -8 + Math.sin(a) * 7);
+                ctx.lineTo(0.5 + Math.cos(a + 0.3) * 4, -8 + Math.sin(a + 0.3) * 4);
+                ctx.fill();
+            }
+            if (mc.glow) {
+                const gp = 0.5 + 0.3 * Math.sin(performance.now() / 200);
+                ctx.fillStyle = mc.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0.5, -8, 8, 0, Math.PI * 2); ctx.fill();
+            }
         } else {
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
             ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
@@ -851,11 +906,16 @@ function drawSleepOverlay() {
 
 // ── Snow Weather Rendering ───────────────────────────────────
 function drawSnowOverlay(camX, camY, startCol, endCol, startRow, endRow) {
-    if (!isSnowing()) return;
+    const snowing = isSnowing();
+    const iceLawn = currentDesign === 'ice';
+    if (!snowing && !iceLawn) return;
     ctx.save();
     const snowStartRow = Math.max(startRow, SNOW_CASTLE_ROW + 1);
     if (snowStartRow <= endRow) {
         for (let row = snowStartRow; row <= endRow; row++) {
+            // Ice Palace lawn frost: only rows 29-43 when not snowing
+            const isLawnRow = row >= 29 && row <= 43;
+            if (!snowing && !isLawnRow) continue;
             for (let col = startCol; col <= endCol; col++) {
                 const tile = map[row][col];
                 const tx = col * T - camX;
@@ -899,6 +959,124 @@ function drawSnowParticles() {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ── Volcano / Fire Overlay ──────────────────────────────────
+function drawFireOverlay(camX, camY, startCol, endCol, startRow, endRow) {
+    if (!isErupting()) return;
+    ctx.save();
+    // Fiery tint on all outdoor tiles (skip castle interior rows 1-28)
+    const fireStartRow = Math.max(startRow, 29);
+    if (fireStartRow <= endRow) {
+        for (let row = fireStartRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                const tile = map[row][col];
+                if (tile === VOID) continue;
+                const tx = col * T - camX;
+                const ty = row * T - camY;
+                // Stronger fiery tint in eruption zones (camp, mountain, peak)
+                const inEruptionZone = row >= 111 && row <= 195;
+                ctx.fillStyle = inEruptionZone ? 'rgba(200,50,0,0.2)' : 'rgba(180,40,0,0.12)';
+                ctx.fillRect(tx, ty, T, T);
+                // Mountain tiles get extra volcanic glow
+                if (tile === MOUNTAIN && row >= 134 && row <= 195) {
+                    ctx.fillStyle = 'rgba(255,80,0,0.18)';
+                    ctx.fillRect(tx, ty, T, T);
+                }
+                // Extra heat shimmer on walkable eruption tiles
+                if (inEruptionZone && (tile === PATH || tile === CAMPFIRE || tile === MOUNTAIN_PATH || tile === CAVE_FLOOR || tile === PEAK_FLOOR || tile === ARENA_FLOOR)) {
+                    const shimmer = 0.05 + 0.05 * Math.sin(performance.now() / 400 + col * 0.5 + row * 0.3);
+                    ctx.fillStyle = `rgba(255,120,0,${shimmer})`;
+                    ctx.fillRect(tx, ty, T, T);
+                }
+            }
+        }
+    }
+    // Subtle red tint on castle area too (fiery sky glow)
+    const castleEnd = Math.min(endRow, 28);
+    if (startRow <= castleEnd) {
+        for (let row = startRow; row <= castleEnd; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                const tx = col * T - camX;
+                const ty = row * T - camY;
+                ctx.fillStyle = 'rgba(150,30,0,0.05)';
+                ctx.fillRect(tx, ty, T, T);
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawFireballs(camX, camY) {
+    if (activeFireballs.length === 0) return;
+    ctx.save();
+    const now = gameTime;
+    for (let i = 0; i < activeFireballs.length; i++) {
+        const fb = activeFireballs[i];
+        const elapsed = now - fb.spawnTime;
+        const tx = fb.col * T - camX;
+        const ty = fb.row * T - camY;
+        const t = performance.now();
+
+        if (!fb.landed) {
+            // Falling fireball — 2x2 block dropping from above
+            const progress = Math.min(elapsed / FIREBALL_FALL_TIME, 1);
+            const dropY = ty - (1 - progress) * 200; // falls from 200px above
+            const size = T * 2;
+            const pulse = 0.7 + 0.3 * Math.sin(t / 100);
+
+            // Shadow on ground
+            ctx.fillStyle = `rgba(0,0,0,${0.2 * progress})`;
+            ctx.beginPath();
+            ctx.ellipse(tx + T, ty + T, T * progress, T * 0.4 * progress, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Fireball
+            const grd = ctx.createRadialGradient(tx + T, dropY + T, 2, tx + T, dropY + T, T);
+            grd.addColorStop(0, `rgba(255,255,100,${pulse})`);
+            grd.addColorStop(0.4, `rgba(255,140,0,${pulse * 0.9})`);
+            grd.addColorStop(1, `rgba(200,30,0,${pulse * 0.5})`);
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.arc(tx + T, dropY + T, T * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Trail
+            ctx.fillStyle = `rgba(255,100,0,${0.3 * (1 - progress)})`;
+            ctx.beginPath();
+            ctx.moveTo(tx + T - 6, dropY + T);
+            ctx.lineTo(tx + T, dropY - 20);
+            ctx.lineTo(tx + T + 6, dropY + T);
+            ctx.fill();
+        } else {
+            // Landed — fire patch (2x2)
+            const lingerElapsed = now - fb.landTime;
+            const fade = 1 - lingerElapsed / FIREBALL_LINGER;
+            if (fade <= 0) continue;
+            const flicker = 0.6 + 0.4 * Math.sin(t / 120 + fb.col);
+
+            // Ground scorch
+            ctx.fillStyle = `rgba(60,20,0,${fade * 0.5})`;
+            ctx.fillRect(tx, ty, T * 2, T * 2);
+
+            // Fire
+            ctx.fillStyle = `rgba(255,100,0,${fade * flicker * 0.6})`;
+            ctx.fillRect(tx + 2, ty + 2, T * 2 - 4, T * 2 - 4);
+            ctx.fillStyle = `rgba(255,200,50,${fade * flicker * 0.4})`;
+            ctx.fillRect(tx + 6, ty + 6, T * 2 - 12, T * 2 - 12);
+
+            // Flame tongues
+            for (let f = 0; f < 3; f++) {
+                const fx = tx + 8 + f * 12 + Math.sin(t / 150 + f) * 4;
+                const fy = ty + 4 + Math.sin(t / 200 + f * 2) * 6;
+                ctx.fillStyle = `rgba(255,180,0,${fade * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(fx, fy, 4 + Math.sin(t / 100 + f) * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     }
     ctx.restore();
 }

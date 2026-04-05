@@ -71,6 +71,11 @@ window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mspItems.length) % mspItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mspItems.length;
             if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
+        } else if (pauseScreen === 'mastery_mace') {
+            const mmItems = getMaceMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mmItems.length) % mmItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mmItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
         } else {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') pauseSelection = (pauseSelection + 1) % PAUSE_ITEMS.length;
@@ -82,21 +87,6 @@ window.addEventListener('keydown', (e) => {
     if (gameState === 'dead') {
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') deathSelection = (deathSelection + 1) % 2;
         if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') deathSelection = (deathSelection + 1) % 2;
-        return;
-    }
-
-    // Admin panel navigation
-    if (adminOpen) {
-        const items = getAdminItems();
-        if (e.key === 'Escape') { adminOpen = false; }
-        else {
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') adminSelection = (adminSelection - 1 + items.length) % items.length;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') adminSelection = (adminSelection + 1) % items.length;
-            if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
-                items[adminSelection].action();
-                ePressed = false;
-            }
-        }
         return;
     }
 
@@ -199,13 +189,7 @@ window.addEventListener('keyup', (e) => keys.delete(e.key));
 canvas.addEventListener('click', (e) => {
     const mx = e.clientX, my = e.clientY;
     if (gameState === 'playing') {
-        if (adminOpen || shopOpen) return; // ignore clicks behind overlays
-        // Admin button
-        if (mx >= adminBtn.x && mx <= adminBtn.x + adminBtn.w &&
-            my >= adminBtn.y && my <= adminBtn.y + adminBtn.h) {
-            tryAdminLogin();
-            return;
-        }
+        if (shopOpen) return; // ignore clicks behind overlays
         if (mx >= pauseBtn.x && mx <= pauseBtn.x + pauseBtn.w &&
             my >= pauseBtn.y && my <= pauseBtn.y + pauseBtn.h) {
             gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main';
@@ -323,6 +307,14 @@ function gameLoop(now) {
                 } else {
                     daggerMasterySkin = mdSelected.key;
                 }
+            } else if (pauseScreen === 'mastery_mace') {
+                const mmItems = getMaceMasteryItems();
+                const mmSelected = mmItems[masterySelection];
+                if (mmSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    maceMasterySkin = mmSelected.key;
+                }
             } else if (pauseScreen === 'settings') {
                 const setItems = getSettingsItems();
                 const setSelected = setItems[settingsSelection];
@@ -377,9 +369,11 @@ function gameLoop(now) {
     const dt = realDt / 1000;
     gameTime += realDt;
 
+    updateSnowSpawn();
+    updateIceTravelerSpawn();
+    updateVolcano();
     updateSnowParticles(realDt);
     updateIceTrap();
-
 
     updateHunger();
     updateHealth();
@@ -472,8 +466,17 @@ function gameLoop(now) {
     }
     snowWasActive = snowNow;
 
+    // Volcano eruption notification
+    if (typeof volcanoWasActive === 'undefined') volcanoWasActive = false;
+    const volcanoNow = isErupting();
+    if (volcanoNow && !volcanoWasActive) {
+        addNotification('The mountain is erupting! Watch for fireballs!', 5000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)');
+    } else if (!volcanoNow && volcanoWasActive) {
+        addNotification('The eruption has subsided.', 3000, 'rgba(200,150,100,1)', 'rgba(50,20,0,0.8)');
+    }
+    volcanoWasActive = volcanoNow;
+
     // Check for death
-    if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
         deathCount++;
         deathSelection = 0;
@@ -685,7 +688,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active && !atmOpen) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active && !atmOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -741,6 +744,7 @@ function gameLoop(now) {
             drawTile(col, row, camX, camY);
 
     drawSnowOverlay(camX, camY, startCol, endCol, startRow, endRow);
+    drawFireOverlay(camX, camY, startCol, endCol, startRow, endRow);
 
     drawGuard(guard1, camX, camY);
     drawGuard(guard2, camX, camY);
@@ -792,6 +796,7 @@ function gameLoop(now) {
 
     drawVoidRush(camX, camY);
     drawShieldEffect(camX, camY);
+    drawFireballs(camX, camY);
     drawIceTrap(camX, camY);
     drawSleepOverlay();
     drawSnowParticles();
@@ -889,14 +894,11 @@ function gameLoop(now) {
     drawHUD();
     drawVoidSentinelBossBar();
     drawQuestTasks();
-    drawTeleportButton();
     drawPauseButton();
-    drawAdminButton();
     drawShopButton();
     drawNotifications();
 
-    if (adminOpen) drawAdminPanel();
-    else if (shopOpen) drawShopMenu();
+    if (shopOpen) drawShopMenu();
 
     drawTouchControls();
 

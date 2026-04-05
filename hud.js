@@ -344,27 +344,6 @@ function drawShopMenu() {
     ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to buy`, bx + bw/2, by + bh - 20);
 }
 
-// ── Teleport Button (admin only) ────────────────────────────
-
-const teleportBtn = { x: 100, y: 12, w: 80, h: 32 };
-
-function drawTeleportButton() {
-    if (!adminUnlocked) return;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(teleportBtn.x, teleportBtn.y, teleportBtn.w, teleportBtn.h);
-    ctx.strokeStyle = '#44AAFF'; ctx.lineWidth = 1; ctx.strokeRect(teleportBtn.x, teleportBtn.y, teleportBtn.w, teleportBtn.h);
-    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#44AAFF'; ctx.fillText('Teleport', teleportBtn.x + teleportBtn.w/2, teleportBtn.y + teleportBtn.h/2);
-}
-
-function teleportToCastleGates() {
-    if (!adminUnlocked) return;
-    if (activeAction || dialog.active || butlerDialog.active || messengerDialog.active || wizardDialog.active || campLeaderDialog.active || shopOpen || adminOpen) return;
-    if (inBoat) inBoat = false;
-    player.x = 14.5 * T;
-    player.y = 29 * T;
-    addNotification('Teleported to the castle gates!', 2000, 'rgba(68,170,255,1)', 'rgba(0,20,60,0.8)');
-}
-
 // ── Noli Boss Bar ───────────────────────────────────────────
 
 function drawVoidSentinelBossBar() {
@@ -427,6 +406,7 @@ function drawPauseMenu() {
     if (pauseScreen === 'mastery_sword') { drawSwordMasteryScreen(); return; }
     if (pauseScreen === 'mastery_dagger') { drawDaggerMasteryScreen(); return; }
     if (pauseScreen === 'mastery_spear') { drawSpearMasteryScreen(); return; }
+    if (pauseScreen === 'mastery_mace') { drawMaceMasteryScreen(); return; }
     if (pauseScreen === 'settings') { drawSettingsScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     const bw = 280, bh = 280;
@@ -485,6 +465,7 @@ function getMasteryPickerItems() {
     const items = [{ label: 'Sword Mastery (Lv ' + swordMastery.level + ')', key: 'sword' }];
     if (daggerUnlocked) items.push({ label: 'Dagger Mastery (Lv ' + daggerMastery.level + ')', key: 'dagger' });
     if (iceSpearUnlocked) items.push({ label: 'Spear Mastery (Lv ' + spearMastery.level + ')', key: 'spear' });
+    if (firemaceUnlocked) items.push({ label: 'Mace Mastery (Lv ' + maceMastery.level + ')', key: 'mace' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }
@@ -624,6 +605,21 @@ function drawSpearMasteryScreen() {
         items, spearMasterySkin, '#88ccff', '#4488cc');
 }
 
+function getMaceMasteryItems() {
+    const skins = getMaceMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawMaceMasteryScreen() {
+    const items = getMaceMasteryItems();
+    drawWeaponMasteryDetail('MACE MASTERY', maceMastery,
+        [25, 50, 75, 100], ['Ember', 'Inferno', 'Magma', 'Hellfire'],
+        ['#cc6620', '#dd3300', '#aa2200', '#ff4400'],
+        items, maceMasterySkin, '#ff8830', '#cc5500');
+}
+
 function getQuestItems() {
     const items = [{ label: 'Main Quest', key: 'main' }];
     if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
@@ -660,212 +656,5 @@ function drawQuestSelectMenu() {
     ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select`, bx + bw/2, by + bh - 24);
 }
 
-// ── Admin Panel ─────────────────────────────────────────────
 
-const adminBtn = { x: 0, y: 0, w: 32, h: 32 };
-const adminCloseBtn = { x: 0, y: 0, w: 36, h: 36 };
-
-function drawAdminButton() {
-    adminBtn.x = canvas.width - 140;
-    adminBtn.y = 12;
-    // Small gear icon button
-    ctx.fillStyle = adminUnlocked ? 'rgba(100,0,0,0.6)' : 'rgba(0,0,0,0.3)';
-    ctx.fillRect(adminBtn.x, adminBtn.y, adminBtn.w, adminBtn.h);
-    ctx.strokeStyle = adminUnlocked ? '#FF4444' : 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1; ctx.strokeRect(adminBtn.x, adminBtn.y, adminBtn.w, adminBtn.h);
-    ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = adminUnlocked ? '#FF4444' : 'rgba(255,255,255,0.2)';
-    ctx.fillText('*', adminBtn.x + adminBtn.w/2, adminBtn.y + adminBtn.h/2);
-}
-
-function getAdminItems() {
-    return [
-        { name: adminGodMode ? 'God Mode: ON' : 'God Mode: OFF', action: () => {
-            adminGodMode = !adminGodMode;
-            if (adminGodMode) { health.max = 1e12; health.value = 1e12; }
-            else { health.max = 10; health.value = 10; }
-            addNotification(adminGodMode ? 'God mode: 1 trillion HP!' : 'God mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: 'Set Damage', action: () => {
-            const val = prompt('Enter damage per hit:');
-            if (val === null) return;
-            const n = Number(val);
-            if (isNaN(n) || n < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            swordDamage = n;
-            addNotification('Damage set to ' + n, 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: adminSwordEquipped ? 'Admin Sword: ON' : 'Admin Sword: OFF', action: () => {
-            adminSwordEquipped = !adminSwordEquipped;
-            if (adminSwordEquipped) { swordPickedUp = true; currentSword = 'admin'; swordDamage = 10; }
-            else { currentSword = 'legendary'; swordDamage = 2; }
-            addNotification(adminSwordEquipped ? 'Admin Sword equipped! (10 dmg)' : 'Admin Sword unequipped', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: 'Set Speed', action: () => {
-            const val = prompt('Enter speed (default 120):');
-            if (val === null) return;
-            const n = Number(val);
-            if (isNaN(n) || n <= 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            player.speed = n;
-            addNotification('Speed set to ' + n, 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: 'Set Gold', action: () => {
-            const val = prompt('Enter gold amount:');
-            if (val === null) return;
-            const n = Number(val);
-            if (isNaN(n) || n < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            goldCount = Math.floor(n);
-            addNotification('Gold set to ' + goldCount, 1500, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
-        }},
-        { name: 'Set Snowflakes', action: () => {
-            const val = prompt('Enter snowflake amount:');
-            if (val === null) return;
-            const n = Number(val);
-            if (isNaN(n) || n < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            snowflakeCount = Math.floor(n);
-            addNotification('Snowflakes set to ' + snowflakeCount, 1500, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
-        }},
-        { name: adminGhostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF', action: () => {
-            adminGhostMode = !adminGhostMode;
-            addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: 'Set Mastery Level', action: () => {
-            const weapon = prompt('Which weapon? (sword / dagger / spear)');
-            if (weapon === null) return;
-            const w = weapon.trim().toLowerCase();
-            if (w !== 'sword' && w !== 'dagger' && w !== 'spear') { addNotification('Enter "sword", "dagger" or "spear"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            const maxLvl = extraLevels ? 99999 : 100;
-            const val = prompt('Enter level (0-' + maxLvl + '):');
-            if (val === null) return;
-            const n = Number(val);
-            if (isNaN(n) || n < 0 || n > maxLvl) { addNotification('Enter 0-' + maxLvl, 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-            const lvl = Math.floor(n);
-            if (w === 'sword') {
-                swordMastery.level = lvl; swordMastery.xp = 0;
-                const ms = [100, 75, 50, 25];
-                const sk = ['diamond', 'gold', 'silver', 'bronze'];
-                masterySkin = 'default';
-                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { masterySkin = sk[i]; break; } }
-                addNotification('Sword mastery set to ' + lvl, 2000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.8)');
-            } else if (w === 'dagger') {
-                daggerMastery.level = lvl; daggerMastery.xp = 0;
-                const ms = [100, 75, 50, 25];
-                const sk = ['nightblade', 'phantom', 'crimson', 'shadow'];
-                daggerMasterySkin = 'default';
-                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { daggerMasterySkin = sk[i]; break; } }
-                addNotification('Dagger mastery set to ' + lvl, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
-            } else {
-                spearMastery.level = lvl; spearMastery.xp = 0;
-                const ms = [100, 75, 50, 25];
-                const sk = ['aurora', 'glacier', 'blizzard', 'frost'];
-                spearMasterySkin = 'default';
-                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { spearMasterySkin = sk[i]; break; } }
-                addNotification('Spear mastery set to ' + lvl, 2000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
-            }
-        }},
-        { name: 'Set Ability Damage', action: () => {
-            const ability = prompt('Which ability? (void rush / stab)');
-            if (ability === null) return;
-            const a = ability.trim().toLowerCase();
-            if (a === 'void rush' || a === 'voidrush' || a === 'void') {
-                const v1 = prompt('First hit damage (current: ' + voidRushDmg1 + '):');
-                if (v1 === null) return;
-                const n1 = Number(v1);
-                if (isNaN(n1) || n1 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-                const v2 = prompt('Second hit damage (current: ' + voidRushDmg2 + '):');
-                if (v2 === null) return;
-                const n2 = Number(v2);
-                if (isNaN(n2) || n2 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-                voidRushDmg1 = Math.floor(n1);
-                voidRushDmg2 = Math.floor(n2);
-                addNotification('Void Rush: hit1=' + voidRushDmg1 + ' hit2=' + voidRushDmg2, 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
-            } else if (a === 'stab' || a === 'dagger') {
-                const v1 = prompt('Front stab damage (current: ' + stabFrontDmg + '):');
-                if (v1 === null) return;
-                const n1 = Number(v1);
-                if (isNaN(n1) || n1 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-                const v2 = prompt('Backstab damage (current: ' + stabBackDmg + '):');
-                if (v2 === null) return;
-                const n2 = Number(v2);
-                if (isNaN(n2) || n2 < 0) { addNotification('Invalid number', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
-                stabFrontDmg = Math.floor(n1);
-                stabBackDmg = Math.floor(n2);
-                addNotification('Stab: front=' + stabFrontDmg + ' back=' + stabBackDmg, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
-            } else {
-                addNotification('Enter "void rush" or "stab"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-            }
-        }},
-        { name: extraLevels ? 'Extra Levels: ON' : 'Extra Levels: OFF', action: () => {
-            extraLevels = !extraLevels;
-            addNotification(extraLevels ? 'Extra levels enabled!' : 'Extra levels disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        }},
-        { name: 'Close', action: () => { adminOpen = false; } },
-    ];
-}
-
-function drawAdminPanel() {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const items = getAdminItems();
-    const bw = 300, bh = 80 + items.length * 40 + 30;
-    const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
-    ctx.fillStyle = 'rgba(40,0,0,0.95)'; ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = '#FF4444'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
-
-    ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillStyle = '#FF4444'; ctx.fillText('ADMIN', bx + bw/2, by + 16);
-
-    // Close button for touch
-    if (isTouchDevice) {
-        adminCloseBtn.x = bx + bw - 40; adminCloseBtn.y = by + 4;
-        ctx.fillStyle = 'rgba(180,40,40,0.8)'; ctx.fillRect(adminCloseBtn.x, adminCloseBtn.y, adminCloseBtn.w, adminCloseBtn.h);
-        ctx.strokeStyle = '#FF6666'; ctx.lineWidth = 1; ctx.strokeRect(adminCloseBtn.x, adminCloseBtn.y, adminCloseBtn.w, adminCloseBtn.h);
-        ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
-        ctx.fillText('X', adminCloseBtn.x + adminCloseBtn.w/2, adminCloseBtn.y + adminCloseBtn.h/2);
-        ctx.textBaseline = 'top';
-    }
-
-    ctx.font = 'bold 14px monospace';
-    for (let i = 0; i < items.length; i++) {
-        const iy = by + 60 + i * 40;
-        if (i === adminSelection) {
-            ctx.fillStyle = 'rgba(255,50,50,0.2)'; ctx.fillRect(bx + 16, iy - 4, bw - 32, 32);
-            ctx.fillStyle = '#FF6666'; ctx.fillText('> ' + items[i].name + ' <', bx + bw/2, iy);
-        } else {
-            ctx.fillStyle = '#ccc'; ctx.fillText(items[i].name, bx + bw/2, iy);
-        }
-    }
-
-    ctx.font = '11px monospace'; ctx.fillStyle = '#888';
-    ctx.fillText(`${kl('nav')} to choose, ${kl('E')} to select, Esc to close`, bx + bw/2, by + bh - 20);
-}
-
-function tryAdminLogin() {
-    const data = getAdminData();
-    if (data.unlocked) {
-        adminUnlocked = true;
-        adminOpen = true;
-        adminSelection = 0;
-        return;
-    }
-    if (data.attempts >= 2) {
-        addNotification('Admin locked. Try again next week.', 3000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-        return;
-    }
-    const pw = prompt('Enter admin password:');
-    if (pw === null) return; // cancelled
-    if (!data.weekStart) data.weekStart = Date.now();
-    if (pw === 'RIVALSISMID') {
-        data.unlocked = true;
-        data.attempts = 0;
-        saveAdminData(data);
-        adminUnlocked = true;
-        adminOpen = true;
-        adminSelection = 0;
-        addNotification('Admin access granted!', 2000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-    } else {
-        data.attempts++;
-        saveAdminData(data);
-        const left = 2 - data.attempts;
-        addNotification(`Wrong password. ${left} attempt${left !== 1 ? 's' : ''} left this week.`, 3000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
-    }
-}
 

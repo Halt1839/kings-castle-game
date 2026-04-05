@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v4.0';
+const GAME_VERSION = 'v4.1.0';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
@@ -86,35 +86,6 @@ function drawVersion() {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fillText(GAME_VERSION, 4, 2);
     ctx.restore();
-}
-
-// Admin panel state
-let adminOpen = false;
-let adminSelection = 0;
-let adminGodMode = false;
-let adminGhostMode = false;
-let adminSwordEquipped = false;
-let adminUnlocked = (function() { try { const d = JSON.parse(localStorage.getItem('kingGame_admin')); return d && d.unlocked === true; } catch(e) { return false; } })();
-const ADMIN_STORAGE_KEY = 'kingGame_admin';
-
-function getAdminData() {
-    try {
-        const d = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY));
-        if (!d) return { unlocked: false, attempts: 0, weekStart: 0 };
-        // Reset attempts if a new week
-        const now = Date.now();
-        const weekMs = 7 * 24 * 60 * 60 * 1000;
-        if (now - d.weekStart >= weekMs) {
-            d.attempts = 0;
-            d.weekStart = now;
-            localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(d));
-        }
-        return d;
-    } catch(e) { return { unlocked: false, attempts: 0, weekStart: 0 }; }
-}
-
-function saveAdminData(d) {
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(d));
 }
 
 // Shield state — declared early so damage checks can reference it

@@ -82,6 +82,11 @@ function saveGame(slot) {
         jackFrostQuestComplete,
         jackFrostKills: { ...jackFrostKills },
         icePalaceUnlocked,
+        snowActive, snowStartTime, snowLastCheck,
+        iceTravelerSpawned, iceTravelerSpawnTime, iceTravelerLastCheck,
+        firemaceUnlocked,
+        maceMastery: { xp: maceMastery.xp, level: maceMastery.level },
+        maceMasterySkin,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -182,6 +187,15 @@ function loadGame(slot) {
     if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
     if (s.jackFrostKills) Object.assign(jackFrostKills, s.jackFrostKills);
     if (s.icePalaceUnlocked !== undefined) icePalaceUnlocked = s.icePalaceUnlocked;
+    if (s.snowActive !== undefined) snowActive = s.snowActive;
+    if (s.snowStartTime !== undefined) snowStartTime = s.snowStartTime;
+    if (s.snowLastCheck !== undefined) snowLastCheck = s.snowLastCheck;
+    if (s.iceTravelerSpawned !== undefined) iceTravelerSpawned = s.iceTravelerSpawned;
+    if (s.iceTravelerSpawnTime !== undefined) iceTravelerSpawnTime = s.iceTravelerSpawnTime;
+    if (s.iceTravelerLastCheck !== undefined) iceTravelerLastCheck = s.iceTravelerLastCheck;
+    if (s.firemaceUnlocked !== undefined) firemaceUnlocked = s.firemaceUnlocked;
+    if (s.maceMastery) { maceMastery.xp = s.maceMastery.xp; maceMastery.level = s.maceMastery.level; }
+    if (s.maceMasterySkin !== undefined) maceMasterySkin = s.maceMasterySkin;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -262,6 +276,9 @@ function resetGameState() {
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
     voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity; voidSentinel.dashHit = false;
     voidSentinelDeathTime = -Infinity;
+    snowActive = false; snowStartTime = 0; snowLastCheck = 0;
+    iceTravelerSpawned = false; iceTravelerSpawnTime = 0; iceTravelerLastCheck = 0;
+    firemaceUnlocked = false; maceMastery.xp = 0; maceMastery.level = 0; maceMasterySkin = 'default';
     gameTime = 0;
 }
 
