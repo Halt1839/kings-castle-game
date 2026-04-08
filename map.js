@@ -281,5 +281,15 @@ function buildMap() {
     // Return teleport spot (marked with DOOR tile at arena entrance)
     map[210][14] = DOOR; map[210][15] = DOOR;
 
+    // ── Lava Chamber (rows 260-280) ──
+    // Border (cave walls)
+    for (let c = 2; c <= 27; c++) { map[260][c] = CAVE_WALL; map[280][c] = CAVE_WALL; }
+    for (let r = 260; r <= 280; r++) { map[r][2] = CAVE_WALL; map[r][27] = CAVE_WALL; }
+    // Lava floor
+    for (let r = 261; r <= 279; r++)
+        for (let c = 3; c <= 26; c++) map[r][c] = LAVA_FLOOR;
+    // Return door
+    map[260][14] = DOOR; map[260][15] = DOOR;
+
 }
 buildMap();

@@ -937,3 +937,100 @@ function drawFireBreath(ox, oy) {
         }
     }
 }
+
+// ── Lava Monster Drawing ────────────────────────────────────
+
+function drawLavaMonster(ox, oy) {
+    if (!lavaMonster.alive || !inLavaZone) return;
+    const sx = Math.round(lavaMonster.x - ox), sy = Math.round(lavaMonster.y - oy);
+    const cx = sx + lavaMonster.width / 2, cy = sy + lavaMonster.height / 2;
+    const now = performance.now();
+
+    // Fire trail
+    for (const t of lavaMonster.trail) {
+        const age = (gameTime - t.time) / LAVA_TRAIL_DURATION;
+        const tx = Math.round(t.x - ox), ty = Math.round(t.y - oy);
+        const alpha = 0.6 * (1 - age);
+        const pulse = 0.8 + 0.2 * Math.sin(now / 200 + t.x);
+        ctx.fillStyle = `rgba(255,${Math.floor(80 + 80 * age)},0,${alpha * pulse})`;
+        ctx.beginPath(); ctx.arc(tx, ty, 6 * (1 - age * 0.3), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,200,50,${alpha * 0.4})`;
+        ctx.beginPath(); ctx.arc(tx, ty, 3 * (1 - age * 0.3), 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + lavaMonster.height + 2, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Body glow
+    const glow = 0.3 + 0.15 * Math.sin(now / 300);
+    ctx.fillStyle = `rgba(255,60,0,${glow})`;
+    ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill();
+
+    // Body (magma rock)
+    ctx.fillStyle = '#4a1a0a';
+    ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+    // Lava cracks
+    ctx.strokeStyle = `rgba(255,100,20,${0.6 + 0.3 * Math.sin(now / 250)})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - 5, cy - 3); ctx.lineTo(cx + 2, cy + 1); ctx.lineTo(cx + 6, cy - 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 3, cy + 2); ctx.lineTo(cx + 1, cy + 6); ctx.stroke();
+    // Inner glow
+    ctx.fillStyle = `rgba(255,150,30,${0.3 + 0.2 * Math.sin(now / 200)})`;
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+
+    // Eyes (glowing orange)
+    ctx.fillStyle = '#ff6600';
+    ctx.fillRect(cx - 5, cy - 4, 3, 3);
+    ctx.fillRect(cx + 2, cy - 4, 3, 3);
+    // Eye cores
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(cx - 4, cy - 3, 1, 1);
+    ctx.fillRect(cx + 3, cy - 3, 1, 1);
+
+    // Arms (rocky with lava glow)
+    ctx.fillStyle = '#3a1005';
+    ctx.fillRect(sx - 2, cy - 2, 4, 8);
+    ctx.fillRect(sx + lavaMonster.width - 2, cy - 2, 4, 8);
+    ctx.fillStyle = `rgba(255,80,0,${0.4 + 0.2 * Math.sin(now / 180)})`;
+    ctx.fillRect(sx - 1, cy, 2, 4);
+    ctx.fillRect(sx + lavaMonster.width - 1, cy, 2, 4);
+
+    // Legs
+    ctx.fillStyle = '#3a1005';
+    ctx.fillRect(cx - 5, sy + lavaMonster.height - 4, 4, 5);
+    ctx.fillRect(cx + 1, sy + lavaMonster.height - 4, 4, 5);
+
+    // Spinning attack visual
+    if (lavaMonster.spinning) {
+        const elapsed = gameTime - lavaMonster.spinStart;
+        const angle = (elapsed / LAVA_MONSTER_SPIN_DURATION) * Math.PI * 4;
+        ctx.save();
+        // Spinning fire ring
+        ctx.strokeStyle = `rgba(255,80,0,0.6)`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, LAVA_MONSTER_SPIN_RANGE * 0.6, 0, Math.PI * 2); ctx.stroke();
+        // 3 orbiting fireballs
+        for (let i = 0; i < 3; i++) {
+            const a = angle + (i * Math.PI * 2 / 3);
+            const orbX = cx + Math.cos(a) * LAVA_MONSTER_SPIN_RANGE * 0.5;
+            const orbY = cy + Math.sin(a) * LAVA_MONSTER_SPIN_RANGE * 0.5;
+            ctx.fillStyle = `rgba(255,${60 + i * 40},0,0.8)`;
+            ctx.beginPath(); ctx.arc(orbX, orbY, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,220,100,0.6)';
+            ctx.beginPath(); ctx.arc(orbX, orbY, 3, 0, Math.PI * 2); ctx.fill();
+        }
+        // Mace in hand during spin
+        const maceA = angle;
+        const maceX = cx + Math.cos(maceA) * 14;
+        const maceY = cy + Math.sin(maceA) * 14;
+        ctx.fillStyle = '#555';
+        ctx.fillRect(maceX - 1, maceY - 1, 3, 8);
+        ctx.fillStyle = '#8a4400';
+        ctx.beginPath(); ctx.arc(maceX + 1, maceY - 2, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,100,0,${0.6 + 0.3 * Math.sin(now / 100)})`;
+        ctx.beginPath(); ctx.arc(maceX + 1, maceY - 2, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+}

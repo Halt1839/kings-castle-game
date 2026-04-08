@@ -148,6 +148,7 @@ function isNPCBlocked(px, py, pw, ph) {
 }
 
 function isSolid(px, py, pw, ph) {
+    if (adminGhostMode) return false;
     const corners = [[px,py],[px+pw-1,py],[px,py+ph-1],[px+pw-1,py+ph-1]];
     for (const [cx, cy] of corners) {
         const col = Math.floor(cx / T), row = Math.floor(cy / T);
@@ -256,4 +257,37 @@ function isNearVoidSentinel() {
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     const vcx = voidSentinel.x + voidSentinel.width / 2, vcy = voidSentinel.y + voidSentinel.height / 2;
     return Math.hypot(pcx - vcx, pcy - vcy) < T * 1.8;
+}
+
+// ── Lava Monster ───────────────────────────────────────────
+
+const lavaMonster = {
+    x: 14 * T, y: 270 * T,
+    width: 20, height: 20,
+    hp: 1000, maxHp: 1000,
+    alive: true,
+    aggro: false,
+    lastAttack: 0,
+    attackCooldown: 1200,
+    damage: 2,
+    speed: 70,
+    // Fire trail
+    trail: [], // [{x, y, time}]
+    trailInterval: 200,
+    lastTrailDrop: 0,
+    // Special attack: mace spin
+    spinning: false,
+    spinStart: 0,
+    spinCooldown: 15000,
+    lastSpinTime: -Infinity,
+    spinDmg: 15,
+    spinHit: false,
+};
+let lavaMonsterDeathTime = -Infinity;
+
+function isNearLavaMonster() {
+    if (!lavaMonster.alive) return false;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const lcx = lavaMonster.x + lavaMonster.width / 2, lcy = lavaMonster.y + lavaMonster.height / 2;
+    return Math.hypot(pcx - lcx, pcy - lcy) < T * 1.8;
 }

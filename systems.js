@@ -941,6 +941,7 @@ let designRoomBuilt = false;
 let currentDesign = 'default'; // 'default', 'gold', 'void'
 let goldDesignUnlocked = false;
 let voidDesignUnlocked = false;
+let lavaDesignUnlocked = false;
 let guestRoomBuilt = false;
 // ── Dagger System ────────────────────────────────────────────
 let daggerUnlocked = false;
@@ -964,7 +965,7 @@ let stabBackDmg = 8;
 let abilityInvincibleUntil = 0;
 const ABILITY_INVINCIBLE_GRACE = 1000; // 1 second after ability ends
 function isAbilityInvincible() {
-    return daggerStab.active || (voidRush.state !== 'idle') || gameTime < abilityInvincibleUntil;
+    return daggerStab.active || maceSpin.active || (voidRush.state !== 'idle') || gameTime < abilityInvincibleUntil;
 }
 
 function findNearestStabTarget() {
@@ -981,6 +982,7 @@ function findNearestStabTarget() {
     if (troll.alive) checkMob(troll);
     if (dragon.alive) checkMob(dragon);
     if (inArena && voidSentinel.alive) checkMob(voidSentinel);
+    if (inLavaZone && lavaMonster.alive) checkMob(lavaMonster);
     return nearest;
 }
 
@@ -1028,6 +1030,10 @@ function completeDaggerStab() {
     if (mob === voidSentinel && !voidSentinel.aggro) {
         voidSentinel.aggro = true;
         addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+    }
+    if (mob === lavaMonster && !lavaMonster.aggro) {
+        lavaMonster.aggro = true;
+        addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
     }
     const pcx = player.x + player.width / 2;
     const mobCX = mob.x + mob.width / 2;
@@ -1089,10 +1095,6 @@ function handleStabKill(mob) {
             addNotification('Build new rooms at the castle with gold!', 5000, 'rgba(200,200,255,1)', 'rgba(20,20,60,0.9)');
         }
         if (!goldDesignUnlocked) { goldDesignUnlocked = true; addNotification('Gold design unlocked!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'); }
-        if (isErupting() && !firemaceUnlocked) {
-            firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 6;
-            addNotification('SECRET: Firemace unlocked! 6 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
-        }
         respawnMonsters();
         questTasks.dragonDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.dragon = true; checkJackFrostQuestComplete(); }
@@ -1113,12 +1115,87 @@ function handleStabKill(mob) {
         }
         if (!voidDesignUnlocked) { voidDesignUnlocked = true; addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'); }
         dropSnowflakes();
+    } else if (mob === lavaMonster) {
+        lavaMonster.alive = false; lavaMonsterDeathTime = gameTime; lavaMonster.trail = [];
+        addWeaponXP(150);
+        const gld = 20 * getVoidMultiplier(); goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
+        if (!firemaceUnlocked) {
+            firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 10;
+            addNotification('Firemace unlocked! 10 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+        }
+        if (!lavaDesignUnlocked) { lavaDesignUnlocked = true; addNotification('Lava design unlocked!', 4000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)'); }
+        addNotification('The Lava Monster is defeated!', 5000, 'rgba(255,200,50,1)', 'rgba(80,40,0,0.9)');
     } else {
         mob.alive = false; addWeaponXP(10);
         const gld = 2 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
         dropSnowflakes();
     }
+}
+
+// ── Mace Spin Ability ────────────────────────────────────────
+const maceSpin = {
+    active: false,
+    startTime: 0,
+    cooldownUntil: 0,
+    hitSet: new Set(),
+};
+const MACE_SPIN_DURATION = 600;
+const MACE_SPIN_COOLDOWN = 10000;
+const MACE_SPIN_RANGE = 64;
+let maceSpinDmg = 12;
+
+function useMaceSpin() {
+    if (currentSword !== 'firemace') return;
+    if (maceSpin.active) return;
+    if (gameTime < maceSpin.cooldownUntil) {
+        const remaining = Math.ceil((maceSpin.cooldownUntil - gameTime) / 1000);
+        addNotification(`Mace Spin cooldown: ${remaining}s`, 1500, 'rgba(200,200,200,1)', 'rgba(40,40,40,0.8)');
+        return;
+    }
+    maceSpin.active = true;
+    maceSpin.startTime = gameTime;
+    maceSpin.cooldownUntil = gameTime + MACE_SPIN_DURATION + MACE_SPIN_COOLDOWN;
+    maceSpin.hitSet = new Set();
+    abilityInvincibleUntil = gameTime + MACE_SPIN_DURATION + ABILITY_INVINCIBLE_GRACE;
+}
+
+function updateMaceSpin() {
+    if (!maceSpin.active) return;
+    const elapsed = gameTime - maceSpin.startTime;
+    if (elapsed >= MACE_SPIN_DURATION) {
+        maceSpin.active = false;
+        return;
+    }
+    // Hit all enemies in range once
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    function spinHit(mob, id) {
+        if (!mob.alive || maceSpin.hitSet.has(id)) return;
+        const dx = (mob.x + mob.width / 2) - pcx, dy = (mob.y + mob.height / 2) - pcy;
+        if (Math.hypot(dx, dy) < MACE_SPIN_RANGE + mob.width / 2) {
+            maceSpin.hitSet.add(id);
+            mob.hp -= maceSpinDmg;
+            addNotification(`Mace Spin! -${maceSpinDmg} HP`, 1000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)');
+            if (mob === voidSentinel && !voidSentinel.aggro) {
+                voidSentinel.aggro = true;
+                addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            }
+            if (mob === lavaMonster && !lavaMonster.aggro) {
+                lavaMonster.aggro = true;
+                addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+            }
+            if (mob.hp <= 0) { mob.hp = 0; handleStabKill(mob); }
+        }
+    }
+    if (spider.active) spinHit(spider, 'spider');
+    if (seaSnake.active) spinHit(seaSnake, 'seaSnake');
+    for (let i = 0; i < orcs.length; i++) spinHit(orcs[i], 'orc' + i);
+    if (troll.alive) spinHit(troll, 'troll');
+    if (dragon.alive) spinHit(dragon, 'dragon');
+    if (inArena && voidSentinel.alive) spinHit(voidSentinel, 'voidSentinel');
+    if (inLavaZone && lavaMonster.alive) spinHit(lavaMonster, 'lavaMonster');
 }
 
 // ── Snowflake Currency & Ice Traveler ────────────────────────
@@ -1142,7 +1219,9 @@ function updateIceTravelerSpawn() {
         }
     }
 }
+let adminForceIceTraveler = false;
 function isIceTravelerPresent() {
+    if (adminForceIceTraveler) return true;
     return iceTravelerSpawned;
 }
 function getIceTravelerTimeLeft() {
@@ -1301,7 +1380,9 @@ function updateSnowSpawn() {
         }
     }
 }
+let adminForceSnow = false;
 function isSnowing() {
+    if (adminForceSnow) return true;
     return snowActive;
 }
 function getSnowTimeLeft() {
@@ -1327,7 +1408,9 @@ let lastCampFireballTime = 0;
 let lastPeakFireballTime = 0;
 const activeFireballs = [];
 
+let adminForceEruption = false;
 function isErupting() {
+    if (adminForceEruption) return true;
     return (gameTime % VOLCANO_CYCLE) >= (VOLCANO_CYCLE - VOLCANO_DURATION);
 }
 function getEruptionTimeLeft() {
@@ -1402,12 +1485,12 @@ function updateVolcano() {
                     // Impact damage
                     fb.damageDealt = true;
                     fb.lastBurnTime = gameTime;
-                    health.value = Math.max(0, health.value - FIREBALL_DAMAGE);
+                    if (!adminGodMode) health.value = Math.max(0, health.value - FIREBALL_DAMAGE);
                     addNotification('Hit by a fireball!', 1500, 'rgba(255,100,50,1)', 'rgba(80,20,0,0.9)');
                 } else if (gameTime - (fb.lastBurnTime || fb.landTime) >= 1000) {
                     // Burn tick every 1s while standing in fire
                     fb.lastBurnTime = gameTime;
-                    health.value = Math.max(0, health.value - 1);
+                    if (!adminGodMode) health.value = Math.max(0, health.value - 1);
                     addNotification('Burning!', 800, 'rgba(255,150,50,1)', 'rgba(80,30,0,0.8)');
                 }
             }
@@ -1693,9 +1776,9 @@ function respawnMonsters() {
     if (!peakPassageOpen) openPeakPassage();
 }
 
-const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 6, voidstar: 7 };
-const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (6 dmg)', voidstar: 'Void Star (7 dmg)' };
-const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'] };
+const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 10, voidstar: 7, admin: 1000 };
+const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (10 dmg)', voidstar: 'Void Star (7 dmg)', admin: 'Admin Sword (1k dmg)' };
+const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
 
 function getSwordOrder() {
     const order = ['legendary', 'kings'];
@@ -1704,6 +1787,7 @@ function getSwordOrder() {
     if (dragonSwordUnlocked) order.push('dragon');
     if (firemaceUnlocked) order.push('firemace');
     if (voidStarSwordUnlocked) order.push('voidstar');
+    if (adminSwordEquipped) order.push('admin');
     return order;
 }
 
@@ -1834,11 +1918,12 @@ function switchDesign() {
     if (goldDesignUnlocked) designs.push('gold');
     if (voidDesignUnlocked) designs.push('void');
     if (icePalaceUnlocked) designs.push('ice');
+    if (lavaDesignUnlocked) designs.push('lava');
     const idx = designs.indexOf(currentDesign);
     const next = designs[(idx + 1) % designs.length];
     currentDesign = next;
-    const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace' };
-    const colors = { default: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], gold: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], void: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], ice: ['rgba(150,210,255,1)', 'rgba(10,30,60,0.9)'] };
+    const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava' };
+    const colors = { default: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], gold: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], void: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], ice: ['rgba(150,210,255,1)', 'rgba(10,30,60,0.9)'], lava: ['rgba(255,120,30,1)', 'rgba(80,20,0,0.9)'] };
     const c = colors[next] || colors.default;
     addNotification(`Switched to ${names[next]} design!`, 2000, c[0], c[1]);
 }
@@ -2260,7 +2345,7 @@ function drawCampBlacksmithDialog() {
     ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#caa060';
     ctx.fillText('Blacksmith:', bx + 16, by + 14);
     ctx.font = '13px monospace'; ctx.fillStyle = '#fff';
-    if (currentSword === 'kings' || currentSword === 'dragon' || currentSword === 'voidstar') {
+    if (currentSword === 'kings' || currentSword === 'dragon' || currentSword === 'voidstar' || currentSword === 'admin') {
         ctx.fillText('"That\'s a fine blade you carry!"', bx + 16, by + 40);
         ctx.fillText('"I\'ve never forged anything like it."', bx + 16, by + 60);
         ctx.fillText('"Take good care of it, Your Majesty."', bx + 16, by + 80);
@@ -2853,6 +2938,40 @@ function pointToSegmentDist(px, py, ax, ay, bx, by) {
     return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
+// ── Burning Wall (lava zone portal) ──────────────────────────
+let burningWall = { active: false, row: 0, col: 0, startTime: 0 };
+const BURNING_WALL_DURATION = 1000;
+
+function startBurningWall(px, py) {
+    const col = Math.floor(px / T), row = Math.floor(py / T);
+    if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) return;
+    burningWall.active = true;
+    burningWall.row = row;
+    burningWall.col = col;
+    burningWall.startTime = gameTime;
+}
+
+function updateBurningWall() {
+    if (!burningWall.active) return;
+    if (gameTime - burningWall.startTime >= BURNING_WALL_DURATION) {
+        burningWall.active = false;
+        return;
+    }
+    // Check if player touches the burning wall
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const pCol = Math.floor(pcx / T), pRow = Math.floor(pcy / T);
+    if (Math.abs(pRow - burningWall.row) <= 1 && Math.abs(pCol - burningWall.col) <= 1) {
+        // Teleport to lava zone
+        burningWall.active = false;
+        lavaZoneReturnX = player.x;
+        lavaZoneReturnY = player.y;
+        player.x = 14 * T;
+        player.y = 270 * T;
+        inLavaZone = true;
+        addNotification('The burning wall pulls you into the lava chamber!', 4000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+    }
+}
+
 // Raycast from (ax,ay) through (bx,by) until hitting a wall tile
 function raycastToWall(ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay;
@@ -2950,6 +3069,9 @@ function updateDragon(dt) {
         }
         if (gameTime - dragon.fireStart >= dragon.fireDuration) {
             dragon.firing = false;
+            if (isErupting()) {
+                startBurningWall(dragon.fireTargetX, dragon.fireTargetY);
+            }
         }
     }
 
@@ -3014,10 +3136,6 @@ function hitDragon() {
         if (!goldDesignUnlocked) {
             goldDesignUnlocked = true;
             addNotification('Gold design unlocked!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
-        }
-        if (isErupting() && !firemaceUnlocked) {
-            firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 6;
-            addNotification('SECRET: Firemace unlocked! 6 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
         }
         respawnMonsters();
         questTasks.dragonDefeated = true;
@@ -3309,6 +3427,7 @@ function updateVoidRush(dt) {
             if (troll.alive) checkTarget2(troll.x + troll.width / 2, troll.y + troll.height / 2, true);
             if (dragon.alive) checkTarget2(dragon.x + dragon.width / 2, dragon.y + dragon.height / 2, true);
             if (typeof orcs !== 'undefined') for (const orc of orcs) { if (orc.alive) checkTarget2(orc.x + orc.width / 2, orc.y + orc.height / 2, true); }
+            if (inLavaZone && lavaMonster.alive) checkTarget2(lavaMonster.x + lavaMonster.width / 2, lavaMonster.y + lavaMonster.height / 2, true);
             if (tx2 !== null) { voidRush.targetX = tx2; voidRush.targetY = ty2; }
             else { voidRush.state = 'idle'; voidRush.lastUseTime = gameTime; abilityInvincibleUntil = gameTime + ABILITY_INVINCIBLE_GRACE; }
         }
@@ -3363,6 +3482,13 @@ function voidRushHitEnemies(dmg) {
     if (troll.alive) tryHit(troll, 1.5, 'troll');
     if (dragon.alive) tryHit(dragon, 1.8, 'dragon');
     if (typeof orcs !== 'undefined') for (let i = 0; i < orcs.length; i++) { if (orcs[i].alive) tryHit(orcs[i], 1.5, 'orc' + i); }
+    if (inLavaZone && lavaMonster.alive) {
+        tryHit(lavaMonster, 1.8, 'lavaMonster');
+        if (!lavaMonster.aggro && voidRush.hitSet.has('lavaMonster')) {
+            lavaMonster.aggro = true;
+            addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+        }
+    }
 }
 
 // ── Void Star ──────────────────────────────────────────────
@@ -3417,4 +3543,129 @@ function useHealPower() {
     lastHealTime = gameTime;
     health.value = health.max;
     addNotification('Healed to full health!', 3000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
+}
+
+// ── Lava Monster Combat ─────────────────────────────────────
+
+const LAVA_TRAIL_DURATION = 3000;
+const LAVA_TRAIL_DMG = 1;
+const LAVA_TRAIL_TICK = 500;
+let lavaTrailLastDmg = 0;
+const LAVA_MONSTER_SPIN_DURATION = 800;
+const LAVA_MONSTER_SPIN_RANGE = 72;
+
+function updateLavaMonster(dt) {
+    // Respawn after death
+    if (!lavaMonster.alive && lavaMonsterDeathTime > 0 && gameTime >= lavaMonsterDeathTime + MOB_RESPAWN_DELAY) {
+        lavaMonster.hp = lavaMonster.maxHp; lavaMonster.alive = true;
+        lavaMonster.x = 14 * T; lavaMonster.y = 270 * T;
+        lavaMonster.aggro = false;
+        lavaMonster.spinning = false; lavaMonster.lastSpinTime = -Infinity;
+        lavaMonster.trail = [];
+        lavaMonsterDeathTime = -Infinity;
+    }
+    if (!lavaMonster.alive) return;
+    if (!inLavaZone) return;
+    if (!lavaMonster.aggro) return;
+
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const mcx = lavaMonster.x + lavaMonster.width / 2, mcy = lavaMonster.y + lavaMonster.height / 2;
+    const dist = Math.hypot(pcx - mcx, pcy - mcy);
+
+    // Handle spinning attack
+    if (lavaMonster.spinning) {
+        const elapsed = gameTime - lavaMonster.spinStart;
+        if (elapsed >= LAVA_MONSTER_SPIN_DURATION) {
+            lavaMonster.spinning = false;
+            return;
+        }
+        // Damage player if in range (once per spin)
+        if (!lavaMonster.spinHit && dist < LAVA_MONSTER_SPIN_RANGE && !isAbilityInvincible()) {
+            if (!shieldActive) {
+                health.value -= lavaMonster.spinDmg;
+                addNotification(`Lava Spin! -${lavaMonster.spinDmg} HP`, 1500, 'rgba(255,60,0,1)', 'rgba(80,0,0,0.9)');
+                lavaMonster.spinHit = true;
+            }
+        }
+        return;
+    }
+
+    // Try special attack (mace spin)
+    if (dist < T * 3 && gameTime - lavaMonster.lastSpinTime >= lavaMonster.spinCooldown) {
+        lavaMonster.spinning = true;
+        lavaMonster.spinStart = gameTime;
+        lavaMonster.lastSpinTime = gameTime;
+        lavaMonster.spinHit = false;
+        return;
+    }
+
+    // Chase player
+    if (dist > T * 0.8) {
+        const dx = pcx - mcx, dy = pcy - mcy;
+        const nd = Math.hypot(dx, dy);
+        lavaMonster.x += (dx / nd) * lavaMonster.speed * dt;
+        lavaMonster.y += (dy / nd) * lavaMonster.speed * dt;
+    }
+
+    // Drop fire trail
+    if (gameTime - lavaMonster.lastTrailDrop >= lavaMonster.trailInterval) {
+        lavaMonster.trail.push({ x: lavaMonster.x + lavaMonster.width / 2, y: lavaMonster.y + lavaMonster.height / 2, time: gameTime });
+        lavaMonster.lastTrailDrop = gameTime;
+    }
+
+    // Expire old trail
+    lavaMonster.trail = lavaMonster.trail.filter(t => gameTime - t.time < LAVA_TRAIL_DURATION);
+
+    // Trail damages player
+    if (!isAbilityInvincible() && !shieldActive && gameTime - lavaTrailLastDmg >= LAVA_TRAIL_TICK) {
+        for (const t of lavaMonster.trail) {
+            if (Math.hypot(pcx - t.x, pcy - t.y) < T * 0.6) {
+                health.value -= LAVA_TRAIL_DMG;
+                addNotification(`Burning! -${LAVA_TRAIL_DMG} HP`, 800, 'rgba(255,150,30,1)', 'rgba(80,30,0,0.8)');
+                lavaTrailLastDmg = gameTime;
+                break;
+            }
+        }
+    }
+
+    // Melee attack
+    if (dist < T * 1.2 && gameTime - lavaMonster.lastAttack >= lavaMonster.attackCooldown) {
+        if (!isAbilityInvincible() && !shieldActive) {
+            health.value -= lavaMonster.damage;
+            addNotification(`Lava Monster hits! -${lavaMonster.damage} HP`, 1000, 'rgba(255,80,20,1)', 'rgba(80,10,0,0.9)');
+            lavaMonster.lastAttack = gameTime;
+        }
+    }
+}
+
+function hitLavaMonster() {
+    if (!swordPickedUp || !lavaMonster.alive) return;
+    if (!isNearLavaMonster()) return;
+    if (!inLavaZone) return;
+    if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
+    playerAttackCooldown = gameTime;
+    const dmg = swordDamage * getVoidMultiplier();
+    lavaMonster.hp -= dmg;
+    if (!lavaMonster.aggro) {
+        lavaMonster.aggro = true;
+        addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+    }
+    addNotification(`Hit Lava Monster! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    if (lavaMonster.hp <= 0) {
+        lavaMonster.hp = 0;
+        lavaMonster.alive = false;
+        lavaMonsterDeathTime = gameTime;
+        lavaMonster.trail = [];
+        addWeaponXP(150);
+        const gld = 20 * getVoidMultiplier();
+        goldCount += gld;
+        addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
+        dropSnowflakes();
+        if (!firemaceUnlocked) {
+            firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 10;
+            addNotification('Firemace unlocked! 10 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+        }
+        if (!lavaDesignUnlocked) { lavaDesignUnlocked = true; addNotification('Lava design unlocked!', 4000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)'); }
+        addNotification('The Lava Monster is defeated!', 5000, 'rgba(255,200,50,1)', 'rgba(80,40,0,0.9)');
+    }
 }

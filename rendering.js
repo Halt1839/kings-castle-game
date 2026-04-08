@@ -21,6 +21,11 @@ const DESIGN_COLORS = {
                door1: '#5a8aaa', door2: '#6a9aba',
                carpet1: '#4a7a9a', carpet2: '#a0d0ee', carpet3: '#4a7a9a',
                throne1: '#3a6a8a', throne2: '#88ccff', throne3: '#bbddff' },
+    lava:    { wall1: '#4a2010', wall2: '#3a1808', wallStroke: '#2a1005',
+               floor1: '#5a3020', floorStroke: '#4a2818',
+               door1: '#8a3a10', door2: '#aa5020',
+               carpet1: '#8a2000', carpet2: '#ff6a20', carpet3: '#8a2000',
+               throne1: '#6a1a00', throne2: '#ff5500', throne3: '#ffaa40' },
 };
 
 function dc() {
@@ -148,13 +153,25 @@ function drawTile(col, row, ox, oy) {
                 } else if (dd === 'gold') {
                     if (col <= 12) { gBase = '#8a7a3a'; gBlade = '#7a6a2a'; }
                     else { gBase = '#b8a858'; gBlade = '#a89848'; }
+                } else if (dd === 'lava') {
+                    if (col <= 12) { gBase = '#3a1808'; gBlade = '#2a1005'; }
+                    else { gBase = '#5a2810'; gBlade = '#4a2008'; }
                 }
             }
             ctx.fillStyle = gBase; ctx.fillRect(x, y, T, T);
-            ctx.fillStyle = gBlade;
-            ctx.fillRect(x+4, y+8, 2, 6); ctx.fillRect(x+12, y+4, 2, 5);
-            ctx.fillRect(x+22, y+10, 2, 7); ctx.fillRect(x+8, y+20, 2, 5);
-            ctx.fillRect(x+18, y+16, 2, 6); ctx.fillRect(x+26, y+22, 2, 5);
+            if (isLawn && (typeof currentDesign !== 'undefined') && currentDesign === 'lava') {
+                // Lava cracks instead of grass blades
+                const pulse = 0.5 + 0.3 * Math.sin(performance.now() / 500 + col * 1.7 + row * 0.9);
+                ctx.fillStyle = `rgba(255,80,0,${pulse * 0.35})`;
+                ctx.fillRect(x+2, y+14, T-4, 2);
+                ctx.fillStyle = `rgba(255,120,20,${pulse * 0.25})`;
+                ctx.fillRect(x+10, y+4, 2, T-8);
+            } else {
+                ctx.fillStyle = gBlade;
+                ctx.fillRect(x+4, y+8, 2, 6); ctx.fillRect(x+12, y+4, 2, 5);
+                ctx.fillRect(x+22, y+10, 2, 7); ctx.fillRect(x+8, y+20, 2, 5);
+                ctx.fillRect(x+18, y+16, 2, 6); ctx.fillRect(x+26, y+22, 2, 5);
+            }
             break;
         }
         case PATH: {
@@ -163,6 +180,7 @@ function drawTile(col, row, ox, oy) {
                 const dd = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
                 if (dd === 'void') { pBase = '#4a2a6e'; pDetail = '#3a1a5e'; }
                 else if (dd === 'gold') { pBase = '#c8a838'; pDetail = '#b89828'; }
+                else if (dd === 'lava') { pBase = '#4a2010'; pDetail = '#3a1808'; }
             }
             ctx.fillStyle = pBase; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = pDetail; ctx.fillRect(x+3, y+5, 4, 3); ctx.fillRect(x+14, y+18, 5, 3);
@@ -389,7 +407,104 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 8, y + 8, 4, 4); ctx.fillRect(x + 20, y + 20, 4, 4);
             ctx.strokeStyle = '#5a5a6a'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
             break;
+        case LAVA_FLOOR: {
+            // Dark rock with lava cracks
+            ctx.fillStyle = '#3a2020'; ctx.fillRect(x, y, T, T);
+            const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 400 + col * 1.3 + row * 0.7);
+            ctx.fillStyle = `rgba(255,80,0,${pulse * 0.4})`; ctx.fillRect(x + 2, y + 14, T - 4, 3);
+            ctx.fillStyle = `rgba(255,120,20,${pulse * 0.3})`; ctx.fillRect(x + 10, y + 4, 3, T - 8);
+            ctx.strokeStyle = `rgba(255,60,0,${pulse * 0.2})`; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, T, T);
+            break;
+        }
     }
+}
+
+// ── Burning Wall Visual ─────────────────────────────────────
+
+function drawBurningWall(ox, oy) {
+    if (!burningWall.active) return;
+    const elapsed = gameTime - burningWall.startTime;
+    const t = elapsed / BURNING_WALL_DURATION;
+    const alpha = 1 - t * 0.3;
+    const wx = burningWall.col * T - ox, wy = burningWall.row * T - oy;
+
+    // Fire glow on the wall
+    ctx.save();
+    const grad = ctx.createRadialGradient(wx + T / 2, wy + T / 2, 2, wx + T / 2, wy + T / 2, T * 1.5);
+    grad.addColorStop(0, `rgba(255,100,0,${alpha * 0.5})`);
+    grad.addColorStop(0.5, `rgba(255,50,0,${alpha * 0.25})`);
+    grad.addColorStop(1, 'rgba(255,50,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(wx - T, wy - T, T * 3, T * 3);
+
+    // Flickering flames on the wall tile
+    const flicker = 0.7 + 0.3 * Math.sin(performance.now() / 80);
+    ctx.fillStyle = `rgba(255,80,0,${alpha * flicker * 0.7})`;
+    ctx.fillRect(wx, wy, T, T);
+    ctx.fillStyle = `rgba(255,200,50,${alpha * flicker * 0.5})`;
+    ctx.fillRect(wx + 4, wy + 4, T - 8, T - 8);
+
+    // Flame tips
+    for (let i = 0; i < 4; i++) {
+        const fx = wx + 4 + Math.sin(performance.now() / 120 + i * 2) * 8 + 8;
+        const fy = wy - 4 - Math.sin(performance.now() / 90 + i * 3) * 6;
+        ctx.fillStyle = `rgba(255,150,30,${alpha * 0.6})`;
+        ctx.beginPath(); ctx.arc(fx, fy, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ── Mace Spin Visual Effects ────────────────────────────────
+
+function drawMaceSpin(ox, oy) {
+    if (!maceSpin.active) return;
+    const elapsed = gameTime - maceSpin.startTime;
+    const t = elapsed / MACE_SPIN_DURATION;
+    const pcx = player.x + player.width / 2 - ox, pcy = player.y + player.height / 2 - oy;
+    const angle = (performance.now() / 60) % (Math.PI * 2);
+    const radius = MACE_SPIN_RANGE;
+
+    ctx.save();
+    // Fire ring
+    const alpha = 1 - t * 0.5;
+    ctx.strokeStyle = `rgba(255,100,20,${alpha * 0.6})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.stroke();
+
+    // Inner glow
+    const grad = ctx.createRadialGradient(pcx, pcy, 0, pcx, pcy, radius);
+    grad.addColorStop(0, `rgba(255,80,0,${alpha * 0.15})`);
+    grad.addColorStop(0.7, `rgba(255,50,0,${alpha * 0.08})`);
+    grad.addColorStop(1, 'rgba(255,50,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.fill();
+
+    // Spinning mace heads (3 fire orbs)
+    for (let i = 0; i < 3; i++) {
+        const a = angle + (Math.PI * 2 / 3) * i;
+        const bx = pcx + Math.cos(a) * radius * 0.85;
+        const by = pcy + Math.sin(a) * radius * 0.85;
+        // Fire trail
+        ctx.fillStyle = `rgba(255,150,30,${alpha * 0.3})`;
+        ctx.beginPath(); ctx.arc(bx, by, 10, 0, Math.PI * 2); ctx.fill();
+        // Core
+        ctx.fillStyle = `rgba(255,80,0,${alpha * 0.8})`;
+        ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+        // Hot center
+        ctx.fillStyle = `rgba(255,220,100,${alpha * 0.9})`;
+        ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Spark particles
+    for (let i = 0; i < 6; i++) {
+        const sa = angle * 2 + (Math.PI * 2 / 6) * i;
+        const sr = radius * (0.4 + 0.5 * Math.sin(performance.now() / 80 + i));
+        const sx = pcx + Math.cos(sa) * sr;
+        const sy = pcy + Math.sin(sa) * sr;
+        ctx.fillStyle = `rgba(255,200,50,${alpha * 0.6})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
 }
 
 // ── Void Rush Visual Effects ────────────────────────────────

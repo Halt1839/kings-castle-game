@@ -1,10 +1,15 @@
-const GAME_VERSION = 'v4.1.0';
+const GAME_VERSION = 'v4.1.9';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
 let inArena = false;
 let arenaReturnX = 0;
 let arenaReturnY = 0;
+
+// Lava zone
+let inLavaZone = false;
+let lavaZoneReturnX = 0;
+let lavaZoneReturnY = 0;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -26,7 +31,7 @@ const LAST_SLOT_KEY = 'kingGame_lastSlot';
 // ── Castle Map ──────────────────────────────────────────────
 const T = 32;
 const MAP_COLS = 30;
-const MAP_ROWS = 240;
+const MAP_ROWS = 290;
 
 // Tile types
 const VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, THRONE = 4;
@@ -41,7 +46,7 @@ const PATH = 27;
 const TREE = 28, HUT_WALL = 29, HUT_FLOOR = 30, GOLD_BLOCK = 31;
 const SAND = 32, DOCK = 33, TENT = 34, CAMPFIRE = 35;
 const MOUNTAIN = 36, MOUNTAIN_PATH = 37, CAVE_WALL = 38, CAVE_FLOOR = 39, CAVE_DOOR = 40;
-const PEAK_FLOOR = 41, WEAPON_RACK = 42, DESIGN_RACK = 44, ATM_TILE = 45;
+const PEAK_FLOOR = 41, WEAPON_RACK = 42, DESIGN_RACK = 44, ATM_TILE = 45, LAVA_FLOOR = 46;
 
 // Game time (pausable) — declared early so notifications & systems can use it
 let gameTime = 0;
@@ -86,6 +91,35 @@ function drawVersion() {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fillText(GAME_VERSION, 4, 2);
     ctx.restore();
+}
+
+// Admin panel state
+let adminOpen = false;
+let adminSelection = 0;
+let adminGodMode = false;
+let adminGhostMode = false;
+let adminSwordEquipped = false;
+let adminUnlocked = (function() { try { const d = JSON.parse(localStorage.getItem('kingGame_admin')); return d && d.unlocked === true; } catch(e) { return false; } })();
+const ADMIN_STORAGE_KEY = 'kingGame_admin';
+
+function getAdminData() {
+    try {
+        const d = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY));
+        if (!d) return { unlocked: false, attempts: 0, weekStart: 0 };
+        // Reset attempts if a new week
+        const now = Date.now();
+        const weekMs = 7 * 24 * 60 * 60 * 1000;
+        if (now - d.weekStart >= weekMs) {
+            d.attempts = 0;
+            d.weekStart = now;
+            localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(d));
+        }
+        return d;
+    } catch(e) { return { unlocked: false, attempts: 0, weekStart: 0 }; }
+}
+
+function saveAdminData(d) {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(d));
 }
 
 // Shield state — declared early so damage checks can reference it

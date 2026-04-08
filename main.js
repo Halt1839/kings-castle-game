@@ -90,6 +90,21 @@ window.addEventListener('keydown', (e) => {
         return;
     }
 
+    // Admin panel navigation
+    if (adminOpen) {
+        const items = getAdminItems();
+        if (e.key === 'Escape') { adminOpen = false; }
+        else {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') adminSelection = (adminSelection - 1 + items.length) % items.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') adminSelection = (adminSelection + 1) % items.length;
+            if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+                items[adminSelection].action();
+                ePressed = false;
+            }
+        }
+        return;
+    }
+
     // Shop navigation
     if (shopOpen) {
         const items = getShopItems();
@@ -189,7 +204,13 @@ window.addEventListener('keyup', (e) => keys.delete(e.key));
 canvas.addEventListener('click', (e) => {
     const mx = e.clientX, my = e.clientY;
     if (gameState === 'playing') {
-        if (shopOpen) return; // ignore clicks behind overlays
+        if (adminOpen || shopOpen) return; // ignore clicks behind overlays
+        // Admin button
+        if (mx >= adminBtn.x && mx <= adminBtn.x + adminBtn.w &&
+            my >= adminBtn.y && my <= adminBtn.y + adminBtn.h) {
+            tryAdminLogin();
+            return;
+        }
         if (mx >= pauseBtn.x && mx <= pauseBtn.x + pauseBtn.w &&
             my >= pauseBtn.y && my <= pauseBtn.y + pauseBtn.h) {
             gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main';
@@ -444,6 +465,15 @@ function gameLoop(now) {
     // Update dagger stab
     updateDaggerStab();
 
+    // Update mace spin
+    updateMaceSpin();
+
+    // Update burning wall
+    updateBurningWall();
+
+    // Update lava monster
+    updateLavaMonster(dt);
+
     // Ice Traveler arrival/departure notification
     if (typeof iceTravelerWasPresent === 'undefined') iceTravelerWasPresent = false;
     const travelerHere = isIceTravelerPresent();
@@ -477,6 +507,7 @@ function gameLoop(now) {
     volcanoWasActive = volcanoNow;
 
     // Check for death
+    if (adminGodMode && health.value <= 0) health.value = health.max;
     if (health.value <= 0) {
         deathCount++;
         deathSelection = 0;
@@ -525,7 +556,9 @@ function gameLoop(now) {
             hitDragon();
         } else if (swordPickedUp && voidSentinel.alive && isNearVoidSentinel()) {
             hitVoidSentinel();
-        } else if (!swordPickedUp && ((spider.active && isNearSpider()) || (seaSnake.active && isNearSeaSnake()) || isNearAnyOrc() || (troll.alive && isNearTroll()) || (dragon.alive && isNearDragon()) || (voidSentinel.alive && isNearVoidSentinel()))) {
+        } else if (swordPickedUp && lavaMonster.alive && isNearLavaMonster()) {
+            hitLavaMonster();
+        } else if (!swordPickedUp && ((spider.active && isNearSpider()) || (seaSnake.active && isNearSeaSnake()) || isNearAnyOrc() || (troll.alive && isNearTroll()) || (dragon.alive && isNearDragon()) || (voidSentinel.alive && isNearVoidSentinel()) || (lavaMonster.alive && isNearLavaMonster()))) {
             addNotification('You need a sword to fight!', 1500, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
         }
         hPressed = false;
@@ -555,11 +588,13 @@ function gameLoop(now) {
         rPressed = false;
     }
 
-    // Handle Y press (dagger stab)
+    // Handle Y press (dagger stab / mace spin)
     if (yPressed) {
         if (currentSword === 'dagger' && swordPickedUp && !daggerStab.active && gameTime >= daggerStab.cooldownUntil) {
             const stabTarget = findNearestStabTarget();
             if (stabTarget) startDaggerStab(stabTarget);
+        } else if (currentSword === 'firemace' && firemaceUnlocked) {
+            useMaceSpin();
         }
         yPressed = false;
     }
@@ -688,7 +723,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !iceTrap.active && !atmOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !maceSpin.active && !iceTrap.active && !atmOpen && !adminOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -722,6 +757,13 @@ function gameLoop(now) {
             player.y = arenaReturnY - T;
             inArena = false;
             addNotification('You returned from the arena.', 2000, 'rgba(150,200,255,1)', 'rgba(0,30,60,0.85)');
+        }
+        // Return from lava zone: step on door tiles at row 260, cols 14-15
+        if (inLavaZone && (pRow === 260 || pRow === 261) && (pCol === 14 || pCol === 15)) {
+            player.x = lavaZoneReturnX;
+            player.y = lavaZoneReturnY;
+            inLavaZone = false;
+            addNotification('You escaped the lava chamber.', 2000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         }
     } else {
         playerWalking = false; playerWalkPhase = 0;
@@ -766,6 +808,7 @@ function gameLoop(now) {
     drawDragon(camX, camY);
     drawFireBreath(camX, camY);
     drawVoidSentinel(camX, camY);
+    drawLavaMonster(camX, camY);
     drawGuestRoomNPCs(camX, camY);
 
     if (inBoat) drawKingInBoat(camX, camY);
@@ -794,7 +837,9 @@ function gameLoop(now) {
         ctx.restore();
     }
 
+    drawBurningWall(camX, camY);
     drawVoidRush(camX, camY);
+    drawMaceSpin(camX, camY);
     drawShieldEffect(camX, camY);
     drawFireballs(camX, camY);
     drawIceTrap(camX, camY);
@@ -821,9 +866,10 @@ function gameLoop(now) {
         if (goldDesignUnlocked) designs.push('gold');
         if (voidDesignUnlocked) designs.push('void');
         if (icePalaceUnlocked) designs.push('ice');
+        if (lavaDesignUnlocked) designs.push('lava');
         const idx = designs.indexOf(currentDesign);
         const nextKey = designs[(idx + 1) % designs.length];
-        const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace' };
+        const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava' };
         drawPrompt(`${kl('E')} to switch to ${names[nextKey]} design`);
     } else if (isNearDesignRoomBuildSite()) {
         drawPrompt(`${kl('E')} to build Design Room (100 gold) [${goldCount} gold]`);
@@ -835,6 +881,9 @@ function gameLoop(now) {
         drawPrompt(`${kl('E')} to build Guest Room (30 gold) [${goldCount} gold]`);
     } else if (isNearGold()) {
         drawPrompt(`${kl('E')} to pick up the gold block`);
+    } else if (isNearLavaMonster()) {
+        const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
+        drawPrompt(`${kl('H')} to attack the Lava Monster!${stabHint}`);
     } else if (isNearVoidSentinel()) {
         const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
         drawPrompt(`${kl('H')} to attack Noli${stabHint}`);
@@ -893,12 +942,16 @@ function gameLoop(now) {
 
     drawHUD();
     drawVoidSentinelBossBar();
+    drawLavaMonsterBossBar();
     drawQuestTasks();
+    drawTeleportButton();
     drawPauseButton();
+    drawAdminButton();
     drawShopButton();
     drawNotifications();
 
-    if (shopOpen) drawShopMenu();
+    if (adminOpen) drawAdminPanel();
+    else if (shopOpen) drawShopMenu();
 
     drawTouchControls();
 

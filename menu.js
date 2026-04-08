@@ -60,6 +60,9 @@ function saveGame(slot) {
         inArena,
         arenaReturnX,
         arenaReturnY,
+        inLavaZone,
+        lavaZoneReturnX,
+        lavaZoneReturnY,
         designRoomBuilt,
         currentDesign,
         goldDesignUnlocked,
@@ -84,9 +87,11 @@ function saveGame(slot) {
         icePalaceUnlocked,
         snowActive, snowStartTime, snowLastCheck,
         iceTravelerSpawned, iceTravelerSpawnTime, iceTravelerLastCheck,
+        lavaDesignUnlocked,
         firemaceUnlocked,
         maceMastery: { xp: maceMastery.xp, level: maceMastery.level },
         maceMasterySkin,
+        lavaMonster: { x: lavaMonster.x, y: lavaMonster.y, hp: lavaMonster.hp, maxHp: lavaMonster.maxHp, alive: lavaMonster.alive, aggro: lavaMonster.aggro, deathTime: lavaMonsterDeathTime },
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -163,6 +168,9 @@ function loadGame(slot) {
     if (s.inArena !== undefined) inArena = s.inArena;
     if (s.arenaReturnX !== undefined) arenaReturnX = s.arenaReturnX;
     if (s.arenaReturnY !== undefined) arenaReturnY = s.arenaReturnY;
+    if (s.inLavaZone !== undefined) inLavaZone = s.inLavaZone;
+    if (s.lavaZoneReturnX !== undefined) lavaZoneReturnX = s.lavaZoneReturnX;
+    if (s.lavaZoneReturnY !== undefined) lavaZoneReturnY = s.lavaZoneReturnY;
     if (s.voidSentinel) {
         voidSentinel.x = s.voidSentinel.x; voidSentinel.y = s.voidSentinel.y;
         voidSentinel.hp = s.voidSentinel.hp; voidSentinel.alive = s.voidSentinel.alive;
@@ -193,9 +201,17 @@ function loadGame(slot) {
     if (s.iceTravelerSpawned !== undefined) iceTravelerSpawned = s.iceTravelerSpawned;
     if (s.iceTravelerSpawnTime !== undefined) iceTravelerSpawnTime = s.iceTravelerSpawnTime;
     if (s.iceTravelerLastCheck !== undefined) iceTravelerLastCheck = s.iceTravelerLastCheck;
+    if (s.lavaDesignUnlocked !== undefined) lavaDesignUnlocked = s.lavaDesignUnlocked;
     if (s.firemaceUnlocked !== undefined) firemaceUnlocked = s.firemaceUnlocked;
     if (s.maceMastery) { maceMastery.xp = s.maceMastery.xp; maceMastery.level = s.maceMastery.level; }
     if (s.maceMasterySkin !== undefined) maceMasterySkin = s.maceMasterySkin;
+    if (s.lavaMonster) {
+        lavaMonster.x = s.lavaMonster.x; lavaMonster.y = s.lavaMonster.y;
+        lavaMonster.hp = s.lavaMonster.hp; lavaMonster.alive = s.lavaMonster.alive;
+        lavaMonster.aggro = s.lavaMonster.aggro || false;
+        if (s.lavaMonster.maxHp) lavaMonster.maxHp = s.lavaMonster.maxHp;
+        if (s.lavaMonster.deathTime !== undefined) lavaMonsterDeathTime = s.lavaMonster.deathTime;
+    }
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -257,6 +273,7 @@ function resetGameState() {
     npcCongrats.cook = 0; npcCongrats.butler = 0; npcCongrats.wizard = 0; npcCongrats.campLeader = 0;
     voidStarSwordUnlocked = false;
     voidRush.state = 'idle'; voidRush.lastUseTime = -Infinity; voidRush.hitSet = new Set();
+    maceSpin.active = false; maceSpin.cooldownUntil = 0;
     voidStarUnlocked = false; voidStarActive = false; lastVoidStarTime = -Infinity;
     notifications = [];
     deathCount = 0;
@@ -272,13 +289,19 @@ function resetGameState() {
     jackFrostDialog.active = false;
     extraLevels = false;
     inArena = false; arenaReturnX = 0; arenaReturnY = 0;
+    inLavaZone = false; lavaZoneReturnX = 0; lavaZoneReturnY = 0;
+    burningWall.active = false;
     voidSentinel.x = 14 * T; voidSentinel.y = 220 * T; voidSentinel.hp = 2500; voidSentinel.maxHp = 2500;
     voidSentinel.alive = true; voidSentinel.aggro = false; voidSentinel.stunned = false; voidSentinel.stunUntil = 0;
     voidSentinel.dashState = 'idle'; voidSentinel.lastDashTime = -Infinity; voidSentinel.dashHit = false;
     voidSentinelDeathTime = -Infinity;
     snowActive = false; snowStartTime = 0; snowLastCheck = 0;
     iceTravelerSpawned = false; iceTravelerSpawnTime = 0; iceTravelerLastCheck = 0;
+    lavaDesignUnlocked = false;
     firemaceUnlocked = false; maceMastery.xp = 0; maceMastery.level = 0; maceMasterySkin = 'default';
+    lavaMonster.x = 14 * T; lavaMonster.y = 270 * T; lavaMonster.hp = 1000; lavaMonster.maxHp = 1000;
+    lavaMonster.alive = true; lavaMonster.aggro = false; lavaMonster.spinning = false;
+    lavaMonster.lastSpinTime = -Infinity; lavaMonster.trail = []; lavaMonsterDeathTime = -Infinity;
     gameTime = 0;
 }
 
