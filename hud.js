@@ -215,14 +215,29 @@ function drawHUD() {
     ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillStyle = '#FFD700';
     ctx.fillText(`Gold: ${goldCount}`, canvas.width - 16, canvas.height - 46 - touchOffsetR);
-    // Snowflake counter
-    ctx.fillStyle = '#aaddff';
-    ctx.fillText(`Snowflakes: ${snowflakeCount}`, canvas.width - 16, canvas.height - 62 - touchOffsetR);
+
+    // Mace Spin indicator (bottom right, shown when firemace equipped)
+    if (currentSword === 'firemace' && firemaceUnlocked) {
+        const spinCdLeft = Math.max(0, maceSpin.cooldownUntil - gameTime);
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        if (maceSpin.active) {
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = `rgba(255,120,30,${pulse})`;
+            ctx.fillText(`[${kl('Y')}] Mace Spin Active`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else if (spinCdLeft <= 0) {
+            ctx.fillStyle = '#ff6600';
+            ctx.fillText(`[${kl('Y')}] Mace Spin Ready`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else {
+            const secs = Math.ceil(spinCdLeft / 1000);
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[${kl('Y')}] Mace Spin ${secs}s`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        }
+    }
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'firemace' ? '#ff6600' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'firemace' ? 'Firemace' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
@@ -866,6 +881,27 @@ function getAdminItems() {
         { name: adminForceEruption ? 'Eruption: ON' : 'Eruption: OFF', action: () => {
             adminForceEruption = !adminForceEruption;
             addNotification(adminForceEruption ? 'Eruption forced on!' : 'Eruption returned to normal cycle', 1500, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.8)');
+        }},
+        { name: lavaDesignUnlocked ? 'Lava Design: ON' : 'Lava Design: OFF', action: () => {
+            lavaDesignUnlocked = !lavaDesignUnlocked;
+            addNotification(lavaDesignUnlocked ? 'Lava design unlocked!' : 'Lava design locked', 1500, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.8)');
+        }},
+        { name: 'Revoke Admin Access', action: () => {
+            if (confirm('Are you sure? You will lose admin access permanently.')) {
+                adminUnlocked = false; adminOpen = false;
+                adminGodMode = false; adminGhostMode = false; adminSwordEquipped = false;
+                adminForceSnow = false; adminForceIceTraveler = false; adminForceEruption = false;
+                health.max = 10; health.value = Math.min(health.value, 10);
+                player.speed = 120;
+                swordDamage = SWORD_DMG_MAP[currentSword] || 2;
+                if (currentSword === 'admin') { currentSword = 'legendary'; swordDamage = 2; }
+                voidRushDmg1 = 15; voidRushDmg2 = 25;
+                stabFrontDmg = 5; stabBackDmg = 15;
+                maceSpinDmg = 12;
+                extraLevels = false;
+                saveAdminData({ unlocked: false, attempts: 0, weekStart: Date.now() });
+                addNotification('Admin access revoked. All stats reset to normal.', 3000, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.9)');
+            }
         }},
         { name: 'Close', action: () => { adminOpen = false; } },
     ];
