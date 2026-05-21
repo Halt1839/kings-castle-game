@@ -475,6 +475,7 @@ function drawPauseMenu() {
     if (pauseScreen === 'mastery_dagger') { drawDaggerMasteryScreen(); return; }
     if (pauseScreen === 'mastery_spear') { drawSpearMasteryScreen(); return; }
     if (pauseScreen === 'mastery_mace') { drawMaceMasteryScreen(); return; }
+    if (pauseScreen === 'mastery_saber') { drawSaberMasteryScreen(); return; }
     if (pauseScreen === 'settings') { drawSettingsScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     const bw = 280, bh = 280;
@@ -534,6 +535,7 @@ function getMasteryPickerItems() {
     if (daggerUnlocked) items.push({ label: 'Dagger Mastery (Lv ' + daggerMastery.level + ')', key: 'dagger' });
     if (iceSpearUnlocked) items.push({ label: 'Spear Mastery (Lv ' + spearMastery.level + ')', key: 'spear' });
     if (firemaceUnlocked) items.push({ label: 'Mace Mastery (Lv ' + maceMastery.level + ')', key: 'mace' });
+    if (saberUnlocked) items.push({ label: 'Saber Mastery (Lv ' + saberMastery.level + ')', key: 'saber' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }
@@ -688,10 +690,26 @@ function drawMaceMasteryScreen() {
         items, maceMasterySkin, '#ff8830', '#cc5500');
 }
 
+function getSaberMasteryItems() {
+    const skins = getSaberMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawSaberMasteryScreen() {
+    const items = getSaberMasteryItems();
+    drawWeaponMasteryDetail('SABER MASTERY', saberMastery,
+        [25, 50, 75, 100], ['Padawan', 'Apprentice', 'Knight', 'Master'],
+        ['#a07a45', '#6a4a25', '#4a3318', '#e0d2b0'],
+        items, saberMasterySkin, '#ff5050', '#aa1010');
+}
+
 function getQuestItems() {
     const items = [{ label: 'Main Quest', key: 'main' }];
     if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
     if (jackFrostQuestActive) items.push({ label: 'Jack Frost Quest', key: 'frost' });
+    if (saviorQuestActive) items.push({ label: 'Savior Quest', key: 'savior' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }
@@ -793,10 +811,10 @@ function getAdminItems() {
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
         { name: 'Set Mastery Level', action: () => {
-            const weapon = prompt('Which weapon? (sword / dagger / spear)');
+            const weapon = prompt('Which weapon? (sword / dagger / spear / mace / saber)');
             if (weapon === null) return;
             const w = weapon.trim().toLowerCase();
-            if (w !== 'sword' && w !== 'dagger' && w !== 'spear' && w !== 'mace' && w !== 'firemace') { addNotification('Enter "sword", "dagger" or "spear"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            if (w !== 'sword' && w !== 'dagger' && w !== 'spear' && w !== 'mace' && w !== 'firemace' && w !== 'saber') { addNotification('Enter "sword", "dagger", "spear", "mace", or "saber"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
             const maxLvl = extraLevels ? 99999 : 100;
             const val = prompt('Enter level (0-' + maxLvl + '):');
             if (val === null) return;
@@ -825,13 +843,21 @@ function getAdminItems() {
                 daggerMasterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { daggerMasterySkin = sk[i]; break; } }
                 addNotification('Dagger mastery set to ' + lvl, 2000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.8)');
-            } else {
+            } else if (w === 'spear') {
                 spearMastery.level = lvl; spearMastery.xp = 0;
                 const ms = [100, 75, 50, 25];
                 const sk = ['aurora', 'glacier', 'blizzard', 'frost'];
                 spearMasterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { spearMasterySkin = sk[i]; break; } }
                 addNotification('Spear mastery set to ' + lvl, 2000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
+            } else {
+                saberUnlocked = true;
+                saberMastery.level = lvl; saberMastery.xp = 0;
+                const ms = [100, 75, 50, 25];
+                const sk = ['master', 'knight', 'apprentice', 'padawan'];
+                saberMasterySkin = 'default';
+                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { saberMasterySkin = sk[i]; break; } }
+                addNotification('Saber mastery set to ' + lvl, 2000, 'rgba(255,80,80,1)', 'rgba(60,0,0,0.8)');
             }
         }},
         { name: 'Set Ability Damage', action: () => {
@@ -881,6 +907,10 @@ function getAdminItems() {
         { name: adminForceEruption ? 'Eruption: ON' : 'Eruption: OFF', action: () => {
             adminForceEruption = !adminForceEruption;
             addNotification(adminForceEruption ? 'Eruption forced on!' : 'Eruption returned to normal cycle', 1500, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.8)');
+        }},
+        { name: 'Spawn Portal Now', action: () => {
+            spawnPortal();
+            portal.lastSpawnCheck = gameTime;
         }},
         { name: lavaDesignUnlocked ? 'Lava Design: ON' : 'Lava Design: OFF', action: () => {
             lavaDesignUnlocked = !lavaDesignUnlocked;

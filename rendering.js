@@ -26,6 +26,11 @@ const DESIGN_COLORS = {
                door1: '#8a3a10', door2: '#aa5020',
                carpet1: '#8a2000', carpet2: '#ff6a20', carpet3: '#8a2000',
                throne1: '#6a1a00', throne2: '#ff5500', throne3: '#ffaa40' },
+    future:  { wall1: '#444a55', wall2: '#34394a', wallStroke: '#1e2230',
+               floor1: '#5a6070', floorStroke: '#4a505e',
+               door1: '#2a3344', door2: '#3a4658',
+               carpet1: '#1a2230', carpet2: '#4FE0FF', carpet3: '#1a2230',
+               throne1: '#2a3344', throne2: '#aabacc', throne3: '#4FE0FF' },
 };
 
 function dc() {
@@ -34,6 +39,154 @@ function dc() {
 }
 
 // ── Tile Drawing ────────────────────────────────────────────
+
+// Sci-fi metallic plate tile (used for future-world terrain).
+// Designed to be visually tileable and varied with (col, row).
+function drawMetallicTile(x, y, col, row) {
+    const variant = ((col * 73856093) ^ (row * 19349663)) & 3;
+    // Base metal fill with vertical gradient
+    const grad = ctx.createLinearGradient(x, y, x, y + T);
+    grad.addColorStop(0, '#4a525e');
+    grad.addColorStop(0.5, '#363c46');
+    grad.addColorStop(1, '#22272f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, T, T);
+
+    // Top/left bevel highlight
+    ctx.fillStyle = 'rgba(180,195,210,0.35)';
+    ctx.fillRect(x, y, T, 1);
+    ctx.fillRect(x, y, 1, T);
+    // Bottom/right shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(x, y + T - 1, T, 1);
+    ctx.fillRect(x + T - 1, y, 1, T);
+
+    // Inset panel
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 3.5, y + 3.5, T - 7, T - 7);
+    ctx.strokeStyle = 'rgba(150,165,180,0.20)';
+    ctx.strokeRect(x + 4.5, y + 4.5, T - 9, T - 9);
+
+    // Angular cut lines vary per tile
+    ctx.strokeStyle = 'rgba(15,18,22,0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (variant === 0) {
+        ctx.moveTo(x + 8, y);  ctx.lineTo(x + 8, y + 10); ctx.lineTo(x, y + 18);
+    } else if (variant === 1) {
+        ctx.moveTo(x + T, y + 12); ctx.lineTo(x + 20, y + 12); ctx.lineTo(x + 14, y + T);
+    } else if (variant === 2) {
+        ctx.moveTo(x + T/2, y); ctx.lineTo(x + T/2, y + 8); ctx.lineTo(x + T, y + 14);
+    } else {
+        ctx.moveTo(x, y + 22); ctx.lineTo(x + 12, y + 22); ctx.lineTo(x + 16, y + T);
+    }
+    ctx.stroke();
+
+    // Cyan accent glow on a subset of tiles
+    if (((col + row) & 3) === 0) {
+        const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 700 + col + row);
+        ctx.strokeStyle = `rgba(80,200,255,${0.35 + 0.25 * pulse})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        if (variant === 0 || variant === 2) {
+            ctx.moveTo(x + 6, y + T - 6); ctx.lineTo(x + T - 6, y + T - 6);
+        } else {
+            ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + T - 6, y + 6);
+        }
+        ctx.stroke();
+    }
+
+    // Tiny rivets in corners
+    ctx.fillStyle = 'rgba(20,24,30,0.9)';
+    ctx.fillRect(x + 2, y + 2, 1.5, 1.5);
+    ctx.fillRect(x + T - 3.5, y + 2, 1.5, 1.5);
+    ctx.fillRect(x + 2, y + T - 3.5, 1.5, 1.5);
+    ctx.fillRect(x + T - 3.5, y + T - 3.5, 1.5, 1.5);
+}
+
+// Future-world tree: metallic base with a sci-fi spire/antenna on top.
+function drawMetallicTree(x, y, col, row) {
+    drawMetallicTile(x, y, col, row);
+    const variant = ((col * 374761393) ^ (row * 668265263)) & 3;
+    const cx = x + T / 2;
+
+    // Trunk / pillar
+    ctx.fillStyle = '#2a313a';
+    ctx.fillRect(cx - 3, y + 4, 6, T - 6);
+    ctx.fillStyle = '#4c5662';
+    ctx.fillRect(cx - 3, y + 4, 2, T - 6);
+    ctx.fillStyle = '#171b21';
+    ctx.fillRect(cx + 1, y + 4, 2, T - 6);
+
+    // Horizontal "branch" plates / antenna dishes
+    ctx.fillStyle = '#3c4450';
+    if (variant === 0) {
+        ctx.fillRect(cx - 9, y + 8, 18, 3);
+        ctx.fillRect(cx - 7, y + 16, 14, 3);
+        ctx.fillRect(cx - 5, y + 22, 10, 3);
+    } else if (variant === 1) {
+        ctx.fillRect(cx - 10, y + 6, 20, 2);
+        ctx.fillRect(cx - 6, y + 14, 12, 2);
+        ctx.fillRect(cx - 8, y + 20, 16, 2);
+    } else if (variant === 2) {
+        // Dish on top
+        ctx.beginPath(); ctx.ellipse(cx, y + 7, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(cx - 6, y + 18, 12, 3);
+    } else {
+        ctx.fillRect(cx - 8, y + 10, 16, 2);
+        ctx.fillRect(cx - 5, y + 18, 10, 2);
+        ctx.beginPath(); ctx.ellipse(cx, y + 26, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Edge highlights on plates
+    ctx.fillStyle = 'rgba(180,200,220,0.30)';
+    if (variant === 0) { ctx.fillRect(cx - 9, y + 8, 18, 1); }
+    else if (variant === 1) { ctx.fillRect(cx - 10, y + 6, 20, 1); }
+    else if (variant === 2) { ctx.fillRect(cx - 8, y + 6, 16, 1); }
+    else { ctx.fillRect(cx - 8, y + 10, 16, 1); }
+
+    // Pulsing cyan accent light at the top
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 500 + col * 0.7 + row * 1.3);
+    ctx.fillStyle = `rgba(80,220,255,${0.55 + 0.4 * pulse})`;
+    ctx.fillRect(cx - 1, y + 1, 2, 4);
+    ctx.fillStyle = `rgba(180,240,255,${0.4 * pulse})`;
+    ctx.beginPath(); ctx.arc(cx, y + 2, 3, 0, Math.PI * 2); ctx.fill();
+}
+
+// Future-world stone tile shared by bridge/dock/hut.
+function drawStoneTile(x, y, col, row, opts) {
+    opts = opts || {};
+    const base = opts.base || '#7a7a82';
+    const dark = opts.dark || '#5c5c64';
+    const light = opts.light || '#94949c';
+
+    ctx.fillStyle = base; ctx.fillRect(x, y, T, T);
+
+    // Pseudo-random stone block pattern based on (col, row)
+    const v = ((col * 928371) ^ (row * 261803)) & 7;
+    ctx.fillStyle = dark;
+    if (v === 0) { ctx.fillRect(x + 2, y + 2, 14, 12); ctx.fillRect(x + 18, y + 6, 12, 16); }
+    else if (v === 1) { ctx.fillRect(x + 4, y + 4, 22, 10); ctx.fillRect(x + 8, y + 18, 18, 10); }
+    else if (v === 2) { ctx.fillRect(x + 2, y + 10, 12, 18); ctx.fillRect(x + 16, y + 2, 14, 14); }
+    else if (v === 3) { ctx.fillRect(x + 6, y + 2, 20, 12); ctx.fillRect(x + 2, y + 16, 26, 12); }
+    else if (v === 4) { ctx.fillRect(x + 4, y + 4, 10, 22); ctx.fillRect(x + 16, y + 4, 12, 22); }
+    else if (v === 5) { ctx.fillRect(x + 4, y + 4, 18, 10); ctx.fillRect(x + 12, y + 16, 16, 12); }
+    else if (v === 6) { ctx.fillRect(x + 2, y + 6, 14, 14); ctx.fillRect(x + 18, y + 14, 12, 14); }
+    else              { ctx.fillRect(x + 6, y + 2, 12, 12); ctx.fillRect(x + 2, y + 16, 26, 10); }
+
+    // Light speckles for texture
+    ctx.fillStyle = light;
+    ctx.fillRect(x + 5, y + 8, 2, 2);
+    ctx.fillRect(x + 19, y + 4, 2, 2);
+    ctx.fillRect(x + 12, y + 20, 2, 2);
+    ctx.fillRect(x + 24, y + 22, 2, 2);
+
+    // Mortar outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+}
 
 function drawTile(col, row, ox, oy) {
     const x = col * T - ox, y = row * T - oy;
@@ -143,8 +296,16 @@ function drawTile(col, row, ox, oy) {
             ctx.fillStyle = '#d0e0f0'; ctx.beginPath(); ctx.ellipse(x+T/2, y+T/2, 5, 3, 0, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#C0C0C0'; ctx.fillRect(x+T/2-1, y+4, 2, 8); break;
         case GRASS: {
-            let gBase = '#4a8c3f', gBlade = '#3d7a34';
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawMetallicTile(x, y, col, row);
+                break;
+            }
             const isLawn = row >= 29 && row <= 38;
+            if (isLawn && (typeof currentDesign !== 'undefined') && currentDesign === 'future') {
+                drawMetallicTile(x, y, col, row);
+                break;
+            }
+            let gBase = '#4a8c3f', gBlade = '#3d7a34';
             if (isLawn) {
                 const dd = (typeof currentDesign !== 'undefined') ? currentDesign : 'default';
                 if (dd === 'void') {
@@ -181,6 +342,7 @@ function drawTile(col, row, ox, oy) {
                 if (dd === 'void') { pBase = '#4a2a6e'; pDetail = '#3a1a5e'; }
                 else if (dd === 'gold') { pBase = '#c8a838'; pDetail = '#b89828'; }
                 else if (dd === 'lava') { pBase = '#4a2010'; pDetail = '#3a1808'; }
+                else if (dd === 'future') { pBase = '#2a323e'; pDetail = '#1c2230'; }
             }
             ctx.fillStyle = pBase; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = pDetail; ctx.fillRect(x+3, y+5, 4, 3); ctx.fillRect(x+14, y+18, 5, 3);
@@ -205,6 +367,10 @@ function drawTile(col, row, ox, oy) {
             break;
         }
         case BRIDGE:
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawStoneTile(x, y, col, row);
+                break;
+            }
             ctx.fillStyle = '#8B6914'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#7a5c10'; ctx.fillRect(x, y, T, 3); ctx.fillRect(x, y+T-3, T, 3);
             // Planks
@@ -242,9 +408,17 @@ function drawTile(col, row, ox, oy) {
             }
             break;
         case TREE:
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawMetallicTree(x, y, col, row);
+                break;
+            }
             ctx.fillStyle = '#1a4a14'; ctx.fillRect(x, y, T, T);
             break;
         case HUT_WALL:
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawStoneTile(x, y, col, row, { base: '#6e6e76', dark: '#4e4e56', light: '#88888f' });
+                break;
+            }
             // Wooden hut wall
             ctx.fillStyle = '#6b4226'; ctx.fillRect(x, y, T, T);
             // Log texture
@@ -252,6 +426,10 @@ function drawTile(col, row, ox, oy) {
             ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 1; ctx.strokeRect(x, y, T, T);
             break;
         case HUT_FLOOR:
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawStoneTile(x, y, col, row, { base: '#8a8a92', dark: '#6c6c74', light: '#a4a4ac' });
+                break;
+            }
             // Wooden plank floor
             ctx.fillStyle = '#a07840'; ctx.fillRect(x, y, T, T);
             ctx.strokeStyle = '#8a6830'; ctx.lineWidth = 0.5;
@@ -266,6 +444,10 @@ function drawTile(col, row, ox, oy) {
             ctx.fillRect(x+12, y+22, 3, 2); ctx.fillRect(x+25, y+15, 2, 2);
             break;
         case DOCK:
+            if (typeof inFutureWorld !== 'undefined' && inFutureWorld) {
+                drawStoneTile(x, y, col, row);
+                break;
+            }
             ctx.fillStyle = '#8B6914'; ctx.fillRect(x, y, T, T);
             ctx.fillStyle = '#7a5c10'; ctx.fillRect(x+1, y+1, T-2, T-2);
             ctx.strokeStyle = '#6a4c08'; ctx.lineWidth = 1;
@@ -553,6 +735,11 @@ const SKIN_COLORS = {
     inferno:  { body: '#5a1500', trim: '#dd4400', crown: '#ff5500', gem: '#ffaa00', legs: '#3a0a00', arms: '#aa3300', glow: 'rgba(255,80,0,0.25)', cape: 'rgba(200,60,0,0.4)' },
     magma:    { body: '#3a1000', trim: '#cc2200', crown: '#ff3300', gem: '#ff6600', legs: '#2a0800', arms: '#882200', glow: 'rgba(255,50,0,0.3)', cape: 'rgba(180,30,0,0.5)' },
     hellfire: { body: '#2a0500', trim: '#ff4400', crown: '#ffaa00', gem: '#ffffff', legs: '#1a0300', arms: '#aa2200', glow: 'rgba(255,150,0,0.4)', aura: true },
+    // Saber mastery robes (Jedi-style)
+    padawan:    { body: '#a07a45', trim: '#7a5a2a', crown: '#FFD700', gem: '#FF3030', legs: '#5a3e1f', arms: '#d4a574' },
+    apprentice: { body: '#6a4a25', trim: '#b08a48', crown: '#FFD700', gem: '#FF3030', legs: '#3a2a14', arms: '#c8a070', cape: 'rgba(80,60,30,0.55)' },
+    knight:     { body: '#4a3318', trim: '#b8902a', crown: '#FFD700', gem: '#FF3030', legs: '#2a1a0a', arms: '#a07c50', cape: 'rgba(50,35,15,0.7)', pauldron: '#3a2810' },
+    master:     { body: '#e0d2b0', trim: '#FFD700', crown: '#FFD700', gem: '#FFFFFF', legs: '#8a7050', arms: '#f0d8b0', cape: 'rgba(240,220,180,0.6)', pauldron: '#b8a070', glow: 'rgba(255,240,200,0.22)' },
 };
 
 const DAGGER_BLADE_COLORS = {
@@ -723,8 +910,8 @@ function drawKing(ox, oy) {
     ctx.fillRect(sx+3+stabLean, sy+17 + legSwing, 4, 3);
     ctx.fillRect(sx+9+stabLean, sy+17 - legSwing, 4, 3);
 
-    // Sword (if picked up)
-    if (swordPickedUp) {
+    // Sword (if picked up). Hide it from the hand while the saber is thrown.
+    if (swordPickedUp && !(currentSword === 'saber' && saberThrow.active)) {
         const swingElapsed = performance.now() - swordSwingTime;
         const swinging = swingElapsed < SWORD_SWING_DURATION;
         ctx.save();
@@ -828,6 +1015,16 @@ function drawKing(ox, oy) {
                 ctx.fillStyle = mc.glow.replace(/[\d.]+\)$/, gp + ')');
                 ctx.beginPath(); ctx.arc(0.5, -8, 8, 0, Math.PI * 2); ctx.fill();
             }
+        } else if (currentSword === 'saber') {
+            // Lightsaber-style — metal hilt + glowing blade tinted by mastery skin
+            const sc = SABER_BLADE_COLORS[saberMasterySkin] || SABER_BLADE_COLORS.default;
+            const sp = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = sc.glow.replace('X', (0.5 * sp).toFixed(3));
+            ctx.beginPath(); ctx.arc(0.5, -10, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2a2a2e'; ctx.fillRect(-1.5, -2, 4, 6);
+            ctx.fillStyle = '#5a5a62'; ctx.fillRect(-1.5, -2, 4, 1);
+            ctx.fillStyle = sc.blade; ctx.fillRect(-1.5, -16, 3, 14);
+            ctx.fillStyle = sc.core; ctx.fillRect(-0.5, -16, 1, 14);
         } else {
             // Sword blade
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
@@ -906,8 +1103,8 @@ function drawKingInBoat(ox, oy) {
     ctx.fillStyle = '#FFD700'; ctx.fillRect(sx + 3, sy - 7, 10, 4);
     ctx.fillRect(sx + 3, sy - 10, 2, 3); ctx.fillRect(sx + 7, sy - 11, 2, 4); ctx.fillRect(sx + 11, sy - 10, 2, 3);
     ctx.fillStyle = '#FF0000'; ctx.fillRect(sx + 7, sy - 7, 2, 2);
-    // Sword in boat
-    if (swordPickedUp) {
+    // Sword in boat. Hide from the hand while the saber is thrown.
+    if (swordPickedUp && !(currentSword === 'saber' && saberThrow.active)) {
         const swingElapsed = performance.now() - swordSwingTime;
         const swinging = swingElapsed < SWORD_SWING_DURATION;
         ctx.save();
@@ -960,6 +1157,14 @@ function drawKingInBoat(ox, oy) {
                 ctx.fillStyle = mc.glow.replace(/[\d.]+\)$/, gp + ')');
                 ctx.beginPath(); ctx.arc(0.5, -8, 8, 0, Math.PI * 2); ctx.fill();
             }
+        } else if (currentSword === 'saber') {
+            const sp = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = `rgba(255,60,60,${0.5 * sp})`;
+            ctx.beginPath(); ctx.arc(0.5, -10, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2a2a2e'; ctx.fillRect(-1.5, -2, 4, 6);
+            ctx.fillStyle = '#5a5a62'; ctx.fillRect(-1.5, -2, 4, 1);
+            ctx.fillStyle = '#FF2020'; ctx.fillRect(-1.5, -16, 3, 14);
+            ctx.fillStyle = '#FFD0D0'; ctx.fillRect(-0.5, -16, 1, 14);
         } else {
             const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
             ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);

@@ -92,6 +92,14 @@ function saveGame(slot) {
         maceMastery: { xp: maceMastery.xp, level: maceMastery.level },
         maceMasterySkin,
         lavaMonster: { x: lavaMonster.x, y: lavaMonster.y, hp: lavaMonster.hp, maxHp: lavaMonster.maxHp, alive: lavaMonster.alive, aggro: lavaMonster.aggro, deathTime: lavaMonsterDeathTime },
+        portal: { active: portal.active, col: portal.col, row: portal.row, spawnTime: portal.spawnTime, lastSpawnCheck: portal.lastSpawnCheck },
+        inFutureWorld, futureWorldReturnX, futureWorldReturnY,
+        saviorQuestActive, saviorQuestComplete,
+        saviorKills: { ...saviorKills },
+        saberUnlocked, infinitePortalUnlocked, futureDesignUnlocked,
+        saberThrowCooldownUntil: saberThrow.cooldownUntil,
+        saberMastery: { xp: saberMastery.xp, level: saberMastery.level },
+        saberMasterySkin,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -212,6 +220,25 @@ function loadGame(slot) {
         if (s.lavaMonster.maxHp) lavaMonster.maxHp = s.lavaMonster.maxHp;
         if (s.lavaMonster.deathTime !== undefined) lavaMonsterDeathTime = s.lavaMonster.deathTime;
     }
+    if (s.portal) {
+        portal.active = s.portal.active;
+        portal.col = s.portal.col;
+        portal.row = s.portal.row;
+        portal.spawnTime = s.portal.spawnTime;
+        portal.lastSpawnCheck = s.portal.lastSpawnCheck;
+    }
+    if (s.inFutureWorld !== undefined) inFutureWorld = s.inFutureWorld;
+    if (s.futureWorldReturnX !== undefined) futureWorldReturnX = s.futureWorldReturnX;
+    if (s.futureWorldReturnY !== undefined) futureWorldReturnY = s.futureWorldReturnY;
+    if (s.saviorQuestActive !== undefined) saviorQuestActive = s.saviorQuestActive;
+    if (s.saviorQuestComplete !== undefined) saviorQuestComplete = s.saviorQuestComplete;
+    if (s.saviorKills) Object.assign(saviorKills, s.saviorKills);
+    if (s.saberUnlocked !== undefined) saberUnlocked = s.saberUnlocked;
+    if (s.infinitePortalUnlocked !== undefined) infinitePortalUnlocked = s.infinitePortalUnlocked;
+    if (s.futureDesignUnlocked !== undefined) futureDesignUnlocked = s.futureDesignUnlocked;
+    if (s.saberThrowCooldownUntil !== undefined) saberThrow.cooldownUntil = s.saberThrowCooldownUntil;
+    if (s.saberMastery) { saberMastery.xp = s.saberMastery.xp; saberMastery.level = s.saberMastery.level; }
+    if (s.saberMasterySkin !== undefined) saberMasterySkin = s.saberMasterySkin;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -302,6 +329,15 @@ function resetGameState() {
     lavaMonster.x = 14 * T; lavaMonster.y = 270 * T; lavaMonster.hp = 1000; lavaMonster.maxHp = 1000;
     lavaMonster.alive = true; lavaMonster.aggro = false; lavaMonster.spinning = false;
     lavaMonster.lastSpinTime = -Infinity; lavaMonster.trail = []; lavaMonsterDeathTime = -Infinity;
+    portal.active = false; portal.col = 0; portal.row = 0; portal.spawnTime = 0; portal.lastSpawnCheck = -Infinity;
+    inFutureWorld = false; futureWorldReturnX = 0; futureWorldReturnY = 0;
+    saviorQuestActive = false; saviorQuestComplete = false;
+    saviorKills.spider = false; saviorKills.seaSnake = false; saviorKills.orcs = false;
+    saviorKills.troll = false; saviorKills.dragon = false;
+    alienDialog.active = false; alienDialog.stage = null;
+    saberUnlocked = false; infinitePortalUnlocked = false; futureDesignUnlocked = false;
+    saberThrow.active = false; saberThrow.cooldownUntil = 0;
+    saberMastery.xp = 0; saberMastery.level = 0; saberMasterySkin = 'default';
     gameTime = 0;
 }
 

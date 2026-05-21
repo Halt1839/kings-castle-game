@@ -8,6 +8,8 @@ let bPressed = false;
 let vPressed = false;
 let rPressed = false;
 let yPressed = false;
+let lPressed = false;
+let playerFacing = 'south';
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.key);
@@ -17,6 +19,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'b' || e.key === 'B') bPressed = true;
     if (e.key === 'v' || e.key === 'V') vPressed = true;
     if (e.key === 'r' || e.key === 'R') rPressed = true;
+    if (e.key === 'l' || e.key === 'L') lPressed = true;
 
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
 
@@ -75,6 +78,11 @@ window.addEventListener('keydown', (e) => {
             const mmItems = getMaceMasteryItems();
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mmItems.length) % mmItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mmItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
+        } else if (pauseScreen === 'mastery_saber') {
+            const msbItems = getSaberMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + msbItems.length) % msbItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % msbItems.length;
             if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
         } else {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
@@ -140,6 +148,7 @@ window.addEventListener('keydown', (e) => {
         else if (campBlacksmithDialog.active) { campBlacksmithDialog.active = false; }
         else if (campHealerDialog.active) { campHealerDialog.active = false; }
         else if (iceTravelerDialog.active) { iceTravelerDialog.active = false; iceTravelerDialog.stage = null; iceTravelerShopOpen = false; }
+        else if (alienDialog.active) { alienDialog.active = false; alienDialog.stage = null; }
         else { gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main'; if (currentSlot) saveGame(currentSlot); }
         return;
     }
@@ -283,6 +292,10 @@ function gameLoop(now) {
                     pauseScreen = 'mastery_dagger'; masterySelection = 0;
                 } else if (mSelected.key === 'spear') {
                     pauseScreen = 'mastery_spear'; masterySelection = 0;
+                } else if (mSelected.key === 'mace') {
+                    pauseScreen = 'mastery_mace'; masterySelection = 0;
+                } else if (mSelected.key === 'saber') {
+                    pauseScreen = 'mastery_saber'; masterySelection = 0;
                 }
             } else if (pauseScreen === 'mastery_sword') {
                 const msItems = getSwordMasteryItems();
@@ -315,6 +328,14 @@ function gameLoop(now) {
                     pauseScreen = 'mastery'; masterySelection = 0;
                 } else {
                     maceMasterySkin = mmSelected.key;
+                }
+            } else if (pauseScreen === 'mastery_saber') {
+                const msbItems = getSaberMasteryItems();
+                const msbSelected = msbItems[masterySelection];
+                if (msbSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    saberMasterySkin = msbSelected.key;
                 }
             } else if (pauseScreen === 'settings') {
                 const setItems = getSettingsItems();
@@ -373,6 +394,7 @@ function gameLoop(now) {
     updateSnowSpawn();
     updateIceTravelerSpawn();
     updateVolcano();
+    updatePortal();
     updateSnowParticles(realDt);
     updateIceTrap();
 
@@ -447,6 +469,9 @@ function gameLoop(now) {
 
     // Update mace spin
     updateMaceSpin();
+
+    // Update saber throw
+    updateSaberThrow();
 
     // Update burning wall
     updateBurningWall();
@@ -568,15 +593,23 @@ function gameLoop(now) {
         rPressed = false;
     }
 
-    // Handle Y press (dagger stab / mace spin)
+    // Handle Y press (dagger stab / mace spin / saber throw)
     if (yPressed) {
         if (currentSword === 'dagger' && swordPickedUp && !daggerStab.active && gameTime >= daggerStab.cooldownUntil) {
             const stabTarget = findNearestStabTarget();
             if (stabTarget) startDaggerStab(stabTarget);
         } else if (currentSword === 'firemace' && firemaceUnlocked) {
             useMaceSpin();
+        } else if (currentSword === 'saber' && saberUnlocked) {
+            startSaberThrow();
         }
         yPressed = false;
+    }
+
+    // Handle L press (infinite portal place)
+    if (lPressed) {
+        if (infinitePortalUnlocked) tryInfinitePortalPlace();
+        lPressed = false;
     }
 
     // Handle E press
@@ -597,6 +630,8 @@ function gameLoop(now) {
             advanceCampBlacksmithDialog();
         } else if (campHealerDialog.active) {
             advanceCampHealerDialog();
+        } else if (alienDialog.active) {
+            advanceAlienDialog();
         } else if (jackFrostDialog.active) {
             advanceJackFrostDialog();
         } else if (iceTravelerDialog.active) {
@@ -649,8 +684,9 @@ function gameLoop(now) {
             } else if (isNearGuestRoomBuildSite()) {
                 if (goldCount >= 30) buildGuestRoom();
                 else addNotification(`Need 30 gold (have ${goldCount})`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
-            } else if (isNearCampLeader() && !orcSiege.active) {
-                openCampLeaderDialog();
+            } else if (isNearCampLeader() && (inFutureWorld || !orcSiege.active)) {
+                if (inFutureWorld) openAlienDialog();
+                else openCampLeaderDialog();
             } else if (isNearCampScout()) {
                 openCampScoutDialog();
             } else if (isNearCampBlacksmith()) {
@@ -685,13 +721,17 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !maceSpin.active && !iceTrap.active && !adminOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active) {
+    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !maceSpin.active && !iceTrap.active && !adminOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active && !alienDialog.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
         if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A') || touchState.left) dx -= 1;
         if (keys.has('ArrowRight') || keys.has('d') || keys.has('D') || touchState.right) dx += 1;
         if (dx !== 0 && dy !== 0) { const len = Math.SQRT2; dx /= len; dy /= len; }
+        if (dx !== 0 || dy !== 0) {
+            if (Math.abs(dx) > Math.abs(dy)) playerFacing = dx > 0 ? 'east' : 'west';
+            else playerFacing = dy > 0 ? 'south' : 'north';
+        }
         const spd = player.speed * getVoidMultiplier();
         const newX = player.x + dx * spd * dt;
         const newY = player.y + dy * spd * dt;
@@ -727,6 +767,23 @@ function gameLoop(now) {
             inLavaZone = false;
             addNotification('You escaped the lava chamber.', 2000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         }
+        // Enter future world: step on active purple portal
+        if (!inFutureWorld && portal.active && isPlayerOnPortal(portal.col, portal.row)) {
+            futureWorldReturnX = player.x;
+            futureWorldReturnY = player.y;
+            player.x = FUTURE_ARRIVAL_COL * T + (T - player.width) / 2;
+            player.y = FUTURE_ARRIVAL_ROW * T + (T - player.height) / 2;
+            inFutureWorld = true;
+            portal.active = false;
+            addNotification('You step through the portal... into the future!', 4000, 'rgba(220,150,255,1)', 'rgba(30,10,60,0.9)');
+        }
+        // Return from future world: step on the return portal in the spaceport
+        if (inFutureWorld && isPlayerOnPortal(RETURN_PORTAL_COL, RETURN_PORTAL_ROW)) {
+            player.x = futureWorldReturnX;
+            player.y = futureWorldReturnY;
+            inFutureWorld = false;
+            addNotification('You return to your own time.', 3000, 'rgba(200,170,230,1)', 'rgba(30,10,50,0.85)');
+        }
     } else {
         playerWalking = false; playerWalkPhase = 0;
     }
@@ -749,6 +806,9 @@ function gameLoop(now) {
 
     drawSnowOverlay(camX, camY, startCol, endCol, startRow, endRow);
     drawFireOverlay(camX, camY, startCol, endCol, startRow, endRow);
+    drawSpaceship(camX, camY);
+    drawPortal(camX, camY);
+    drawReturnPortal(camX, camY);
 
     drawGuard(guard1, camX, camY);
     drawGuard(guard2, camX, camY);
@@ -802,6 +862,7 @@ function gameLoop(now) {
     drawBurningWall(camX, camY);
     drawVoidRush(camX, camY);
     drawMaceSpin(camX, camY);
+    drawSaberThrow(camX, camY);
     drawShieldEffect(camX, camY);
     drawFireballs(camX, camY);
     drawIceTrap(camX, camY);
@@ -818,6 +879,7 @@ function gameLoop(now) {
     else if (campBlacksmithDialog.active) drawCampBlacksmithDialog();
     else if (campHealerDialog.active) drawCampHealerDialog();
     else if (jackFrostDialog.active) drawJackFrostDialog();
+    else if (alienDialog.active) drawAlienDialog();
     else if (iceTravelerDialog.active) drawIceTravelerDialog();
     else if (activeAction) drawActionMessage();
     else if (isNearDesignRack()) {
@@ -826,9 +888,10 @@ function gameLoop(now) {
         if (voidDesignUnlocked) designs.push('void');
         if (icePalaceUnlocked) designs.push('ice');
         if (lavaDesignUnlocked) designs.push('lava');
+        if (futureDesignUnlocked) designs.push('future');
         const idx = designs.indexOf(currentDesign);
         const nextKey = designs[(idx + 1) % designs.length];
-        const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava' };
+        const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava', future: 'Future' };
         drawPrompt(`${kl('E')} to switch to ${names[nextKey]} design`);
     } else if (isNearDesignRoomBuildSite()) {
         drawPrompt(`${kl('E')} to build Design Room (100 gold) [${goldCount} gold]`);
@@ -855,8 +918,8 @@ function gameLoop(now) {
     } else if (isNearAnyOrc()) {
         const stabHint = currentSword === 'dagger' ? ` | ${kl('Y')} to stab` : '';
         drawPrompt(`${kl('H')} to attack the orc!${stabHint}`);
-    } else if (isNearCampLeader() && !orcSiege.active) {
-        drawPrompt(`${kl('E')} to talk to the Camp Leader`);
+    } else if (isNearCampLeader() && (inFutureWorld || !orcSiege.active)) {
+        drawPrompt(inFutureWorld ? `${kl('E')} to talk to the Alien` : `${kl('E')} to talk to the Camp Leader`);
     } else if (isNearCampScout()) {
         drawPrompt(`${kl('E')} to talk to the Scout`);
     } else if (isNearCampBlacksmith()) {

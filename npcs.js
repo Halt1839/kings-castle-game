@@ -1,5 +1,345 @@
 // ── NPC Drawing ─────────────────────────────────────────────
 
+// ── Robot variants (used when inFutureWorld) ────────────────
+// Shared white-metal palette for all robot creatures.
+const ROBOT_HI   = '#f4f4f8';
+const ROBOT_BODY = '#d8d8de';
+const ROBOT_MID  = '#aeaeb6';
+const ROBOT_DARK = '#6a6a72';
+const ROBOT_JOINT = '#3a3a40';
+
+function _robotEye(cx, cy, r) {
+    const p = 0.6 + 0.4 * Math.sin(performance.now() / 250 + cx * 0.13);
+    ctx.fillStyle = `rgba(255,${Math.floor(40 + 30 * p)},${Math.floor(40 + 30 * p)},${0.4 + 0.4 * p})`;
+    ctx.beginPath(); ctx.arc(cx, cy, r + 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FF3030';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFE0E0';
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.4, 0, Math.PI * 2); ctx.fill();
+}
+
+function _robotHpBar(cx, sy, w, hpRatio) {
+    const h = 6, x = cx - w / 2, yy = sy - 16;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(x, yy, w, h);
+    ctx.fillStyle = '#e53935'; ctx.fillRect(x + 1, yy + 1, (w - 2) * hpRatio, h - 2);
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.strokeRect(x, yy, w, h);
+}
+
+function drawRobotSpider(ox, oy) {
+    if (!spider.alive || !spider.active) return;
+    const sx = Math.round(spider.x - ox), sy = Math.round(spider.y - oy);
+    const cx = sx + spider.width / 2, cy = sy + spider.height / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + spider.height + 2, 14, 4, 0, 0, Math.PI * 2); ctx.fill();
+    // Mechanical legs (stiff, jointed)
+    ctx.strokeStyle = ROBOT_DARK; ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+        const legY = cy - 6 + i * 4;
+        const bend = Math.sin(performance.now() / 200 + i) * 2;
+        // Left
+        ctx.beginPath(); ctx.moveTo(cx - 6, legY);
+        ctx.lineTo(cx - 14, legY - 2 + i); ctx.lineTo(cx - 20 - bend, legY + 4); ctx.stroke();
+        // Right
+        ctx.beginPath(); ctx.moveTo(cx + 6, legY);
+        ctx.lineTo(cx + 14, legY - 2 + i); ctx.lineTo(cx + 20 + bend, legY + 4); ctx.stroke();
+        // Joint nubs
+        ctx.fillStyle = ROBOT_JOINT;
+        ctx.fillRect(cx - 15, legY - 3 + i, 2, 2);
+        ctx.fillRect(cx + 13, legY - 3 + i, 2, 2);
+    }
+    // Abdomen (white metal dome)
+    ctx.fillStyle = ROBOT_BODY;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 4, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.ellipse(cx - 2, cy + 2, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Panel seam
+    ctx.strokeStyle = ROBOT_JOINT; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 3); ctx.lineTo(cx, cy + 11); ctx.stroke();
+    // Head dome
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.ellipse(cx, cy - 6, 7, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.ellipse(cx - 2, cy - 7, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+    // Sensor eyes (red)
+    _robotEye(cx - 3, cy - 7, 1.8);
+    _robotEye(cx + 3, cy - 7, 1.8);
+    // Mandible pincers
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.fillRect(cx - 3, cy - 2, 2, 4); ctx.fillRect(cx + 1, cy - 2, 2, 4);
+    // Antenna
+    ctx.strokeStyle = ROBOT_DARK; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 16); ctx.stroke();
+    ctx.fillStyle = '#FF3030';
+    ctx.beginPath(); ctx.arc(cx, cy - 17, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (spider.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 3; i++) {
+            const angle = st + i * (Math.PI * 2 / 3);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', cx + Math.cos(angle) * 12, sy - 6 + Math.sin(angle) * 5);
+        }
+    }
+    _robotHpBar(cx, sy, 40, spider.hp / spider.maxHp);
+}
+
+function drawRobotSeaSnake(ox, oy) {
+    if (typeof seaSnake === 'undefined' || !seaSnake.alive || !seaSnake.active) return;
+    const sx = Math.round(seaSnake.x - ox), sy = Math.round(seaSnake.y - oy);
+    const cx = sx + seaSnake.width / 2, cy = sy + seaSnake.height / 2;
+    const t = performance.now() / 300;
+    // Segmented metal body
+    for (let i = 6; i >= 1; i--) {
+        const segX = cx - i * 8 + Math.sin(t + i * 0.8) * 6;
+        const segY = cy + Math.cos(t + i * 0.8) * 4;
+        ctx.fillStyle = ROBOT_DARK;
+        ctx.beginPath(); ctx.arc(segX, segY, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = ROBOT_BODY;
+        ctx.beginPath(); ctx.arc(segX, segY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = ROBOT_HI;
+        ctx.beginPath(); ctx.arc(segX - 1, segY - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+        // Glow joint between segments
+        if (i % 2 === 0) {
+            ctx.fillStyle = `rgba(80,200,255,${0.5 + 0.3 * Math.sin(t * 3 + i)})`;
+            ctx.beginPath(); ctx.arc(segX + 2, segY + 1, 1, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    // Head (larger dome)
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_BODY;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.ellipse(cx - 2, cy - 2, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+    // Sensor eyes (red)
+    _robotEye(cx - 4, cy - 3, 2);
+    _robotEye(cx + 4, cy - 3, 2);
+    // Antenna / probe
+    ctx.strokeStyle = ROBOT_DARK; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 9); ctx.lineTo(cx, cy - 14); ctx.stroke();
+    const blink = (Math.floor(performance.now() / 250) % 2) === 0;
+    ctx.fillStyle = blink ? '#FF4040' : '#600000';
+    ctx.beginPath(); ctx.arc(cx, cy - 15, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (seaSnake.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 3; i++) {
+            const angle = st + i * (Math.PI * 2 / 3);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', cx + Math.cos(angle) * 14, sy - 6 + Math.sin(angle) * 5);
+        }
+    }
+    _robotHpBar(cx, sy, 50, seaSnake.hp / seaSnake.maxHp);
+}
+
+function drawRobotOrc(orc, ox, oy) {
+    if (!orc.alive) return;
+    const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);
+    const cx = sx + orc.width / 2, cy = sy + orc.height / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + orc.height + 1, 7, 2, 0, 0, Math.PI * 2); ctx.fill();
+    // Body (white chassis)
+    ctx.fillStyle = ROBOT_BODY; ctx.fillRect(sx + 3, sy + 7, 14, 9);
+    ctx.fillStyle = ROBOT_HI; ctx.fillRect(sx + 4, sy + 8, 5, 3);
+    ctx.fillStyle = ROBOT_MID; ctx.fillRect(sx + 5, sy + 11, 10, 4);
+    // Belt seam
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(sx + 3, sy + 13, 14, 1);
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(sx + 9, sy + 7, 2, 9);
+    // Head dome
+    ctx.fillStyle = ROBOT_MID; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI; ctx.beginPath(); ctx.arc(cx - 1, sy + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+    // Visor strip (red glowing)
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(cx - 4, sy + 4, 8, 2);
+    const p = 0.6 + 0.4 * Math.sin(performance.now() / 200 + sx);
+    ctx.fillStyle = `rgba(255,60,60,${0.6 + 0.3 * p})`; ctx.fillRect(cx - 3, sy + 4.5, 6, 1);
+    // Arms
+    ctx.fillStyle = ROBOT_MID; ctx.fillRect(sx + 1, sy + 8, 3, 5);
+    ctx.fillStyle = ROBOT_MID; ctx.fillRect(sx + 16, sy + 8, 3, 5);
+    // Weapon (energy baton)
+    ctx.fillStyle = ROBOT_DARK; ctx.fillRect(sx - 1, sy + 4, 2, 8);
+    ctx.fillStyle = `rgba(120,220,255,${0.7 + 0.3 * p})`; ctx.fillRect(sx - 1, sy + 2, 2, 3);
+    // Feet
+    ctx.fillStyle = ROBOT_DARK; ctx.fillRect(sx + 4, sy + 15, 4, 3); ctx.fillRect(sx + 12, sy + 15, 4, 3);
+    if (orc.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 3; i++) {
+            const angle = st + i * (Math.PI * 2 / 3);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', cx + Math.cos(angle) * 10, sy - 4 + Math.sin(angle) * 4);
+        }
+    }
+    const barW = 24, barH = 4;
+    const barX = cx - barW / 2, barY = sy - 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = '#e53935'; ctx.fillRect(barX + 1, barY + 1, (barW - 2) * (orc.hp / orc.maxHp), barH - 2);
+}
+
+function drawRobotTroll(ox, oy) {
+    if (typeof troll === 'undefined' || !troll.alive) return;
+    const sx = Math.round(troll.x - ox), sy = Math.round(troll.y - oy);
+    const cx = sx + troll.width / 2, cy = sy + troll.height / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + troll.height + 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
+    // Body (heavy chassis)
+    ctx.fillStyle = ROBOT_BODY; ctx.fillRect(sx - 2, sy + 4, 32, 20);
+    ctx.fillStyle = ROBOT_HI; ctx.fillRect(sx - 2, sy + 4, 32, 3);
+    ctx.fillStyle = ROBOT_MID; ctx.fillRect(sx + 2, sy + 8, 24, 12);
+    // Vertical seam
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(cx - 1, sy + 4, 2, 20);
+    // Reactor core (glowing red)
+    const corePulse = 0.6 + 0.4 * Math.sin(performance.now() / 250);
+    ctx.fillStyle = `rgba(255,60,60,${corePulse})`;
+    ctx.beginPath(); ctx.arc(cx, sy + 14, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFE0E0';
+    ctx.beginPath(); ctx.arc(cx, sy + 14, 1.5, 0, Math.PI * 2); ctx.fill();
+    // Belt panel
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(sx - 1, sy + 19, 30, 2);
+    // Head
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.arc(cx, sy + 2, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.arc(cx - 2, sy, 3, 0, Math.PI * 2); ctx.fill();
+    // Visor band
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(cx - 7, sy, 14, 3);
+    ctx.fillStyle = `rgba(255,60,60,${corePulse})`; ctx.fillRect(cx - 6, sy + 0.5, 12, 1.5);
+    // Arms (thick mech)
+    ctx.fillStyle = ROBOT_MID;
+    ctx.fillRect(sx - 6, sy + 6, 6, 14);
+    ctx.fillRect(sx + troll.width, sy + 6, 6, 14);
+    ctx.fillStyle = ROBOT_JOINT;
+    ctx.fillRect(sx - 6, sy + 12, 6, 2);
+    ctx.fillRect(sx + troll.width, sy + 12, 6, 2);
+    // Hammer/cannon
+    ctx.fillStyle = ROBOT_DARK; ctx.fillRect(sx + troll.width + 2, sy - 4, 4, 18);
+    ctx.fillStyle = ROBOT_BODY; ctx.fillRect(sx + troll.width, sy - 8, 8, 6);
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(sx + troll.width + 1, sy - 7, 6, 1);
+    // Feet
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.fillRect(sx, sy + 23, 8, 5); ctx.fillRect(sx + 18, sy + 23, 8, 5);
+    if (troll.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 3; i++) {
+            const angle = st + i * (Math.PI * 2 / 3);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', cx + Math.cos(angle) * 14, sy - 6 + Math.sin(angle) * 6);
+        }
+    }
+    _robotHpBar(cx, sy, 50, troll.hp / troll.maxHp);
+}
+
+function drawRobotDragon(ox, oy) {
+    if (typeof dragon === 'undefined' || !dragon.alive) return;
+    const sx = Math.round(dragon.x - ox), sy = Math.round(dragon.y - oy);
+    const cx = sx + dragon.width / 2, cy = sy + dragon.height / 2;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + dragon.height + 4, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
+    // Mech wings
+    const wingFlap = Math.sin(performance.now() / 400) * 8;
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.beginPath(); ctx.moveTo(cx - 8, cy - 4);
+    ctx.lineTo(cx - 32, cy - 20 + wingFlap); ctx.lineTo(cx - 24, cy + 4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.moveTo(cx - 8, cy - 2);
+    ctx.lineTo(cx - 28, cy - 16 + wingFlap); ctx.lineTo(cx - 20, cy + 2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.beginPath(); ctx.moveTo(cx + 8, cy - 4);
+    ctx.lineTo(cx + 32, cy - 20 + wingFlap); ctx.lineTo(cx + 24, cy + 4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.moveTo(cx + 8, cy - 2);
+    ctx.lineTo(cx + 28, cy - 16 + wingFlap); ctx.lineTo(cx + 20, cy + 2);
+    ctx.closePath(); ctx.fill();
+    // Wing struts
+    ctx.strokeStyle = ROBOT_JOINT; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - 8, cy - 2); ctx.lineTo(cx - 28, cy - 16 + wingFlap); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 8, cy - 2); ctx.lineTo(cx + 28, cy - 16 + wingFlap); ctx.stroke();
+
+    // Body (white chassis)
+    ctx.fillStyle = ROBOT_BODY;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 2, 14, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.ellipse(cx - 3, cy - 2, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+    // Plate seams
+    ctx.strokeStyle = ROBOT_JOINT; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + 14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 14, cy + 2); ctx.lineTo(cx + 14, cy + 2); ctx.stroke();
+    // Reactor core
+    const corePulse = 0.6 + 0.4 * Math.sin(performance.now() / 250);
+    ctx.fillStyle = `rgba(255,80,80,${corePulse})`;
+    ctx.beginPath(); ctx.arc(cx, cy + 6, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFE0E0';
+    ctx.beginPath(); ctx.arc(cx, cy + 6, 2, 0, Math.PI * 2); ctx.fill();
+
+    // Neck
+    ctx.fillStyle = ROBOT_MID; ctx.fillRect(cx - 4, cy - 14, 8, 12);
+    ctx.fillStyle = ROBOT_JOINT; ctx.fillRect(cx - 4, cy - 8, 8, 1);
+    // Head
+    ctx.fillStyle = ROBOT_MID;
+    ctx.beginPath(); ctx.ellipse(cx, cy - 16, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROBOT_HI;
+    ctx.beginPath(); ctx.ellipse(cx - 2, cy - 18, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Horn antennas
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.fillRect(cx - 8, cy - 28, 2, 8);
+    ctx.fillRect(cx + 6, cy - 28, 2, 8);
+    const blink = (Math.floor(performance.now() / 250) % 2) === 0;
+    ctx.fillStyle = blink ? '#FF4040' : '#600000';
+    ctx.beginPath(); ctx.arc(cx - 7, cy - 29, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 7, cy - 29, 1.5, 0, Math.PI * 2); ctx.fill();
+    // Sensor eyes
+    _robotEye(cx - 4, cy - 17, 2.2);
+    _robotEye(cx + 4, cy - 17, 2.2);
+    // Snout vent
+    if (dragon.windingUp) {
+        const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 100);
+        ctx.fillStyle = `rgba(120,220,255,${pulse})`;
+        ctx.beginPath(); ctx.arc(cx - 3, cy - 12, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 3, cy - 12, 3, 0, Math.PI * 2); ctx.fill();
+    } else {
+        ctx.fillStyle = ROBOT_JOINT;
+        ctx.beginPath(); ctx.arc(cx - 3, cy - 12, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 3, cy - 12, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Tail (jointed)
+    ctx.strokeStyle = ROBOT_MID; ctx.lineWidth = 4;
+    const tailWag = Math.sin(performance.now() / 300) * 6;
+    ctx.beginPath(); ctx.moveTo(cx, cy + 12);
+    ctx.quadraticCurveTo(cx + 10 + tailWag, cy + 20, cx + 6 + tailWag, cy + 28);
+    ctx.stroke();
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.beginPath(); ctx.moveTo(cx + 6 + tailWag, cy + 28);
+    ctx.lineTo(cx + 2 + tailWag, cy + 32); ctx.lineTo(cx + 10 + tailWag, cy + 32);
+    ctx.closePath(); ctx.fill();
+    // Legs
+    ctx.fillStyle = ROBOT_MID;
+    ctx.fillRect(sx + 4, sy + dragon.height - 4, 6, 8);
+    ctx.fillRect(sx + dragon.width - 10, sy + dragon.height - 4, 6, 8);
+    ctx.fillStyle = ROBOT_DARK;
+    ctx.fillRect(sx + 2, sy + dragon.height + 3, 3, 2);
+    ctx.fillRect(sx + 8, sy + dragon.height + 3, 3, 2);
+    ctx.fillRect(sx + dragon.width - 12, sy + dragon.height + 3, 3, 2);
+    ctx.fillRect(sx + dragon.width - 6, sy + dragon.height + 3, 3, 2);
+    if (dragon.stunned) {
+        const st = performance.now() / 200;
+        for (let i = 0; i < 4; i++) {
+            const angle = st + i * (Math.PI * 2 / 4);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('*', cx + Math.cos(angle) * 18, cy - 20 + Math.sin(angle) * 8);
+        }
+    }
+    // HP bar
+    const hpBarW = 60, hpBarH = 6;
+    const hpBarX = cx - hpBarW / 2, hpBarY = sy - 36;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
+    ctx.fillStyle = '#e53935';
+    ctx.fillRect(hpBarX + 1, hpBarY + 1, (hpBarW - 2) * (dragon.hp / dragon.maxHp), hpBarH - 2);
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.strokeRect(hpBarX, hpBarY, hpBarW, hpBarH);
+}
+
 function drawWizard(ox, oy) {
     const sx = Math.round(wizard.x - ox), sy = Math.round(wizard.y - oy);
     const cx = sx + wizard.width / 2;
@@ -38,6 +378,7 @@ function drawWizard(ox, oy) {
 
 function drawSpider(ox, oy) {
     if (!spider.alive || !spider.active) return;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotSpider(ox, oy); return; }
     const sx = Math.round(spider.x - ox), sy = Math.round(spider.y - oy);
     const cx = sx + spider.width / 2, cy = sy + spider.height / 2;
     // Shadow
@@ -170,6 +511,7 @@ function drawButler(ox, oy) {
 
 function drawSeaSnake(ox, oy) {
     if (typeof seaSnake === 'undefined' || !seaSnake.alive || !seaSnake.active) return;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotSeaSnake(ox, oy); return; }
     const sx = Math.round(seaSnake.x - ox), sy = Math.round(seaSnake.y - oy);
     const cx = sx + seaSnake.width / 2, cy = sy + seaSnake.height / 2;
     // Undulating body
@@ -223,9 +565,92 @@ function drawSeaSnake(ox, oy) {
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
 }
 
+function drawAlien(sx, sy, cx) {
+    const now = performance.now();
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + 22, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Soft glow aura
+    const pulse = 0.4 + 0.3 * Math.sin(now / 350);
+    ctx.fillStyle = `rgba(120,255,160,${0.12 + 0.08 * pulse})`;
+    ctx.beginPath(); ctx.arc(cx, sy + 8, 14, 0, Math.PI * 2); ctx.fill();
+
+    // Slim body (jumpsuit)
+    ctx.fillStyle = '#3a6a5a'; ctx.fillRect(sx + 5, sy + 10, 6, 8);
+    ctx.fillStyle = '#4a8a7a'; ctx.fillRect(sx + 6, sy + 11, 4, 6);
+    // Belt
+    ctx.fillStyle = '#1a2a26'; ctx.fillRect(sx + 5, sy + 14, 6, 1);
+    // Chest emblem
+    ctx.fillStyle = `rgba(160,255,200,${0.7 + 0.3 * pulse})`;
+    ctx.fillRect(cx - 1, sy + 12, 2, 2);
+
+    // Long thin arms
+    ctx.fillStyle = '#8ae0b0';
+    ctx.fillRect(sx + 3, sy + 11, 2, 7);
+    ctx.fillRect(sx + 11, sy + 11, 2, 7);
+    // Three-finger hands
+    ctx.fillStyle = '#6ac090';
+    ctx.fillRect(sx + 2, sy + 17, 1, 2);
+    ctx.fillRect(sx + 3, sy + 18, 1, 2);
+    ctx.fillRect(sx + 4, sy + 17, 1, 2);
+    ctx.fillRect(sx + 11, sy + 17, 1, 2);
+    ctx.fillRect(sx + 12, sy + 18, 1, 2);
+    ctx.fillRect(sx + 13, sy + 17, 1, 2);
+
+    // Skinny legs
+    ctx.fillStyle = '#3a6a5a';
+    ctx.fillRect(sx + 6, sy + 17, 2, 4);
+    ctx.fillRect(sx + 9, sy + 17, 2, 4);
+    // Feet
+    ctx.fillStyle = '#1a2a26';
+    ctx.fillRect(sx + 5, sy + 20, 4, 2);
+    ctx.fillRect(sx + 8, sy + 20, 4, 2);
+
+    // Big head
+    ctx.fillStyle = '#8ae0b0';
+    ctx.beginPath(); ctx.ellipse(cx, sy + 5, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a4f0c4';
+    ctx.beginPath(); ctx.ellipse(cx - 2, sy + 3, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Massive almond eyes
+    ctx.fillStyle = '#0a1a14';
+    ctx.beginPath(); ctx.ellipse(cx - 3, sy + 6, 2.2, 3, -0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 3, sy + 6, 2.2, 3, 0.3, 0, Math.PI * 2); ctx.fill();
+    // Eye glints
+    ctx.fillStyle = '#a4f0c4';
+    ctx.fillRect(cx - 4, sy + 5, 1, 1);
+    ctx.fillRect(cx + 2, sy + 5, 1, 1);
+
+    // Tiny nostrils & slit mouth
+    ctx.fillStyle = '#3a6a5a';
+    ctx.fillRect(cx - 1, sy + 9, 1, 1); ctx.fillRect(cx, sy + 9, 1, 1);
+    ctx.fillRect(cx - 2, sy + 11, 4, 1);
+
+    // Antennae with pulsing tips
+    ctx.strokeStyle = '#6ac090'; ctx.lineWidth = 1;
+    const wobble = Math.sin(now / 300) * 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - 3, sy); ctx.lineTo(cx - 5 - wobble, sy - 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 3, sy); ctx.lineTo(cx + 5 + wobble, sy - 6); ctx.stroke();
+    ctx.fillStyle = `rgba(160,255,200,${0.6 + 0.4 * pulse})`;
+    ctx.beginPath(); ctx.arc(cx - 5 - wobble, sy - 6, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 5 + wobble, sy - 6, 1.6, 0, Math.PI * 2); ctx.fill();
+
+    // Quest marker when quest is available or completed
+    if (typeof saviorQuestActive !== 'undefined' && (!saviorQuestActive || saviorQuestComplete)) {
+        const bounce = Math.sin(now / 300) * 3;
+        ctx.fillStyle = 'rgba(120,255,180,0.85)';
+        ctx.beginPath(); ctx.arc(cx, sy - 14 + bounce, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillStyle = saviorQuestComplete ? '#FFD700' : '#0a3018';
+        ctx.fillText('!', cx, sy - 6 + bounce);
+    }
+}
+
 function drawCampLeader(ox, oy) {
     const sx = Math.round(campLeader.x - ox), sy = Math.round(campLeader.y - oy);
     const cx = sx + campLeader.width / 2;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawAlien(sx, sy, cx); return; }
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath(); ctx.ellipse(cx, sy + campLeader.height + 2, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
@@ -441,6 +866,7 @@ function drawIceTraveler(ox, oy) {
 
 function drawOrc(orc, ox, oy) {
     if (!orc.alive) return;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotOrc(orc, ox, oy); return; }
     const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);
     const cx = sx + orc.width / 2, cy = sy + orc.height / 2;
     const snow = isSnowing();
@@ -520,6 +946,7 @@ function drawAllOrcs(ox, oy) {
 
 function drawTroll(ox, oy) {
     if (typeof troll === 'undefined' || !troll.alive) return;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotTroll(ox, oy); return; }
     const sx = Math.round(troll.x - ox), sy = Math.round(troll.y - oy);
     const cx = sx + troll.width / 2, cy = sy + troll.height / 2;
     // Shadow
@@ -574,6 +1001,7 @@ function drawTroll(ox, oy) {
 
 function drawDragon(ox, oy) {
     if (typeof dragon === 'undefined' || !dragon.alive) return;
+    if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotDragon(ox, oy); return; }
     const sx = Math.round(dragon.x - ox), sy = Math.round(dragon.y - oy);
     const cx = sx + dragon.width / 2, cy = sy + dragon.height / 2;
     const snow = isSnowing();

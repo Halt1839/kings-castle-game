@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v4.2.6';
+const GAME_VERSION = 'v4.2.23';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
@@ -10,6 +10,11 @@ let arenaReturnY = 0;
 let inLavaZone = false;
 let lavaZoneReturnX = 0;
 let lavaZoneReturnY = 0;
+
+// Future world (entered via purple portal)
+let inFutureWorld = false;
+let futureWorldReturnX = 0;
+let futureWorldReturnY = 0;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');

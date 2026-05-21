@@ -529,6 +529,146 @@ function drawJackFrostDialog() {
     ctx.fillText(`${kl('E')} to continue`, bx + 16, by + bh - 24);
 }
 
+// ── Savior Quest (alien camp leader, future world) ──────────
+let saviorQuestActive = false;
+let saviorQuestComplete = false;
+const saviorKills = {
+    spider: false,
+    seaSnake: false,
+    orcs: false,
+    troll: false,
+    dragon: false,
+};
+const alienDialog = { active: false, stage: null };
+
+function openAlienDialog() {
+    alienDialog.active = true;
+    if (saviorQuestComplete) alienDialog.stage = 'done';
+    else if (saviorQuestActive) alienDialog.stage = 'progress';
+    else alienDialog.stage = 'intro';
+    // Alien sics robot orcs on the player every visit (only if none alive).
+    spawnSaviorOrcs();
+}
+
+function advanceAlienDialog() {
+    if (alienDialog.stage === 'intro') {
+        alienDialog.stage = 'plea';
+    } else if (alienDialog.stage === 'plea') {
+        alienDialog.stage = 'quest_offer';
+    } else if (alienDialog.stage === 'quest_offer') {
+        saviorQuestActive = true;
+        activeQuest = 'savior';
+        alienDialog.active = false;
+        addNotification('Savior Quest started! Destroy the robots!', 4000, 'rgba(140,255,180,1)', 'rgba(10,40,20,0.9)');
+        spawnSaviorOrcs();
+    } else {
+        alienDialog.active = false;
+    }
+}
+
+// Summon a wave of robot orcs into the spaceport at the alien's command.
+// The alien can call them at will — every visit while the quest is active
+// brings another wave (as long as the previous one has been cleared).
+function spawnSaviorOrcs() {
+    if (typeof orcs !== 'undefined' && orcs.some(o => o.alive)) return;
+    spawnOrcs('camp');
+    orcSiege.active = true; orcSiege.complete = false;
+    orcSiege.location = 'camp';
+    addNotification('Robot orcs converge on the spaceport!', 4000, 'rgba(255,150,150,1)', 'rgba(60,0,0,0.9)');
+}
+
+function checkSaviorQuestComplete() {
+    if (!saviorQuestActive || saviorQuestComplete) return;
+    if (saviorKills.spider && saviorKills.seaSnake && saviorKills.orcs && saviorKills.troll && saviorKills.dragon) {
+        saviorQuestComplete = true;
+        saberUnlocked = true;
+        infinitePortalUnlocked = true;
+        futureDesignUnlocked = true;
+        currentSword = 'saber';
+        swordDamage = SWORD_DMG_MAP.saber;
+        addNotification('Savior Quest complete!', 6000, 'rgba(140,255,180,1)', 'rgba(10,40,20,0.9)');
+        addNotification('Saber unlocked! 12 dmg + Throw (press Y).', 6000, 'rgba(255,80,80,1)', 'rgba(60,0,0,0.9)');
+        addNotification('Infinite Portal unlocked! Press L to place.', 6000, 'rgba(220,150,255,1)', 'rgba(40,10,60,0.9)');
+        addNotification('Future castle design unlocked!', 6000, 'rgba(120,220,255,1)', 'rgba(10,30,50,0.9)');
+    }
+}
+
+function drawAlienDialog() {
+    if (!alienDialog.active) return;
+    const bw = 380, bh = 160;
+    const bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - bh / 2;
+    ctx.fillStyle = 'rgba(8,20,12,0.94)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#7af0a0'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#4ac070'; ctx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+
+    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#9affc0';
+    ctx.fillText('Alien Commander', bx + 16, by + 14);
+
+    ctx.font = '13px monospace'; ctx.fillStyle = '#dfffdf';
+    if (alienDialog.stage === 'intro') {
+        ctx.fillText('"Greetings, traveler from the past."', bx + 16, by + 44);
+        ctx.fillText('"I am the last of my kind on this"', bx + 16, by + 64);
+        ctx.fillText('"world. The machines came... and"', bx + 16, by + 84);
+        ctx.fillText('"now they rule everything."', bx + 16, by + 104);
+    } else if (alienDialog.stage === 'plea') {
+        ctx.fillText('"The robots have taken over the"', bx + 16, by + 44);
+        ctx.fillText('"world. They corrupt every beast,"', bx + 16, by + 64);
+        ctx.fillText('"every creature. No one can stop"', bx + 16, by + 84);
+        ctx.fillText('"them — no one but you."', bx + 16, by + 104);
+    } else if (alienDialog.stage === 'quest_offer') {
+        ctx.fillText('"Destroy them all — the spider,"', bx + 16, by + 44);
+        ctx.fillText('"the snake, the orc patrols,"', bx + 16, by + 64);
+        ctx.fillText('"the troll, the dragon. Be our"', bx + 16, by + 84);
+        ctx.fillText('"Savior. Two great prizes await."', bx + 16, by + 104);
+    } else if (alienDialog.stage === 'progress') {
+        const count = [saviorKills.spider, saviorKills.seaSnake, saviorKills.orcs, saviorKills.troll, saviorKills.dragon].filter(Boolean).length;
+        ctx.fillText(`"You have destroyed ${count}/5 robots."`, bx + 16, by + 44);
+        ctx.fillText('"Hunt down the rest! The machines"', bx + 16, by + 64);
+        ctx.fillText('"must all be dismantled."', bx + 16, by + 84);
+    } else if (alienDialog.stage === 'done') {
+        ctx.fillText('"You did it! The robots fall silent."', bx + 16, by + 44);
+        ctx.fillText('"You are our Savior, hero of two"', bx + 16, by + 64);
+        ctx.fillText('"timelines. Your prizes await..."', bx + 16, by + 84);
+    }
+
+    ctx.font = '11px monospace'; ctx.fillStyle = '#7ac88a';
+    ctx.fillText(`${kl('E')} to continue`, bx + 16, by + bh - 24);
+}
+
+function drawSaviorQuestTasks() {
+    const tx = canvas.width - 250, ty = 54;
+    const tasks = [
+        { label: 'Destroy Robot Spider', done: saviorKills.spider },
+        { label: 'Destroy Robot Snake', done: saviorKills.seaSnake },
+        { label: 'Destroy Robot Orcs', done: saviorKills.orcs },
+        { label: 'Destroy Robot Troll', done: saviorKills.troll },
+        { label: 'Destroy Robot Dragon', done: saviorKills.dragon },
+    ];
+    const panelH = 40 + tasks.length * 22 + (saviorQuestComplete ? 26 : 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(tx - 8, ty - 4, 240, panelH);
+    ctx.strokeStyle = '#7af0a0'; ctx.lineWidth = 1;
+    ctx.strokeRect(tx - 8, ty - 4, 240, panelH);
+
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#9affc0';
+    ctx.fillText('Savior Quest', tx, ty);
+
+    ctx.font = '12px monospace';
+    for (let i = 0; i < tasks.length; i++) {
+        const iy = ty + 22 + i * 22;
+        const check = tasks[i].done ? '[x]' : '[ ]';
+        ctx.fillStyle = tasks[i].done ? '#4CAF50' : '#aaa';
+        ctx.fillText(`${check} ${tasks[i].label}`, tx + 4, iy);
+    }
+
+    if (saviorQuestComplete) {
+        ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#4CAF50';
+        ctx.fillText('Quest complete!', tx + 4, ty + 22 + tasks.length * 22 + 4);
+    }
+}
+
 function drawFrostQuestTasks() {
     const tx = canvas.width - 250, ty = 54;
     const tasks = [
@@ -598,6 +738,10 @@ function checkAllTasks() {
 }
 
 function drawQuestTasks() {
+    if (activeQuest === 'savior' && saviorQuestActive) {
+        drawSaviorQuestTasks();
+        return;
+    }
     if (activeQuest === 'frost' && jackFrostQuestActive) {
         drawFrostQuestTasks();
         return;
@@ -938,10 +1082,11 @@ let dragonSwordUnlocked = false;
 let voidStarSwordUnlocked = false;
 let weaponryBuilt = false;
 let designRoomBuilt = false;
-let currentDesign = 'default'; // 'default', 'gold', 'void'
+let currentDesign = 'default'; // 'default', 'gold', 'void', 'ice', 'lava', 'future'
 let goldDesignUnlocked = false;
 let voidDesignUnlocked = false;
 let lavaDesignUnlocked = false;
+let futureDesignUnlocked = false;
 let guestRoomBuilt = false;
 // ── Dagger System ────────────────────────────────────────────
 let daggerUnlocked = false;
@@ -1058,6 +1203,7 @@ function handleStabKill(mob) {
         map[gr][gc] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.spider = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.spider = true; checkSaviorQuestComplete(); }
         addNotification('The giant spider is defeated! It dropped a gold block!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
     } else if (mob === seaSnake) {
         seaSnake.alive = false; seaSnakeDeathTime = gameTime; seaSnake.maxHp += 10; addWeaponXP(30);
@@ -1068,6 +1214,7 @@ function handleStabKill(mob) {
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.seaSnake = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.seaSnake = true; checkSaviorQuestComplete(); }
         addNotification('The sea snake is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification(`Health increased to ${health.max}/${health.max}!`, 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
     } else if (mob === troll) {
@@ -1079,6 +1226,7 @@ function handleStabKill(mob) {
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.troll = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.troll = true; checkSaviorQuestComplete(); }
         addNotification('The mountain troll is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification('Health increased to 30/30!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
         addNotification('A secret passage to the peak opens!', 5000, 'rgba(255,200,100,1)', 'rgba(60,40,0,0.9)');
@@ -1098,6 +1246,7 @@ function handleStabKill(mob) {
         respawnMonsters();
         questTasks.dragonDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.dragon = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.dragon = true; checkSaviorQuestComplete(); }
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
@@ -1196,6 +1345,142 @@ function updateMaceSpin() {
     if (dragon.alive) spinHit(dragon, 'dragon');
     if (inArena && voidSentinel.alive) spinHit(voidSentinel, 'voidSentinel');
     if (inLavaZone && lavaMonster.alive) spinHit(lavaMonster, 'lavaMonster');
+}
+
+// ── Saber (Savior Quest reward) ──────────────────────────────
+let saberUnlocked = false;
+let infinitePortalUnlocked = false;
+const SABER_THROW_COOLDOWN = 10 * 1000;
+const SABER_THROW_SPEED = 380;       // px/sec
+const SABER_THROW_RANGE = 220;       // px before it reverses
+const SABER_THROW_DMG = 15;
+const SABER_THROW_HIT_RADIUS = 18;
+const saberThrow = {
+    active: false,
+    x: 0, y: 0,
+    dx: 0, dy: 0,
+    travelled: 0,
+    returning: false,
+    cooldownUntil: 0,
+    hitSet: null,
+    spin: 0,
+};
+
+function startSaberThrow() {
+    if (currentSword !== 'saber' || !saberUnlocked) return;
+    if (saberThrow.active) return;
+    if (gameTime < saberThrow.cooldownUntil) {
+        const remaining = Math.ceil((saberThrow.cooldownUntil - gameTime) / 1000);
+        addNotification(`Saber Throw cooldown: ${remaining}s`, 1500, 'rgba(255,150,150,1)', 'rgba(60,0,0,0.8)');
+        return;
+    }
+    let fx = 0, fy = 0;
+    if (playerFacing === 'north') fy = -1;
+    else if (playerFacing === 'south') fy = 1;
+    else if (playerFacing === 'east') fx = 1;
+    else fx = -1;
+    saberThrow.active = true;
+    saberThrow.x = player.x + player.width / 2;
+    saberThrow.y = player.y + player.height / 2;
+    saberThrow.dx = fx; saberThrow.dy = fy;
+    saberThrow.travelled = 0;
+    saberThrow.returning = false;
+    saberThrow.hitSet = new Set();
+    saberThrow.spin = 0;
+    saberThrow.cooldownUntil = gameTime + SABER_THROW_COOLDOWN;
+    addNotification('Saber thrown!', 1000, 'rgba(255,80,80,1)', 'rgba(60,0,0,0.8)');
+}
+
+function _saberCheckMobHit(mob) {
+    if (!mob || !mob.alive) return;
+    if (mob.active === false) return;
+    if (saberThrow.hitSet.has(mob)) return;
+    const mcx = mob.x + (mob.width || 16) / 2;
+    const mcy = mob.y + (mob.height || 16) / 2;
+    const d = Math.hypot(saberThrow.x - mcx, saberThrow.y - mcy);
+    if (d < SABER_THROW_HIT_RADIUS) {
+        saberThrow.hitSet.add(mob);
+        mob.hp = Math.max(0, mob.hp - SABER_THROW_DMG);
+        if (mob.hp <= 0) handleStabKill(mob);
+    }
+}
+
+function updateSaberThrow() {
+    if (!saberThrow.active) return;
+    const dt = 1 / 60; // approximate; movement scaled per-frame
+    const stepX = saberThrow.dx * SABER_THROW_SPEED * dt;
+    const stepY = saberThrow.dy * SABER_THROW_SPEED * dt;
+    if (saberThrow.returning) {
+        // Home back to player
+        const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+        const vx = pcx - saberThrow.x, vy = pcy - saberThrow.y;
+        const dist = Math.hypot(vx, vy);
+        if (dist < 12) { saberThrow.active = false; return; }
+        const nx = vx / dist, ny = vy / dist;
+        saberThrow.x += nx * SABER_THROW_SPEED * dt;
+        saberThrow.y += ny * SABER_THROW_SPEED * dt;
+    } else {
+        saberThrow.x += stepX;
+        saberThrow.y += stepY;
+        saberThrow.travelled += Math.hypot(stepX, stepY);
+        if (saberThrow.travelled >= SABER_THROW_RANGE) {
+            saberThrow.returning = true;
+            saberThrow.hitSet = new Set(); // allow second pass damage on return
+        }
+    }
+    saberThrow.spin += 0.6;
+    // Hit detection
+    if (typeof spider !== 'undefined') _saberCheckMobHit(spider);
+    if (typeof seaSnake !== 'undefined') _saberCheckMobHit(seaSnake);
+    if (typeof troll !== 'undefined') _saberCheckMobHit(troll);
+    if (typeof dragon !== 'undefined') _saberCheckMobHit(dragon);
+    if (typeof voidSentinel !== 'undefined') _saberCheckMobHit(voidSentinel);
+    if (typeof lavaMonster !== 'undefined') _saberCheckMobHit(lavaMonster);
+    if (typeof orcs !== 'undefined') for (const orc of orcs) _saberCheckMobHit(orc);
+}
+
+function drawSaberThrow(camX, camY) {
+    if (!saberThrow.active) return;
+    const sc = SABER_BLADE_COLORS[saberMasterySkin] || SABER_BLADE_COLORS.default;
+    const x = saberThrow.x - camX, y = saberThrow.y - camY;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(saberThrow.spin);
+    // Hilt
+    ctx.fillStyle = '#2a2a2e'; ctx.fillRect(-2, -1, 4, 6);
+    ctx.fillStyle = '#5a5a62'; ctx.fillRect(-2, -1, 4, 1);
+    // Glow halo
+    const p = 0.6 + 0.4 * Math.sin(performance.now() / 80);
+    ctx.fillStyle = sc.glow.replace('X', (0.45 * p).toFixed(3));
+    ctx.beginPath(); ctx.arc(0, -8, 12, 0, Math.PI * 2); ctx.fill();
+    // Blade
+    ctx.fillStyle = sc.blade; ctx.fillRect(-1.5, -20, 3, 18);
+    ctx.fillStyle = sc.core; ctx.fillRect(-0.6, -20, 1.2, 18);
+    ctx.restore();
+}
+
+// ── Infinite Portal (Savior Quest reward) ────────────────────
+function tryInfinitePortalPlace() {
+    if (!infinitePortalUnlocked) return;
+    if (portal.active) {
+        addNotification('A portal is already active!', 1500, 'rgba(220,150,255,1)', 'rgba(40,10,60,0.85)');
+        return;
+    }
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const pCol = Math.floor(pcx / T), pRow = Math.floor(pcy / T);
+    let col = pCol - 1, row = pRow - 1;
+    if (playerFacing === 'north') { col = pCol - 1; row = pRow - 4; }
+    else if (playerFacing === 'south') { col = pCol - 1; row = pRow + 2; }
+    else if (playerFacing === 'east')  { col = pCol + 2; row = pRow - 1; }
+    else if (playerFacing === 'west')  { col = pCol - 5; row = pRow - 1; }
+    col = Math.max(0, Math.min(MAP_COLS - PORTAL_W, col));
+    row = Math.max(0, Math.min(MAP_ROWS - PORTAL_H, row));
+    portal.active = true;
+    portal.col = col;
+    portal.row = row;
+    portal.spawnTime = gameTime;
+    portal.lastSpawnCheck = gameTime; // reset random cycle from here
+    addNotification('Portal placed!', 1500, 'rgba(220,150,255,1)', 'rgba(40,10,60,0.85)');
 }
 
 // ── Snowflake Currency & Ice Traveler ────────────────────────
@@ -1384,6 +1669,258 @@ function updateVolcano() {
     }
 }
 
+// ── Future Portal (random spawn every 30 min) ────────────────
+const PORTAL_CYCLE = 30 * 60 * 1000; // 30 min between spawns
+const PORTAL_DURATION = 60 * 1000;   // stays for 1 min
+const PORTAL_W = 4; // tiles wide
+const PORTAL_H = 3; // tiles tall
+const portal = { active: false, col: 0, row: 0, spawnTime: 0, lastSpawnCheck: -Infinity };
+
+// Return portal — anchor in the future-world camp (cols 4-7, rows 113-115)
+const RETURN_PORTAL_COL = 4;
+const RETURN_PORTAL_ROW = 113;
+
+// Future-world arrival spot (camp center, south of campfire)
+const FUTURE_ARRIVAL_COL = 14;
+const FUTURE_ARRIVAL_ROW = 116;
+
+const PORTAL_WALKABLE = new Set([
+    FLOOR, PATH, DOOR, CARPET, RUG, BATH_FLOOR, HUT_FLOOR,
+    SAND, MOUNTAIN_PATH, CAVE_FLOOR, PEAK_FLOOR, BRIDGE, DOCK,
+]);
+
+function findRandomPortalSpot() {
+    const candidates = [];
+    const maxRow = Math.min(MAP_ROWS, 196) - PORTAL_H; // exclude arena/lava zones (rows 200+)
+    for (let r = 1; r <= maxRow; r++) {
+        for (let c = 0; c <= MAP_COLS - PORTAL_W; c++) {
+            let ok = true;
+            for (let dr = 0; dr < PORTAL_H && ok; dr++) {
+                for (let dc = 0; dc < PORTAL_W && ok; dc++) {
+                    if (!PORTAL_WALKABLE.has(map[r + dr][c + dc])) ok = false;
+                }
+            }
+            if (ok) candidates.push({ row: r, col: c });
+        }
+    }
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function spawnPortal() {
+    const spot = findRandomPortalSpot();
+    if (!spot) return;
+    portal.active = true;
+    portal.col = spot.col;
+    portal.row = spot.row;
+    portal.spawnTime = gameTime;
+    addNotification('A mysterious purple portal has appeared!', 5000, 'rgba(220,150,255,1)', 'rgba(40,10,60,0.9)');
+}
+
+function updatePortal() {
+    if (portal.active && gameTime - portal.spawnTime >= PORTAL_DURATION) {
+        portal.active = false;
+        addNotification('The purple portal has vanished.', 3000, 'rgba(180,140,220,1)', 'rgba(30,10,50,0.85)');
+    }
+    if (gameTime - portal.lastSpawnCheck >= PORTAL_CYCLE) {
+        portal.lastSpawnCheck = gameTime;
+        spawnPortal();
+    }
+}
+
+function drawPortalAt(col, row, camX, camY) {
+    const sx = col * T - camX;
+    const sy = row * T - camY;
+    const w = PORTAL_W * T;
+    const h = PORTAL_H * T;
+    const cx = sx + w / 2, cy = sy + h / 2;
+    const rx = w / 2, ry = h / 2;
+    const t = performance.now() / 1000;
+
+    ctx.save();
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.5);
+    ctx.globalAlpha = 0.25 + 0.15 * pulse;
+    ctx.fillStyle = '#C040FF';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx + 8, ry + 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+    const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, Math.max(rx, ry));
+    grad.addColorStop(0, '#FFB8FF');
+    grad.addColorStop(0.35, '#C040E0');
+    grad.addColorStop(0.75, '#5010A0');
+    grad.addColorStop(1, '#1A0040');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    for (let i = 0; i < 4; i++) {
+        const phase = ((i / 4) + (t * 0.4) % 1) % 1;
+        const k = 1 - phase;
+        ctx.globalAlpha = 0.55 * phase;
+        ctx.strokeStyle = '#FFD8FF';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx * k, ry * k, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    for (let i = 0; i < 6; i++) {
+        const angle = t * 1.5 + i * (Math.PI * 2 / 6);
+        const px = cx + Math.cos(angle) * (rx - 3);
+        const py = cy + Math.sin(angle) * (ry - 3);
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#FFE0FF';
+        ctx.fillRect(px - 1, py - 1, 2, 2);
+    }
+    ctx.restore();
+}
+
+function drawPortal(camX, camY) {
+    if (portal.active) drawPortalAt(portal.col, portal.row, camX, camY);
+}
+
+function drawReturnPortal(camX, camY) {
+    if (!inFutureWorld) return;
+    drawPortalAt(RETURN_PORTAL_COL, RETURN_PORTAL_ROW, camX, camY);
+}
+
+// Player overlap with a portal anchored at (col, row) of size PORTAL_W x PORTAL_H
+function isPlayerOnPortal(col, row) {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const x1 = col * T, y1 = row * T;
+    const x2 = (col + PORTAL_W) * T, y2 = (row + PORTAL_H) * T;
+    return pcx >= x1 && pcx < x2 && pcy >= y1 && pcy < y2;
+}
+
+// ── Spaceport (future-world camp ship) ─────────────────────
+// Big saucer-style ship drawn in pixel art on the open grass just
+// south-west of the camp, so it doesn't overlap the campfire (cols
+// 14-15 row 115) or the alien camp leader (col 17 row 115).
+function drawSpaceship(camX, camY) {
+    if (!inFutureWorld) return;
+    const baseCol = 3, baseRow = 119;
+    const x = baseCol * T - camX, y = baseRow * T - camY;
+    const w = 10 * T, h = 6 * T;
+    const cx = x + w / 2, cy = y + h / 2;
+    const t = performance.now() / 1000;
+
+    ctx.save();
+
+    // Landing shadow
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + h * 0.35, w * 0.45, h * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Landing pad ring
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = '#4FE0FF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + h * 0.32, w * 0.42, h * 0.14, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.3 + 0.2 * Math.sin(t * 3);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + h * 0.32, w * 0.36, h * 0.11, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+
+    // Lower hull (dark band)
+    ctx.fillStyle = '#1f2a36';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 12, w * 0.46, h * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main saucer body
+    const hullGrad = ctx.createLinearGradient(cx, cy - h * 0.25, cx, cy + h * 0.2);
+    hullGrad.addColorStop(0, '#9aaab8');
+    hullGrad.addColorStop(0.5, '#6a7886');
+    hullGrad.addColorStop(1, '#2c3540');
+    ctx.fillStyle = hullGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 4, w * 0.45, h * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hull highlight stripe
+    ctx.fillStyle = '#b6c5d2';
+    ctx.beginPath();
+    ctx.ellipse(cx - w * 0.05, cy - 4, w * 0.30, h * 0.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Side running lights
+    const lightCount = 7;
+    for (let i = 0; i < lightCount; i++) {
+        const a = -Math.PI + (i / (lightCount - 1)) * Math.PI;
+        const lx = cx + Math.cos(a) * w * 0.42;
+        const ly = cy + 6 + Math.sin(a) * h * 0.26;
+        const on = ((i + Math.floor(t * 4)) % 2) === 0;
+        ctx.fillStyle = on ? '#FFE066' : '#553A10';
+        ctx.beginPath();
+        ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Cockpit dome
+    const domeCx = cx, domeCy = cy - h * 0.18;
+    const domeGrad = ctx.createRadialGradient(domeCx - 10, domeCy - 8, 2, domeCx, domeCy, w * 0.22);
+    domeGrad.addColorStop(0, '#CFF5FF');
+    domeGrad.addColorStop(0.4, '#4FB8E0');
+    domeGrad.addColorStop(1, '#103850');
+    ctx.fillStyle = domeGrad;
+    ctx.beginPath();
+    ctx.ellipse(domeCx, domeCy, w * 0.22, h * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dome outline
+    ctx.strokeStyle = '#0a1e2c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(domeCx, domeCy, w * 0.22, h * 0.22, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Dome highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(domeCx - w * 0.08, domeCy - h * 0.08, w * 0.06, h * 0.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Antenna
+    ctx.strokeStyle = '#c0c8d0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(domeCx, domeCy - h * 0.20);
+    ctx.lineTo(domeCx, domeCy - h * 0.40);
+    ctx.stroke();
+    // Antenna tip blinking
+    const blink = (Math.floor(t * 2) % 2) === 0;
+    ctx.fillStyle = blink ? '#FF4040' : '#700000';
+    ctx.beginPath();
+    ctx.arc(domeCx, domeCy - h * 0.42, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Engine thrust glow (pulsing)
+    const epulse = 0.6 + 0.4 * Math.sin(t * 6);
+    for (let i = -1; i <= 1; i++) {
+        const ex = cx + i * w * 0.22;
+        const ey = cy + h * 0.20;
+        const eg = ctx.createRadialGradient(ex, ey, 1, ex, ey, 12);
+        eg.addColorStop(0, `rgba(180,230,255,${0.9 * epulse})`);
+        eg.addColorStop(0.6, `rgba(80,180,255,${0.5 * epulse})`);
+        eg.addColorStop(1, 'rgba(0,40,90,0)');
+        ctx.fillStyle = eg;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 12, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
 // ── Ice Trap (Ice Dragon's ice ball hit) ─────────────────────
 const iceTrap = {
     active: false,
@@ -1562,6 +2099,7 @@ function addWeaponXP(amount) {
     if (currentSword === 'dagger') addDaggerXP(amount);
     else if (currentSword === 'icespear') addSpearXP(amount);
     else if (currentSword === 'firemace') addMaceXP(amount);
+    else if (currentSword === 'saber') addSaberXP(amount);
     else addSwordXP(amount);
 }
 
@@ -1630,10 +2168,58 @@ function getMaceMasteryUnlockedSkins() {
     return skins;
 }
 
+// ── Saber Mastery ──────────────────────────────────────────
+const saberMastery = { xp: 0, level: 0 };
+let saberMasterySkin = 'default';
+const SABER_MASTERY_SKINS = ['default', 'padawan', 'apprentice', 'knight', 'master'];
+const SABER_MASTERY_MILESTONES = { 25: 'padawan', 50: 'apprentice', 75: 'knight', 100: 'master' };
+
+function addSaberXP(amount) {
+    if (saberMastery.level >= 100 && !extraLevels) return;
+    saberMastery.xp += amount;
+    let leveled = false;
+    while (saberMastery.level < 100 || extraLevels) {
+        const needed = xpForLevel(saberMastery.level + 1);
+        if (saberMastery.xp >= needed) {
+            saberMastery.xp -= needed;
+            saberMastery.level++;
+            leveled = true;
+            const milestone = SABER_MASTERY_MILESTONES[saberMastery.level];
+            if (milestone) {
+                saberMasterySkin = milestone;
+                addNotification(`Saber Mastery ${saberMastery.level}! ${milestone.charAt(0).toUpperCase() + milestone.slice(1)} skin unlocked!`, 6000, 'rgba(255,70,70,1)', 'rgba(60,0,0,0.9)');
+            }
+        } else break;
+    }
+    if (leveled && !SABER_MASTERY_MILESTONES[saberMastery.level]) {
+        addNotification(`Saber Mastery Level ${saberMastery.level}!`, 2000, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
+    }
+    if (saberMastery.level >= 100 && !extraLevels) saberMastery.xp = 0;
+}
+
+function getSaberMasteryUnlockedSkins() {
+    const skins = ['default'];
+    if (saberMastery.level >= 25) skins.push('padawan');
+    if (saberMastery.level >= 50) skins.push('apprentice');
+    if (saberMastery.level >= 75) skins.push('knight');
+    if (saberMastery.level >= 100) skins.push('master');
+    return skins;
+}
+
+// Saber blade colors per mastery skin — used by the wielded + thrown render.
+const SABER_BLADE_COLORS = {
+    default:    { glow: 'rgba(255,60,60,X)', blade: '#FF2020', core: '#FFD0D0' },
+    padawan:    { glow: 'rgba(255,80,80,X)', blade: '#FF3030', core: '#FFE0E0' },
+    apprentice: { glow: 'rgba(220,30,40,X)', blade: '#C8101A', core: '#FFB0B8' },
+    knight:     { glow: 'rgba(255,90,40,X)', blade: '#FF4020', core: '#FFD6B8' },
+    master:     { glow: 'rgba(255,120,120,X)', blade: '#FF1010', core: '#FFFFFF' },
+};
+
 function getActiveMasterySkin() {
     if (currentSword === 'dagger') return daggerMasterySkin;
     if (currentSword === 'icespear') return spearMasterySkin;
     if (currentSword === 'firemace') return maceMasterySkin;
+    if (currentSword === 'saber') return saberMasterySkin;
     return masterySkin;
 }
 
@@ -1656,9 +2242,9 @@ function respawnMonsters() {
     if (!peakPassageOpen) openPeakPassage();
 }
 
-const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 10, voidstar: 7, admin: 1000 };
-const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (10 dmg)', voidstar: 'Void Star (7 dmg)', admin: 'Admin Sword (1k dmg)' };
-const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
+const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 10, voidstar: 7, saber: 12, admin: 1000 };
+const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (10 dmg)', voidstar: 'Void Star (7 dmg)', saber: 'Saber (12 dmg + Throw)', admin: 'Admin Sword (1k dmg)' };
+const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], saber: ['rgba(255,70,70,1)', 'rgba(60,0,0,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
 
 function getSwordOrder() {
     const order = ['legendary', 'kings'];
@@ -1667,6 +2253,7 @@ function getSwordOrder() {
     if (dragonSwordUnlocked) order.push('dragon');
     if (firemaceUnlocked) order.push('firemace');
     if (voidStarSwordUnlocked) order.push('voidstar');
+    if (saberUnlocked) order.push('saber');
     if (adminSwordEquipped) order.push('admin');
     return order;
 }
@@ -1799,11 +2386,12 @@ function switchDesign() {
     if (voidDesignUnlocked) designs.push('void');
     if (icePalaceUnlocked) designs.push('ice');
     if (lavaDesignUnlocked) designs.push('lava');
+    if (futureDesignUnlocked) designs.push('future');
     const idx = designs.indexOf(currentDesign);
     const next = designs[(idx + 1) % designs.length];
     currentDesign = next;
-    const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava' };
-    const colors = { default: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], gold: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], void: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], ice: ['rgba(150,210,255,1)', 'rgba(10,30,60,0.9)'], lava: ['rgba(255,120,30,1)', 'rgba(80,20,0,0.9)'] };
+    const names = { default: 'Default', gold: 'Gold', void: 'Void', ice: 'Ice Palace', lava: 'Lava', future: 'Future' };
+    const colors = { default: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], gold: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], void: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], ice: ['rgba(150,210,255,1)', 'rgba(10,30,60,0.9)'], lava: ['rgba(255,120,30,1)', 'rgba(80,20,0,0.9)'], future: ['rgba(120,220,255,1)', 'rgba(10,30,50,0.9)'] };
     const c = colors[next] || colors.default;
     addNotification(`Switched to ${names[next]} design!`, 2000, c[0], c[1]);
 }
@@ -1856,6 +2444,7 @@ function hitSpider() {
         map[goldRow][goldCol] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.spider = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.spider = true; checkSaviorQuestComplete(); }
         addNotification('The giant spider is defeated! It dropped a gold block!', 5000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.9)');
     }
 }
@@ -2019,6 +2608,7 @@ function hitSeaSnake() {
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.seaSnake = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.seaSnake = true; checkSaviorQuestComplete(); }
         addNotification('The sea snake is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification(`Health increased to ${health.max}/${health.max}!`, 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
     }
@@ -2466,6 +3056,7 @@ function updateOrcs(dt) {
             orcs = [];
             questTasks.campHelped = true;
             if (isSnowing() && jackFrostQuestActive) { jackFrostKills.orcs = true; checkJackFrostQuestComplete(); }
+            if (inFutureWorld && saviorQuestActive) { saviorKills.orcs = true; checkSaviorQuestComplete(); }
             // Return guards home
             guardCombat.active = false;
             guardCombat.guard1Target = null;
@@ -2755,6 +3346,7 @@ function hitTroll() {
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.troll = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.troll = true; checkSaviorQuestComplete(); }
         addNotification('The mountain troll is defeated!', 5000, 'rgba(100,255,150,1)', 'rgba(0,40,20,0.9)');
         if (dragonKills === 0) addNotification('Health increased to 30/30!', 4000, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.85)');
         addNotification('A secret passage to the peak opens!', 5000, 'rgba(255,200,100,1)', 'rgba(60,40,0,0.9)');
@@ -3020,6 +3612,7 @@ function hitDragon() {
         respawnMonsters();
         questTasks.dragonDefeated = true;
         if (isSnowing() && jackFrostQuestActive) { jackFrostKills.dragon = true; checkJackFrostQuestComplete(); }
+        if (inFutureWorld && saviorQuestActive) { saviorKills.dragon = true; checkSaviorQuestComplete(); }
         addNotification('The dragon is slain!', 8000, 'rgba(255,215,0,1)', 'rgba(60,40,0,0.9)');
         addNotification('All monsters have respawned!', 5000, 'rgba(255,150,100,1)', 'rgba(60,20,0,0.85)');
         addNotification('Dragon returns in 2 minutes...', 4000, 'rgba(200,100,100,1)', 'rgba(60,0,0,0.8)');
