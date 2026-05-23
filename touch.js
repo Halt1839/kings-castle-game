@@ -128,7 +128,7 @@ function handleTouchStart(e) {
         if (touchHitTest(tx, ty, actions.btnB)) bPressed = true;
         if (touchHitTest(tx, ty, actions.btnF)) fPressed = true;
         if (voidStarUnlocked && touchHitTest(tx, ty, actions.btnV)) vPressed = true;
-        if (currentSword === 'dagger' && touchHitTest(tx, ty, actions.btnS)) yPressed = true;
+        if ((currentSword === 'dagger' || currentSword === 'saber') && touchHitTest(tx, ty, actions.btnS)) yPressed = true;
 
         // Tap on pause button area
         if (touchHitTest(tx, ty, pauseBtn)) {
@@ -260,6 +260,7 @@ function drawTouchControls() {
         drawTouchButton(actions.btnB, 'BLK', false, '68,136,255');
         drawTouchButton(actions.btnF, 'HEAL', false, '138,43,226');
         if (currentSword === 'dagger') drawTouchButton(actions.btnS, 'STAB', false, '255,140,50');
+        else if (currentSword === 'saber') drawTouchButton(actions.btnS, 'THROW', false, '255,140,50');
     } else {
         // Menu/pause/dead: joystick + ACT for navigation
         drawJoystick();
