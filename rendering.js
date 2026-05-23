@@ -585,41 +585,6 @@ function drawTile(col, row, ox, oy) {
     }
 }
 
-// ── Burning Wall Visual ─────────────────────────────────────
-
-function drawBurningWall(ox, oy) {
-    if (!burningWall.active) return;
-    const elapsed = gameTime - burningWall.startTime;
-    const t = elapsed / BURNING_WALL_DURATION;
-    const alpha = 1 - t * 0.3;
-    const wx = burningWall.col * T - ox, wy = burningWall.row * T - oy;
-
-    // Fire glow on the wall
-    ctx.save();
-    const grad = ctx.createRadialGradient(wx + T / 2, wy + T / 2, 2, wx + T / 2, wy + T / 2, T * 1.5);
-    grad.addColorStop(0, `rgba(255,100,0,${alpha * 0.5})`);
-    grad.addColorStop(0.5, `rgba(255,50,0,${alpha * 0.25})`);
-    grad.addColorStop(1, 'rgba(255,50,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(wx - T, wy - T, T * 3, T * 3);
-
-    // Flickering flames on the wall tile
-    const flicker = 0.7 + 0.3 * Math.sin(performance.now() / 80);
-    ctx.fillStyle = `rgba(255,80,0,${alpha * flicker * 0.7})`;
-    ctx.fillRect(wx, wy, T, T);
-    ctx.fillStyle = `rgba(255,200,50,${alpha * flicker * 0.5})`;
-    ctx.fillRect(wx + 4, wy + 4, T - 8, T - 8);
-
-    // Flame tips
-    for (let i = 0; i < 4; i++) {
-        const fx = wx + 4 + Math.sin(performance.now() / 120 + i * 2) * 8 + 8;
-        const fy = wy - 4 - Math.sin(performance.now() / 90 + i * 3) * 6;
-        ctx.fillStyle = `rgba(255,150,30,${alpha * 0.6})`;
-        ctx.beginPath(); ctx.arc(fx, fy, 3, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
-}
-
 // ── Mace Spin Visual Effects ────────────────────────────────
 
 function drawMaceSpin(ox, oy) {

@@ -3410,40 +3410,6 @@ function pointToSegmentDist(px, py, ax, ay, bx, by) {
     return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
-// ── Burning Wall (lava zone portal) ──────────────────────────
-let burningWall = { active: false, row: 0, col: 0, startTime: 0 };
-const BURNING_WALL_DURATION = 1000;
-
-function startBurningWall(px, py) {
-    const col = Math.floor(px / T), row = Math.floor(py / T);
-    if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) return;
-    burningWall.active = true;
-    burningWall.row = row;
-    burningWall.col = col;
-    burningWall.startTime = gameTime;
-}
-
-function updateBurningWall() {
-    if (!burningWall.active) return;
-    if (gameTime - burningWall.startTime >= BURNING_WALL_DURATION) {
-        burningWall.active = false;
-        return;
-    }
-    // Check if player touches the burning wall
-    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
-    const pCol = Math.floor(pcx / T), pRow = Math.floor(pcy / T);
-    if (Math.abs(pRow - burningWall.row) <= 1 && Math.abs(pCol - burningWall.col) <= 1) {
-        // Teleport to lava zone
-        burningWall.active = false;
-        lavaZoneReturnX = player.x;
-        lavaZoneReturnY = player.y;
-        player.x = 14 * T;
-        player.y = 270 * T;
-        inLavaZone = true;
-        addNotification('The burning wall pulls you into the lava chamber!', 4000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
-    }
-}
-
 // Raycast from (ax,ay) through (bx,by) until hitting a wall tile
 function raycastToWall(ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay;
@@ -3541,9 +3507,6 @@ function updateDragon(dt) {
         }
         if (gameTime - dragon.fireStart >= dragon.fireDuration) {
             dragon.firing = false;
-            if (isErupting()) {
-                startBurningWall(dragon.fireTargetX, dragon.fireTargetY);
-            }
         }
     }
 

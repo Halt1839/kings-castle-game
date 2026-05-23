@@ -473,9 +473,6 @@ function gameLoop(now) {
     // Update saber throw
     updateSaberThrow();
 
-    // Update burning wall
-    updateBurningWall();
-
     // Update lava monster
     updateLavaMonster(dt);
 
@@ -859,7 +856,6 @@ function gameLoop(now) {
         ctx.restore();
     }
 
-    drawBurningWall(camX, camY);
     drawVoidRush(camX, camY);
     drawMaceSpin(camX, camY);
     drawSaberThrow(camX, camY);

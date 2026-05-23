@@ -157,6 +157,24 @@ function drawHUD() {
         }
     }
 
+    // Saber Throw cooldown (bottom left, shown when saber equipped)
+    if (currentSword === 'saber' && saberUnlocked) {
+        const throwCdLeft = Math.max(0, saberThrow.cooldownUntil - gameTime);
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        if (saberThrow.active) {
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = `rgba(255,80,80,${pulse})`;
+            ctx.fillText(`[${kl('Y')}] Saber Throw Active`, 16, canvas.height - 130 - touchOffsetL);
+        } else if (throwCdLeft <= 0) {
+            ctx.fillStyle = '#FF4646';
+            ctx.fillText(`[${kl('Y')}] Saber Throw Ready`, 16, canvas.height - 130 - touchOffsetL);
+        } else {
+            const secs = Math.ceil(throwCdLeft / 1000);
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[${kl('Y')}] Saber Throw ${secs}s`, 16, canvas.height - 130 - touchOffsetL);
+        }
+    }
+
     // Dragon respawn timer
     if (typeof dragonRespawnTime !== 'undefined' && dragonRespawnTime > 0 && !dragon.alive) {
         const remaining = Math.max(0, Math.ceil((dragonRespawnTime - gameTime) / 1000));
@@ -236,8 +254,8 @@ function drawHUD() {
 
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'firemace' ? '#ff6600' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'firemace' ? 'Firemace' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'saber' ? '#FF4646' : currentSword === 'firemace' ? '#ff6600' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'saber' ? 'Saber' : currentSword === 'firemace' ? 'Firemace' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
