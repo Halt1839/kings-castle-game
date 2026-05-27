@@ -351,8 +351,23 @@ function getShopItems() {
 
 function drawShopMenu() {
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const bw = 320, bh = 280;
+
+    const items = getShopItems();
+    const itemH = 50;
+    const headerH = 80;   // title + gold line + top padding
+    const footerH = 32;   // hint line
+    const maxVisible = Math.max(2, Math.floor((canvas.height - 80 - headerH - footerH) / itemH));
+    const visCount = Math.max(1, Math.min(Math.max(items.length, 1), maxVisible));
+    const bw = 320, bh = headerH + visCount * itemH + footerH;
     const bx = canvas.width/2 - bw/2, by = canvas.height/2 - bh/2;
+
+    // Keep selection in range, then compute scroll offset
+    if (shopSelection >= items.length) shopSelection = Math.max(0, items.length - 1);
+    let scrollTop = 0;
+    if (shopSelection >= maxVisible) scrollTop = shopSelection - maxVisible + 1;
+    if (scrollTop > items.length - maxVisible) scrollTop = items.length - maxVisible;
+    if (scrollTop < 0) scrollTop = 0;
+
     ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3; ctx.strokeRect(bx, by, bw, bh);
 
@@ -374,16 +389,26 @@ function drawShopMenu() {
     ctx.font = 'bold 14px monospace';
     ctx.fillStyle = '#FFD700'; ctx.fillText(`Gold: ${goldCount}`, bx + bw/2, by + 48);
 
-    const items = getShopItems();
     if (items.length === 0) {
         ctx.font = '14px monospace'; ctx.fillStyle = '#aaa';
-        ctx.fillText('All items purchased!', bx + bw/2, by + 100);
+        ctx.fillText('All items purchased!', bx + bw/2, by + headerH + 10);
     } else {
-        ctx.font = 'bold 16px monospace';
-        for (let i = 0; i < items.length; i++) {
-            const iy = by + 90 + i * 50;
+        // Scroll up indicator
+        if (scrollTop > 0) {
+            ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#FFD700';
+            ctx.fillText('▲ more', bx + bw/2, by + headerH - 14);
+        }
+
+        // Clipped, scrolling item list
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bx, by + headerH, bw, visCount * itemH);
+        ctx.clip();
+        for (let i = scrollTop; i < Math.min(scrollTop + maxVisible, items.length); i++) {
+            const iy = by + headerH + (i - scrollTop) * itemH + 6;
             const item = items[i];
             const canAfford = goldCount >= item.cost;
+            ctx.font = 'bold 16px monospace';
             if (i === shopSelection) {
                 ctx.fillStyle = 'rgba(218,165,32,0.3)'; ctx.fillRect(bx + 20, iy - 6, bw - 40, 38);
                 ctx.fillStyle = canAfford ? '#FFD700' : '#FF6666';
@@ -395,7 +420,13 @@ function drawShopMenu() {
             ctx.font = '12px monospace';
             ctx.fillStyle = canAfford ? '#aaa' : '#664444';
             ctx.fillText(`${item.cost} gold`, bx + bw/2, iy + 22);
-            ctx.font = 'bold 16px monospace';
+        }
+        ctx.restore();
+
+        // Scroll down indicator
+        if (scrollTop + maxVisible < items.length) {
+            ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#FFD700';
+            ctx.fillText('▼ more', bx + bw/2, by + headerH + visCount * itemH);
         }
     }
 
