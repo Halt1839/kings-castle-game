@@ -1184,7 +1184,7 @@ function completeDaggerStab() {
     const mobCX = mob.x + mob.width / 2;
     const currentSide = pcx < mobCX ? -1 : 1;
     const isBackstab = (currentSide === daggerStab.playerSideX);
-    const dmg = isBackstab ? stabBackDmg : stabFrontDmg;
+    const dmg = (isBackstab ? stabBackDmg : stabFrontDmg) * getRingMultiplier();
     swordSwingTime = performance.now();
     mob.hp -= dmg;
     addNotification(isBackstab ? `Backstab! -${dmg} HP` : `Dagger stab! -${dmg} HP`, 1000,
@@ -1198,7 +1198,7 @@ function handleStabKill(mob) {
         spider.alive = false; spiderDeathTime = gameTime; spider.maxHp += 10; addWeaponXP(25);
         const gld = 3 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         const gc = Math.floor((spider.x + spider.width / 2) / T), gr = Math.floor((spider.y + spider.height / 2) / T);
         map[gr][gc] = GOLD_BLOCK;
         questTasks.spiderDefeated = true; checkAllTasks();
@@ -1209,7 +1209,7 @@ function handleStabKill(mob) {
         seaSnake.alive = false; seaSnakeDeathTime = gameTime; seaSnake.maxHp += 10; addWeaponXP(30);
         const gld = 5 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
@@ -1221,7 +1221,7 @@ function handleStabKill(mob) {
         troll.alive = false; trollDeathTime = gameTime; troll.maxHp += 10; addWeaponXP(45);
         const gld = 8 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
@@ -1235,7 +1235,7 @@ function handleStabKill(mob) {
         dragon.alive = false; dragonKills++; addWeaponXP(100);
         const gld = 15 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         dragon.maxHp += 30; dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
         if (dragonKills === 1) {
             kingSwordUnlocked = true; currentSword = 'kings'; swordDamage = 3;
@@ -1263,13 +1263,13 @@ function handleStabKill(mob) {
             addNotification('Press R to use Void Rush when equipped!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.85)');
         }
         if (!voidDesignUnlocked) { voidDesignUnlocked = true; addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'); }
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
     } else if (mob === lavaMonster) {
         lavaMonster.alive = false; lavaMonsterDeathTime = gameTime; lavaMonster.trail = [];
         addWeaponXP(150);
         const gld = 20 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         if (!firemaceUnlocked) {
             firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 10;
             addNotification('Firemace unlocked! 10 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
@@ -1280,7 +1280,7 @@ function handleStabKill(mob) {
         mob.alive = false; addWeaponXP(10);
         const gld = 2 * getVoidMultiplier(); goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
     }
 }
 
@@ -1325,8 +1325,9 @@ function updateMaceSpin() {
         const dx = (mob.x + mob.width / 2) - pcx, dy = (mob.y + mob.height / 2) - pcy;
         if (Math.hypot(dx, dy) < MACE_SPIN_RANGE + mob.width / 2) {
             maceSpin.hitSet.add(id);
-            mob.hp -= maceSpinDmg;
-            addNotification(`Mace Spin! -${maceSpinDmg} HP`, 1000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)');
+            const spinDmg = maceSpinDmg * getRingMultiplier();
+            mob.hp -= spinDmg;
+            addNotification(`Mace Spin! -${spinDmg} HP`, 1000, 'rgba(255,120,30,1)', 'rgba(80,20,0,0.9)');
             if (mob === voidSentinel && !voidSentinel.aggro) {
                 voidSentinel.aggro = true;
                 addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
@@ -1400,7 +1401,7 @@ function _saberCheckMobHit(mob) {
     const d = Math.hypot(saberThrow.x - mcx, saberThrow.y - mcy);
     if (d < SABER_THROW_HIT_RADIUS) {
         saberThrow.hitSet.add(mob);
-        mob.hp = Math.max(0, mob.hp - SABER_THROW_DMG);
+        mob.hp = Math.max(0, mob.hp - SABER_THROW_DMG * getRingMultiplier());
         if (mob.hp <= 0) handleStabKill(mob);
     }
 }
@@ -1521,6 +1522,87 @@ function dropSnowflakes() {
     const amt = 1 + Math.floor(Math.random() * 3); // 1-3
     snowflakeCount += amt;
     addNotification(`+${amt} Snowflake${amt > 1 ? 's' : ''}`, 1200, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
+}
+
+// ── The Ring (sneak peak — v6.0.0) ───────────────────────────
+let ringOwned = false;
+const RING_TEMPT_WINDOW = 5000; // 5 sec to press R after a kill
+const ringTempt = { active: false, startTime: 0 };
+let friendlyOrcs = [];
+const FRIENDLY_ORC_DETECT_RANGE = T * 8;
+const FRIENDLY_ORC_ATTACK_RATE = 1000; // 1 dmg per sec
+
+function getRingMultiplier() { return ringOwned ? 2 : 1; }
+
+function tempt() {
+    if (!ringOwned) return;
+    health.value = Math.min(health.max, health.value + 1);
+    for (const f of friendlyOrcs) if (f.alive) f.hp = f.maxHp;
+    ringTempt.active = true;
+    ringTempt.startTime = gameTime;
+}
+
+function acceptTempt() {
+    if (!ringTempt.active) return false;
+    if (gameTime - ringTempt.startTime > RING_TEMPT_WINDOW) { ringTempt.active = false; return false; }
+    if (nextFreeOrcSlot() < 0) {
+        ringTempt.active = false;
+        addNotification(`Army already full (${FRIENDLY_ORC_MAX} max)`, 1800, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.85)');
+        return false;
+    }
+    ringTempt.active = false;
+    health.value = Math.max(0, health.value - 3);
+    addNotification('The Ring takes 3 HP...', 1800, 'rgba(220,150,255,1)', 'rgba(30,10,40,0.9)');
+    spawnFriendlyOrcs(3);
+    return true;
+}
+
+const FRIENDLY_ORC_MAX = 16;
+const FRIENDLY_ORC_COLS = 4;
+
+function nextFreeOrcSlot() {
+    const used = new Set(friendlyOrcs.filter(o => o.alive).map(o => o.slot));
+    for (let i = 0; i < FRIENDLY_ORC_MAX; i++) if (!used.has(i)) return i;
+    return -1;
+}
+
+function orcSlotPosition(slot) {
+    // Formation: 4x4 grid behind the player. Row 1 nearest, row 4 farthest.
+    const row = Math.floor(slot / FRIENDLY_ORC_COLS) + 1;     // 1..4
+    const side = (slot % FRIENDLY_ORC_COLS) - (FRIENDLY_ORC_COLS - 1) / 2; // -1.5..+1.5
+    const pcx = player.x + player.width / 2;
+    const pcy = player.y + player.height / 2;
+    const gap = T * 0.9;
+    let bx = 0, by = 0, sxv = 0, syv = 0;
+    if (playerFacing === 'south')      { bx = 0; by = -1; sxv = 1; syv = 0; }
+    else if (playerFacing === 'north') { bx = 0; by = 1;  sxv = 1; syv = 0; }
+    else if (playerFacing === 'east')  { bx = -1; by = 0; sxv = 0; syv = 1; }
+    else /* west */                    { bx = 1;  by = 0; sxv = 0; syv = 1; }
+    return {
+        x: pcx + bx * row * gap + sxv * side * gap,
+        y: pcy + by * row * gap + syv * side * gap,
+    };
+}
+
+function spawnFriendlyOrcs(n) {
+    let spawned = 0;
+    for (let i = 0; i < n; i++) {
+        const slot = nextFreeOrcSlot();
+        if (slot < 0) break;
+        const pos = orcSlotPosition(slot);
+        friendlyOrcs.push({
+            x: pos.x - 10, y: pos.y - 10,
+            width: 20, height: 20,
+            hp: 15, maxHp: 15, alive: true,
+            lastAttack: 0, attackCooldown: FRIENDLY_ORC_ATTACK_RATE,
+            damage: 1, speed: player.speed,
+            target: null, targetId: null,
+            path: null, pathIndex: 0, pathTime: 0,
+            slot,
+        });
+        spawned++;
+    }
+    if (spawned > 0) addNotification(`${spawned} orc${spawned > 1 ? 's' : ''} follow you!`, 2200, 'rgba(180,255,180,1)', 'rgba(0,40,10,0.85)');
 }
 
 // ── Snow Weather ─────────────────────────────────────────────
@@ -2425,7 +2507,7 @@ function hitSpider() {
     if (pRow < 44 || pRow > 89) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     spider.hp -= dmg;
     addNotification(`Hit! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (spider.hp <= 0) {
@@ -2437,7 +2519,7 @@ function hitSpider() {
         const gld = 3 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         // Drop gold block at spider position
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
         const goldRow = Math.floor((spider.y + spider.height / 2) / T);
@@ -2591,7 +2673,7 @@ function hitSeaSnake() {
     if (pRow < 90 || pRow > 110) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     seaSnake.hp -= dmg;
     addNotification(`Hit! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (seaSnake.hp <= 0) {
@@ -2603,7 +2685,7 @@ function hitSeaSnake() {
         const gld = 5 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         health.max = Math.max(health.max, 15);
         if (dragonKills === 0) health.value = health.max;
         questTasks.seaSnakeDefeated = true;
@@ -3134,6 +3216,80 @@ function updateOrcs(dt) {
     orcs = orcs.filter(o => o.alive);
 }
 
+// ── Friendly Orcs (from Ring temptation) ─────────────────────
+function findNearestEnemyForOrc(cx, cy, range) {
+    let nearest = null, bestD = range;
+    function tryMob(m) {
+        if (!m || !m.alive) return;
+        const mcx = m.x + m.width / 2, mcy = m.y + m.height / 2;
+        const d = Math.hypot(cx - mcx, cy - mcy);
+        if (d < bestD) { bestD = d; nearest = m; }
+    }
+    if (typeof spider !== 'undefined' && spider.active) tryMob(spider);
+    if (typeof seaSnake !== 'undefined' && seaSnake.active) tryMob(seaSnake);
+    if (typeof troll !== 'undefined') tryMob(troll);
+    if (typeof dragon !== 'undefined') tryMob(dragon);
+    if (typeof voidSentinel !== 'undefined' && inArena) tryMob(voidSentinel);
+    if (typeof lavaMonster !== 'undefined' && inLavaZone) tryMob(lavaMonster);
+    if (typeof orcs !== 'undefined') for (const o of orcs) tryMob(o);
+    return nearest;
+}
+
+function updateFriendlyOrcs(dt) {
+    if (!friendlyOrcs.length) return;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    for (const f of friendlyOrcs) {
+        if (!f.alive) continue;
+        const fcx = f.x + f.width / 2, fcy = f.y + f.height / 2;
+        const target = findNearestEnemyForOrc(fcx, fcy, FRIENDLY_ORC_DETECT_RANGE);
+        f.target = target;
+        f.speed = player.speed; // match player speed live
+        if (target) {
+            const tcx = target.x + target.width / 2, tcy = target.y + target.height / 2;
+            const dx = tcx - fcx, dy = tcy - fcy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > T * 0.9) {
+                f.x += (dx / dist) * f.speed * dt;
+                f.y += (dy / dist) * f.speed * dt;
+            } else if (gameTime - f.lastAttack >= f.attackCooldown) {
+                f.lastAttack = gameTime;
+                const playerDmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
+                f.damage = Math.max(1, Math.floor(playerDmg / 2));
+                target.hp -= f.damage;
+                f.hp -= 1; // retaliation cost
+                if (target.hp <= 0) {
+                    target.hp = 0;
+                    handleStabKill(target);
+                }
+            }
+        } else {
+            // Follow player in formation slot
+            const slotPos = orcSlotPosition(f.slot != null ? f.slot : 0);
+            const dx = slotPos.x - fcx, dy = slotPos.y - fcy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 3) {
+                const step = Math.min(dist, f.speed * dt);
+                f.x += (dx / dist) * step;
+                f.y += (dy / dist) * step;
+            }
+        }
+        // Player separation — never overlap the player
+        const sepCx = f.x + f.width / 2, sepCy = f.y + f.height / 2;
+        const pdx = sepCx - pcx, pdy = sepCy - pcy;
+        const pdist = Math.hypot(pdx, pdy);
+        const minDist = (f.width + player.width) / 2 + 2;
+        if (pdist < minDist && pdist > 0.001) {
+            const push = (minDist - pdist);
+            f.x += (pdx / pdist) * push;
+            f.y += (pdy / pdist) * push;
+        } else if (pdist <= 0.001) {
+            f.x += T * 0.5;
+        }
+        if (f.hp <= 0) f.alive = false;
+    }
+    friendlyOrcs = friendlyOrcs.filter(o => o.alive);
+}
+
 function updateGuardCombat(g, targetKey, cdKey, dt) {
     const pathKey = targetKey.replace('Target', 'Path');
     const pathIndexKey = targetKey.replace('Target', 'PathIndex');
@@ -3214,7 +3370,7 @@ function hitNearestOrc() {
     }
     if (!nearest) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     nearest.hp -= dmg;
     addNotification(`Hit orc! -${dmg} HP`, 600, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (nearest.hp <= 0) {
@@ -3224,7 +3380,7 @@ function hitNearestOrc() {
         const gld = 2 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1200, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
     }
 }
 
@@ -3329,7 +3485,7 @@ function hitTroll() {
     if (pRow < 148 || pRow > 156) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     troll.hp -= dmg;
     addNotification(`Hit troll! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (troll.hp <= 0) {
@@ -3341,7 +3497,7 @@ function hitTroll() {
         const gld = 8 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         health.max = Math.max(health.max, 30);
         if (dragonKills === 0) health.value = health.max;
         questTasks.trollDefeated = true;
@@ -3548,7 +3704,7 @@ function hitDragon() {
     if (pRow < 167 || pRow > 193) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     dragon.hp -= dmg;
     addNotification(`Hit dragon! -${dmg} HP`, 800, 'rgba(255,100,100,1)', 'rgba(60,0,0,0.8)');
     if (dragon.hp <= 0) {
@@ -3559,7 +3715,7 @@ function hitDragon() {
         const gld = 15 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         dragon.maxHp += 30;
         dragonRespawnTime = gameTime + DRAGON_RESPAWN_DELAY;
         if (dragonKills === 1) {
@@ -3748,7 +3904,7 @@ function hitVoidSentinel() {
         voidSentinel.aggro = true;
         addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
     }
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     voidSentinel.hp -= dmg;
     addNotification(`Hit Sentinel! -${dmg} HP`, 800, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
     if (voidSentinel.hp <= 0) {
@@ -3773,7 +3929,7 @@ function hitVoidSentinel() {
             voidDesignUnlocked = true;
             addNotification('Void design unlocked!', 4000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
         }
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
     }
 }
 
@@ -3843,7 +3999,7 @@ function updateVoidRush(dt) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
             // Hit ALL enemies along the line of fire
-            voidRushHitEnemies(voidRushDmg1);
+            voidRushHitEnemies(voidRushDmg1 * getRingMultiplier());
         } else {
             // Reached target — start second windup, retarget nearest enemy
             voidRush.state = 'windup2';
@@ -3883,7 +4039,7 @@ function updateVoidRush(dt) {
         if (dist > 6) {
             player.x += (dx / dist) * voidRush.dashSpeed * dt;
             player.y += (dy / dist) * voidRush.dashSpeed * dt;
-            voidRushHitEnemies(voidRushDmg2);
+            voidRushHitEnemies(voidRushDmg2 * getRingMultiplier());
         } else {
             voidRush.state = 'idle';
             voidRush.lastUseTime = gameTime;
@@ -4080,7 +4236,7 @@ function hitLavaMonster() {
     if (!inLavaZone) return;
     if (gameTime - playerAttackCooldown < PLAYER_ATTACK_RATE) return;
     playerAttackCooldown = gameTime;
-    const dmg = swordDamage * getVoidMultiplier();
+    const dmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
     lavaMonster.hp -= dmg;
     if (!lavaMonster.aggro) {
         lavaMonster.aggro = true;
@@ -4096,7 +4252,7 @@ function hitLavaMonster() {
         const gld = 20 * getVoidMultiplier();
         goldCount += gld;
         addNotification(`+${gld} Gold`, 1500, 'rgba(255,215,0,1)', 'rgba(40,30,0,0.8)');
-        dropSnowflakes();
+        dropSnowflakes(); tempt();
         if (!firemaceUnlocked) {
             firemaceUnlocked = true; currentSword = 'firemace'; swordDamage = 10;
             addNotification('Firemace unlocked! 10 damage per hit!', 8000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');

@@ -445,6 +445,7 @@ function gameLoop(now) {
 
     // Update orcs
     updateOrcs(dt);
+    updateFriendlyOrcs(dt);
 
     // Update troll
     updateTroll(dt);
@@ -584,9 +585,13 @@ function gameLoop(now) {
         vPressed = false;
     }
 
-    // Handle R press (void rush)
+    // Handle R press (ring tempt-accept, else void rush)
     if (rPressed) {
-        if (currentSword === 'voidstar' && voidStarSwordUnlocked) useVoidRush();
+        if (ringOwned && ringTempt.active && gameTime - ringTempt.startTime <= RING_TEMPT_WINDOW) {
+            acceptTempt();
+        } else if (currentSword === 'voidstar' && voidStarSwordUnlocked) {
+            useVoidRush();
+        }
         rPressed = false;
     }
 
@@ -823,6 +828,7 @@ function gameLoop(now) {
     drawJackFrost(camX, camY);
     drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
+    drawAllFriendlyOrcs(camX, camY);
     drawTroll(camX, camY);
     drawDragon(camX, camY);
     drawFireBreath(camX, camY);
@@ -966,6 +972,7 @@ function gameLoop(now) {
     drawPauseButton();
     drawAdminButton();
     drawShopButton();
+    drawRingTempt();
     drawNotifications();
 
     if (adminOpen) drawAdminPanel();

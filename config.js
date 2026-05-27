@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v4.2.26';
+const GAME_VERSION = 'v5.0.10';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor

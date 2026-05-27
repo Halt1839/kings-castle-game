@@ -48,6 +48,28 @@ function drawBar(label, value, max, bx, by, color, critThreshold) {
     ctx.fillText(`${fmtNum(value)} / ${fmtNum(max)}`, bx+barW/2, by+barH/2);
 }
 
+function drawRingTempt() {
+    if (typeof ringTempt === 'undefined' || !ringTempt.active) return;
+    const elapsed = gameTime - ringTempt.startTime;
+    if (elapsed > RING_TEMPT_WINDOW) { ringTempt.active = false; return; }
+    const remaining = (RING_TEMPT_WINDOW - elapsed) / 1000;
+    const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 120);
+    const bw = 360, bh = 60;
+    const bx = canvas.width / 2 - bw / 2;
+    const by = 80;
+    ctx.fillStyle = `rgba(40,10,60,${0.75 * pulse + 0.2})`;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = `rgba(220,180,255,${pulse})`;
+    ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = `rgba(230,200,255,${pulse})`;
+    ctx.fillText('THE RING TEMPTS YOU...', bx + bw / 2, by + 8);
+    ctx.font = '13px monospace';
+    ctx.fillStyle = '#ddd';
+    ctx.fillText(`Press R for 3 orcs (-3 HP)  ·  ${remaining.toFixed(1)}s`, bx + bw / 2, by + 32);
+}
+
 function drawHUD() {
     // Offset bottom HUD elements above touch controls on touch devices
     const touchOffsetL = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 140 : 0;
@@ -320,6 +342,10 @@ function getShopItems() {
     if (!daggerUnlocked) items.push({ name: 'Dagger (3 dmg + Stab)', cost: 300, action: () => { goldCount -= 300; daggerUnlocked = true; currentSword = 'dagger'; swordDamage = 3; addNotification('Dagger acquired! Press ' + kl('Y') + ' to stab!', 5000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'); } });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
     if (!voidStarUnlocked) items.push({ name: 'Void Star (4x buff)', cost: 2500, action: () => { goldCount -= 2500; voidStarUnlocked = true; addNotification('Void Star unlocked! Press V to activate!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)'); } });
+    if (!ringOwned && adminUnlocked) {
+        const ringCost = Math.max(100000, goldCount);
+        items.push({ name: 'The Ring (2x dmg)', cost: ringCost, action: () => { goldCount = Math.max(0, goldCount - Math.max(100000, goldCount)); ringOwned = true; addNotification('The Ring is yours. All damage doubled.', 5000, 'rgba(220,180,255,1)', 'rgba(30,10,40,0.9)'); addNotification('It will tempt you after every kill...', 4500, 'rgba(220,180,255,1)', 'rgba(30,10,40,0.85)'); } });
+    }
     return items;
 }
 

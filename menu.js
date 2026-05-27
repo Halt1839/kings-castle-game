@@ -80,6 +80,8 @@ function saveGame(slot) {
         spearMastery: { xp: spearMastery.xp, level: spearMastery.level },
         spearMasterySkin,
         snowflakeCount,
+        ringOwned,
+        friendlyOrcs: friendlyOrcs.map(o => ({ x: o.x, y: o.y, hp: o.hp, maxHp: o.maxHp, alive: o.alive, slot: o.slot })),
         extraLevels,
         jackFrostQuestActive,
         jackFrostQuestComplete,
@@ -198,6 +200,17 @@ function loadGame(slot) {
     if (s.spearMastery) { spearMastery.xp = s.spearMastery.xp; spearMastery.level = s.spearMastery.level; }
     if (s.spearMasterySkin !== undefined) spearMasterySkin = s.spearMasterySkin;
     if (s.snowflakeCount !== undefined) snowflakeCount = s.snowflakeCount;
+    if (s.ringOwned !== undefined) ringOwned = s.ringOwned;
+    if (Array.isArray(s.friendlyOrcs)) {
+        friendlyOrcs = s.friendlyOrcs.map((o, idx) => ({
+            x: o.x, y: o.y, width: 20, height: 20,
+            hp: Math.min(15, o.hp), maxHp: 15, alive: o.alive,
+            lastAttack: 0, attackCooldown: FRIENDLY_ORC_ATTACK_RATE,
+            damage: 1, speed: player.speed, target: null, targetId: null,
+            path: null, pathIndex: 0, pathTime: 0,
+            slot: (o.slot != null ? o.slot : idx),
+        }));
+    }
     if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
     if (s.jackFrostQuestActive !== undefined) jackFrostQuestActive = s.jackFrostQuestActive;
     if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
@@ -310,6 +323,7 @@ function resetGameState() {
     daggerMastery.xp = 0; daggerMastery.level = 0; daggerMasterySkin = 'default';
     iceSpearUnlocked = false; spearMastery.xp = 0; spearMastery.level = 0; spearMasterySkin = 'default';
     snowflakeCount = 0; iceTravelerDialog.active = false; iceTravelerShopOpen = false; iceTravelerWasPresent = false; snowWasActive = false;
+    ringOwned = false; ringTempt.active = false; ringTempt.startTime = 0; friendlyOrcs = [];
     iceTrap.active = false; iceTrap.hits = 0;
     jackFrostQuestActive = false; jackFrostQuestComplete = false; icePalaceUnlocked = false;
     jackFrostKills.spider = false; jackFrostKills.seaSnake = false; jackFrostKills.orcs = false; jackFrostKills.troll = false; jackFrostKills.dragon = false;

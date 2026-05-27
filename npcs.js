@@ -944,6 +944,52 @@ function drawAllOrcs(ox, oy) {
     for (const orc of orcs) drawOrc(orc, ox, oy);
 }
 
+function drawFriendlyOrc(orc, ox, oy) {
+    if (!orc.alive) return;
+    const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);
+    const cx = sx + orc.width / 2, cy = sy + orc.height / 2;
+    // Ghostly translucency
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    // Green aura under friendly orc
+    ctx.fillStyle = 'rgba(120,255,140,0.25)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + orc.height + 1, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, sy + orc.height + 1, 7, 2, 0, 0, Math.PI * 2); ctx.fill();
+    // Body (dark leather)
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(sx + 3, sy + 7, 14, 9);
+    ctx.fillStyle = '#4a3a2a'; ctx.fillRect(sx + 5, sy + 8, 10, 7);
+    // Head (green)
+    ctx.fillStyle = '#4a8a3a'; ctx.beginPath(); ctx.arc(cx, sy + 5, 5, 0, Math.PI * 2); ctx.fill();
+    // Darker green patches
+    ctx.fillStyle = '#3a6a2a'; ctx.fillRect(cx - 4, sy + 3, 3, 3);
+    // Cyan eyes (friendly tell)
+    ctx.fillStyle = '#66e0ff'; ctx.fillRect(cx - 3, sy + 4, 2, 2); ctx.fillRect(cx + 1, sy + 4, 2, 2);
+    // Jaw/tusks
+    ctx.fillStyle = '#F5F5DC'; ctx.fillRect(cx - 2, sy + 8, 2, 2); ctx.fillRect(cx + 1, sy + 8, 2, 2);
+    // Red bandana around head (friendly marker)
+    ctx.fillStyle = '#c83030'; ctx.fillRect(cx - 5, sy + 1, 10, 2);
+    ctx.fillStyle = '#8b1010'; ctx.fillRect(cx + 4, sy + 1, 3, 3);
+    // Arm with weapon
+    ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 1, sy + 8, 3, 5);
+    ctx.fillStyle = '#654321'; ctx.fillRect(sx - 1, sy + 5, 2, 8);
+    ctx.fillStyle = '#555'; ctx.fillRect(sx - 2, sy + 3, 4, 4);
+    ctx.fillStyle = '#4a8a3a'; ctx.fillRect(sx + 16, sy + 8, 3, 5);
+    ctx.fillStyle = '#2a1a0a'; ctx.fillRect(sx + 4, sy + 15, 4, 3); ctx.fillRect(sx + 12, sy + 15, 4, 3);
+    // HP bar (green)
+    const barW = 24, barH = 4;
+    const barX = cx - barW / 2, barY = sy - 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = '#5ad65a'; ctx.fillRect(barX + 1, barY + 1, (barW - 2) * (orc.hp / orc.maxHp), barH - 2);
+    ctx.restore();
+}
+
+function drawAllFriendlyOrcs(ox, oy) {
+    if (typeof friendlyOrcs === 'undefined') return;
+    for (const orc of friendlyOrcs) drawFriendlyOrc(orc, ox, oy);
+}
+
 function drawTroll(ox, oy) {
     if (typeof troll === 'undefined' || !troll.alive) return;
     if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotTroll(ox, oy); return; }
