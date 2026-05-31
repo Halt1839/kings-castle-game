@@ -551,6 +551,7 @@ function drawPauseMenu() {
     if (pauseScreen === 'mastery_spear') { drawSpearMasteryScreen(); return; }
     if (pauseScreen === 'mastery_mace') { drawMaceMasteryScreen(); return; }
     if (pauseScreen === 'mastery_saber') { drawSaberMasteryScreen(); return; }
+    if (pauseScreen === 'mastery_voidstar') { drawVoidstarMasteryScreen(); return; }
     if (pauseScreen === 'settings') { drawSettingsScreen(); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     const bw = 280, bh = 280;
@@ -611,6 +612,7 @@ function getMasteryPickerItems() {
     if (iceSpearUnlocked) items.push({ label: 'Spear Mastery (Lv ' + spearMastery.level + ')', key: 'spear' });
     if (firemaceUnlocked) items.push({ label: 'Mace Mastery (Lv ' + maceMastery.level + ')', key: 'mace' });
     if (saberUnlocked) items.push({ label: 'Saber Mastery (Lv ' + saberMastery.level + ')', key: 'saber' });
+    if (voidStarSwordUnlocked) items.push({ label: 'Void Star Mastery (Lv ' + voidstarMastery.level + ')', key: 'voidstar' });
     items.push({ label: 'Back', key: 'back' });
     return items;
 }
@@ -780,6 +782,21 @@ function drawSaberMasteryScreen() {
         items, saberMasterySkin, '#ff5050', '#aa1010');
 }
 
+function getVoidstarMasteryItems() {
+    const skins = getVoidstarMasteryUnlockedSkins();
+    const items = skins.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1) + ' Skin', key: s }));
+    items.push({ label: 'Back', key: 'back' });
+    return items;
+}
+
+function drawVoidstarMasteryScreen() {
+    const items = getVoidstarMasteryItems();
+    drawWeaponMasteryDetail('VOID STAR MASTERY', voidstarMastery,
+        [25, 50, 75, 100], ['Shade', 'Rift', 'Nebula', 'Singularity'],
+        ['#a06edb', '#8c46f5', '#d25aff', '#7828d2'],
+        items, voidstarMasterySkin, '#C88FFF', '#6a1fa0');
+}
+
 function getQuestItems() {
     const items = [{ label: 'Main Quest', key: 'main' }];
     if (dragonKills > 0) items.push({ label: 'Void Quest', key: 'void' });
@@ -886,10 +903,10 @@ function getAdminItems() {
             addNotification(adminGhostMode ? 'Ghost mode: walk through anything!' : 'Ghost mode disabled', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
         { name: 'Set Mastery Level', action: () => {
-            const weapon = prompt('Which weapon? (sword / dagger / spear / mace / saber)');
+            const weapon = prompt('Which weapon? (sword / dagger / spear / mace / saber / voidstar)');
             if (weapon === null) return;
             const w = weapon.trim().toLowerCase();
-            if (w !== 'sword' && w !== 'dagger' && w !== 'spear' && w !== 'mace' && w !== 'firemace' && w !== 'saber') { addNotification('Enter "sword", "dagger", "spear", "mace", or "saber"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
+            if (w !== 'sword' && w !== 'dagger' && w !== 'spear' && w !== 'mace' && w !== 'firemace' && w !== 'saber' && w !== 'voidstar') { addNotification('Enter "sword", "dagger", "spear", "mace", "saber", or "voidstar"', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)'); return; }
             const maxLvl = extraLevels ? 99999 : 100;
             const val = prompt('Enter level (0-' + maxLvl + '):');
             if (val === null) return;
@@ -925,7 +942,7 @@ function getAdminItems() {
                 spearMasterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { spearMasterySkin = sk[i]; break; } }
                 addNotification('Spear mastery set to ' + lvl, 2000, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
-            } else {
+            } else if (w === 'saber') {
                 saberUnlocked = true;
                 saberMastery.level = lvl; saberMastery.xp = 0;
                 const ms = [100, 75, 50, 25];
@@ -933,6 +950,14 @@ function getAdminItems() {
                 saberMasterySkin = 'default';
                 for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { saberMasterySkin = sk[i]; break; } }
                 addNotification('Saber mastery set to ' + lvl, 2000, 'rgba(255,80,80,1)', 'rgba(60,0,0,0.8)');
+            } else {
+                voidStarSwordUnlocked = true;
+                voidstarMastery.level = lvl; voidstarMastery.xp = 0;
+                const ms = [100, 75, 50, 25];
+                const sk = ['singularity', 'nebula', 'rift', 'shade'];
+                voidstarMasterySkin = 'default';
+                for (let i = 0; i < ms.length; i++) { if (lvl >= ms[i]) { voidstarMasterySkin = sk[i]; break; } }
+                addNotification('Void Star mastery set to ' + lvl, 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
             }
         }},
         { name: 'Set Ability Damage', action: () => {
@@ -1123,3 +1148,110 @@ function tryAdminLogin() {
     }
 }
 
+
+// ── Orc Command Wheel ───────────────────────────────────────
+function drawOrcWheel() {
+    if (!orcWheel.open) return;
+    ctx.save();
+    // Dim the battlefield
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const rOuter = 150, rInner = 56;
+    const titles = ['Attack\nDelta', 'Square\nMarch', 'Defense\nCircle'];
+    const descs = [
+        'Auto-engage enemies nearby',
+        'Diamond march, chases foes',
+        'Ring shield, counters attacks',
+    ];
+    const n = ORC_FORMATION_LIST.length;
+
+    for (let i = 0; i < n; i++) {
+        const a0 = -Math.PI / 2 + (i / n) * Math.PI * 2;
+        const a1 = -Math.PI / 2 + ((i + 1) / n) * Math.PI * 2;
+        const selected = i === orcWheel.selection;
+        const active = ORC_FORMATION_LIST[i] === orcFormation;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOuter, a0, a1);
+        ctx.arc(cx, cy, rInner, a1, a0, true);
+        ctx.closePath();
+        ctx.fillStyle = selected ? 'rgba(90,210,110,0.92)' : 'rgba(28,40,30,0.92)';
+        ctx.fill();
+        ctx.strokeStyle = active ? '#ffd24a' : '#2a3a2a';
+        ctx.lineWidth = active ? 4 : 3;
+        ctx.stroke();
+        // Label at the sector's mid-angle
+        const am = (a0 + a1) / 2;
+        const lr = (rOuter + rInner) / 2;
+        const lx = cx + Math.cos(am) * lr, ly = cy + Math.sin(am) * lr;
+        ctx.fillStyle = selected ? '#08240f' : '#cfe8d2';
+        ctx.font = 'bold 15px monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        titles[i].split('\n').forEach((ln, k) => ctx.fillText(ln, lx, ly - 8 + k * 16));
+    }
+
+    // Center hub
+    ctx.beginPath(); ctx.arc(cx, cy, rInner - 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(18,24,18,0.96)'; ctx.fill();
+    ctx.strokeStyle = '#5ad65a'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#9f9'; ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('ORC', cx, cy - 8);
+    ctx.fillText('ORDERS', cx, cy + 8);
+
+    // Description + controls hint
+    ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
+    ctx.fillText(descs[orcWheel.selection], cx, cy + rOuter + 28);
+    ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
+    ctx.fillText(`${kl('nav')} select   ${kl('E')} confirm   Esc cancel`, cx, cy + rOuter + 50);
+
+    // Execution button (under the wheel) — click to start picking orcs
+    const bw = 190, bh = 34;
+    orcWheelExecBtn.x = cx - bw / 2;
+    orcWheelExecBtn.y = cy + rOuter + 66;
+    orcWheelExecBtn.w = bw;
+    orcWheelExecBtn.h = bh;
+    ctx.fillStyle = 'rgba(80,15,15,0.95)';
+    ctx.fillRect(orcWheelExecBtn.x, orcWheelExecBtn.y, bw, bh);
+    ctx.strokeStyle = '#ff5555'; ctx.lineWidth = 2;
+    ctx.strokeRect(orcWheelExecBtn.x, orcWheelExecBtn.y, bw, bh);
+    ctx.fillStyle = '#ff8080'; ctx.font = 'bold 15px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('☠ EXECUTION', cx, orcWheelExecBtn.y + bh / 2);
+    ctx.restore();
+}
+
+// Blackout targeting overlay — only the orcs are visible; click to mark, D to execute.
+function drawExecutionOverlay(ox, oy) {
+    if (!executionMode.active) return;
+    ctx.save();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (const o of friendlyOrcs) {
+        if (!o.alive) continue;
+        drawFriendlyOrc(o, ox, oy);
+        const sx = Math.round(o.x - ox), sy = Math.round(o.y - oy);
+        const ccx = sx + o.width / 2, ccy = sy + o.height / 2;
+        const sel = executionMode.selected.indexOf(o) >= 0;
+        ctx.strokeStyle = sel ? '#ff3030' : 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = sel ? 3 : 1.5;
+        ctx.beginPath(); ctx.arc(ccx, ccy, 16, 0, Math.PI * 2); ctx.stroke();
+        if (sel) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ccx - 6, ccy - 6); ctx.lineTo(ccx + 6, ccy + 6);
+            ctx.moveTo(ccx + 6, ccy - 6); ctx.lineTo(ccx - 6, ccy + 6);
+            ctx.stroke();
+        }
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#ff5555'; ctx.font = 'bold 22px monospace';
+    ctx.fillText('EXECUTION', canvas.width / 2, 30);
+    ctx.fillStyle = '#ddd'; ctx.font = '14px monospace';
+    ctx.fillText('Click orcs to mark them for death', canvas.width / 2, 62);
+    const n = executionMode.selected.filter(o => o && o.alive).length;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${n} marked    —    D: execute    Esc: cancel`, canvas.width / 2, 84);
+    ctx.restore();
+}

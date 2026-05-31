@@ -9,10 +9,31 @@ let vPressed = false;
 let rPressed = false;
 let yPressed = false;
 let lPressed = false;
+let cPressed = false;
 let playerFacing = 'south';
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.key);
+
+    // Execution targeting — captures input while picking orcs
+    if (executionMode.active) {
+        if (e.key === 'd' || e.key === 'D' || e.key === 'Enter') confirmExecution();
+        else if (e.key === 'Escape') cancelExecution();
+        e.preventDefault();
+        return;
+    }
+
+    // Orc command wheel — captures input while open so no actions leak through
+    if (orcWheel.open) {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') moveOrcWheel(-1);
+        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') moveOrcWheel(1);
+        else if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') confirmOrcWheel();
+        else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') closeOrcWheel();
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === 'c' || e.key === 'C') cPressed = true;
     if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') ePressed = true;
     if (e.key === 'h' || e.key === 'H') hPressed = true;
     if (e.key === 'f' || e.key === 'F') fPressed = true;
@@ -83,6 +104,11 @@ window.addEventListener('keydown', (e) => {
             const msbItems = getSaberMasteryItems();
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + msbItems.length) % msbItems.length;
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % msbItems.length;
+            if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
+        } else if (pauseScreen === 'mastery_voidstar') {
+            const mvItems = getVoidstarMasteryItems();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') masterySelection = (masterySelection - 1 + mvItems.length) % mvItems.length;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') masterySelection = (masterySelection + 1) % mvItems.length;
             if (e.key === 'Escape') { pauseScreen = 'mastery'; masterySelection = 0; }
         } else {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') pauseSelection = (pauseSelection - 1 + PAUSE_ITEMS.length) % PAUSE_ITEMS.length;
@@ -193,6 +219,21 @@ window.addEventListener('keyup', (e) => keys.delete(e.key));
 canvas.addEventListener('click', (e) => {
     const mx = e.clientX, my = e.clientY;
     if (gameState === 'playing') {
+        // Command wheel open: only the Execution button is clickable
+        if (orcWheel.open) {
+            if (mx >= orcWheelExecBtn.x && mx <= orcWheelExecBtn.x + orcWheelExecBtn.w &&
+                my >= orcWheelExecBtn.y && my <= orcWheelExecBtn.y + orcWheelExecBtn.h) {
+                enterExecutionMode();
+            }
+            return;
+        }
+        // Execution picker: click an orc to toggle its mark
+        if (executionMode.active) {
+            const camX = player.x + player.width / 2 - canvas.width / 2;
+            const camY = player.y + player.height / 2 - canvas.height / 2;
+            executionPickAt(mx + camX, my + camY);
+            return;
+        }
         if (adminOpen || shopOpen) return; // ignore clicks behind overlays
         // Admin button
         if (mx >= adminBtn.x && mx <= adminBtn.x + adminBtn.w &&
@@ -296,6 +337,8 @@ function gameLoop(now) {
                     pauseScreen = 'mastery_mace'; masterySelection = 0;
                 } else if (mSelected.key === 'saber') {
                     pauseScreen = 'mastery_saber'; masterySelection = 0;
+                } else if (mSelected.key === 'voidstar') {
+                    pauseScreen = 'mastery_voidstar'; masterySelection = 0;
                 }
             } else if (pauseScreen === 'mastery_sword') {
                 const msItems = getSwordMasteryItems();
@@ -336,6 +379,14 @@ function gameLoop(now) {
                     pauseScreen = 'mastery'; masterySelection = 0;
                 } else {
                     saberMasterySkin = msbSelected.key;
+                }
+            } else if (pauseScreen === 'mastery_voidstar') {
+                const mvItems = getVoidstarMasteryItems();
+                const mvSelected = mvItems[masterySelection];
+                if (mvSelected.key === 'back') {
+                    pauseScreen = 'mastery'; masterySelection = 0;
+                } else {
+                    voidstarMasterySkin = mvSelected.key;
                 }
             } else if (pauseScreen === 'settings') {
                 const setItems = getSettingsItems();
@@ -388,8 +439,10 @@ function gameLoop(now) {
     }
 
     // ── PLAYING ──
-    const dt = realDt / 1000;
-    gameTime += realDt;
+    // Orc command wheel / execution picker freeze the world (soft pause) while open.
+    const worldFrozen = orcWheel.open || executionMode.active;
+    const dt = worldFrozen ? 0 : realDt / 1000;
+    if (!worldFrozen) gameTime += realDt;
 
     updateSnowSpawn();
     updateIceTravelerSpawn();
@@ -446,6 +499,7 @@ function gameLoop(now) {
     // Update orcs
     updateOrcs(dt);
     updateFriendlyOrcs(dt);
+    updateExecutioners(dt);
 
     // Update troll
     updateTroll(dt);
@@ -612,6 +666,15 @@ function gameLoop(now) {
     if (lPressed) {
         if (infinitePortalUnlocked) tryInfinitePortalPlace();
         lPressed = false;
+    }
+
+    // Handle C press (orc command wheel)
+    if (cPressed) {
+        cPressed = false;
+        if (canOpenOrcWheel()) {
+            if (friendlyOrcs.length) openOrcWheel();
+            else addNotification('You have no orcs to command.', 1500, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.85)');
+        }
     }
 
     // Handle E press
@@ -829,6 +892,19 @@ function gameLoop(now) {
     drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
     drawAllFriendlyOrcs(camX, camY);
+    // Executioner guards are ghostly, like the orcs they hunt
+    for (const g of executioners) {
+        const sx = Math.round(g.x - camX + g.width / 2), sy = Math.round(g.y - camY + g.height / 2);
+        ctx.save();
+        // pale spectral aura
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = 'rgba(180,220,255,0.9)';
+        ctx.beginPath(); ctx.ellipse(sx, sy, 13, 15, 0, 0, Math.PI * 2); ctx.fill();
+        // translucent guard
+        ctx.globalAlpha = 0.5;
+        drawGuard(g, camX, camY);
+        ctx.restore();
+    }
     drawTroll(camX, camY);
     drawDragon(camX, camY);
     drawFireBreath(camX, camY);
@@ -979,6 +1055,8 @@ function gameLoop(now) {
     else if (shopOpen) drawShopMenu();
 
     drawTouchControls();
+    drawOrcWheel();
+    drawExecutionOverlay(camX, camY);
 
     // Auto-save periodically
     if (currentSlot && Math.floor(gameTime / 30000) > Math.floor((gameTime - realDt) / 30000)) {

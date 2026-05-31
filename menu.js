@@ -82,6 +82,7 @@ function saveGame(slot) {
         snowflakeCount,
         ringOwned,
         friendlyOrcs: friendlyOrcs.map(o => ({ x: o.x, y: o.y, hp: o.hp, maxHp: o.maxHp, alive: o.alive, slot: o.slot })),
+        orcFormation,
         extraLevels,
         jackFrostQuestActive,
         jackFrostQuestComplete,
@@ -102,6 +103,8 @@ function saveGame(slot) {
         saberThrowCooldownUntil: saberThrow.cooldownUntil,
         saberMastery: { xp: saberMastery.xp, level: saberMastery.level },
         saberMasterySkin,
+        voidstarMastery: { xp: voidstarMastery.xp, level: voidstarMastery.level },
+        voidstarMasterySkin,
         gameTime,
         savedAt: new Date().toLocaleString(),
     };
@@ -204,13 +207,17 @@ function loadGame(slot) {
     if (Array.isArray(s.friendlyOrcs)) {
         friendlyOrcs = s.friendlyOrcs.map((o, idx) => ({
             x: o.x, y: o.y, width: 20, height: 20,
-            hp: Math.min(15, o.hp), maxHp: 15, alive: o.alive,
+            hp: Math.min(10, o.hp), maxHp: 10, alive: o.alive,
             lastAttack: 0, attackCooldown: FRIENDLY_ORC_ATTACK_RATE,
             damage: 1, speed: player.speed, target: null, targetId: null,
             path: null, pathIndex: 0, pathTime: 0,
             slot: (o.slot != null ? o.slot : idx),
         }));
     }
+    orcFormation = (s.orcFormation && ORC_FORMATION_LIST.includes(s.orcFormation)) ? s.orcFormation : 'delta';
+    orcWheel.open = false;
+    orcCircleAggro.active = false; orcCircleAggro.target = null;
+    executionMode.active = false; executionMode.selected = []; executioners = [];
     if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
     if (s.jackFrostQuestActive !== undefined) jackFrostQuestActive = s.jackFrostQuestActive;
     if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
@@ -252,6 +259,8 @@ function loadGame(slot) {
     if (s.saberThrowCooldownUntil !== undefined) saberThrow.cooldownUntil = s.saberThrowCooldownUntil;
     if (s.saberMastery) { saberMastery.xp = s.saberMastery.xp; saberMastery.level = s.saberMastery.level; }
     if (s.saberMasterySkin !== undefined) saberMasterySkin = s.saberMasterySkin;
+    if (s.voidstarMastery) { voidstarMastery.xp = s.voidstarMastery.xp; voidstarMastery.level = s.voidstarMastery.level; }
+    if (s.voidstarMasterySkin !== undefined) voidstarMasterySkin = s.voidstarMasterySkin;
     // Restore gold block on map if spider defeated but gold not yet picked up
     if (questTasks.spiderDefeated && !hasGold && !questTasks.gaveGold) {
         const goldCol = Math.floor((spider.x + spider.width / 2) / T);
@@ -324,6 +333,8 @@ function resetGameState() {
     iceSpearUnlocked = false; spearMastery.xp = 0; spearMastery.level = 0; spearMasterySkin = 'default';
     snowflakeCount = 0; iceTravelerDialog.active = false; iceTravelerShopOpen = false; iceTravelerWasPresent = false; snowWasActive = false;
     ringOwned = false; ringTempt.active = false; ringTempt.startTime = 0; friendlyOrcs = [];
+    orcFormation = 'delta'; orcWheel.open = false; orcCircleAggro.active = false; orcCircleAggro.target = null;
+    executionMode.active = false; executionMode.selected = []; executioners = [];
     iceTrap.active = false; iceTrap.hits = 0;
     jackFrostQuestActive = false; jackFrostQuestComplete = false; icePalaceUnlocked = false;
     jackFrostKills.spider = false; jackFrostKills.seaSnake = false; jackFrostKills.orcs = false; jackFrostKills.troll = false; jackFrostKills.dragon = false;
@@ -351,6 +362,7 @@ function resetGameState() {
     saberUnlocked = false; infinitePortalUnlocked = false; futureDesignUnlocked = false;
     saberThrow.active = false; saberThrow.cooldownUntil = 0;
     saberMastery.xp = 0; saberMastery.level = 0; saberMasterySkin = 'default';
+    voidstarMastery.xp = 0; voidstarMastery.level = 0; voidstarMasterySkin = 'default';
     gameTime = 0;
 }
 

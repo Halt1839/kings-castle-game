@@ -111,6 +111,10 @@ Both paths exist for: spider, seaSnake, troll, dragon, voidSentinel, orcs.
 
 ## Controls
 
-WASD/Arrows: Move | E: Interact/advance dialog | H: Attack | F: Heal | B: Shield | G: Switch sword | V: Void Rush | Y: Dagger Stab | P/Esc: Pause | 1-3: Save slots (while paused)
+WASD/Arrows: Move | E: Interact/advance dialog | H: Attack | F: Heal | B: Shield | G: Switch sword | V: Void Rush | Y: Dagger Stab | C: Orc command wheel | P/Esc: Pause | 1-3: Save slots (while paused)
+
+**Orc command wheel (C):** Opens a radial wheel (freezes the world) to set the friendly-orc formation. Arrows/joystick highlight, E confirms, Esc cancels. Formations live in `orcFormation` (`'delta'`/`'square'`/`'circle'`): Attack Delta (4×4 grid, auto-engage), Square March (diamond formation, still chases), Defense Circle (ring that blocks enemies; a projectile / void rush / mace spin makes the orcs charge the attacker for `ORC_CIRCLE_AGGRO_TIME` then reform). State + helpers in systems.js (`orcWheel`, `orcCircleAggro`, `provokeOrcCircle()`, `updateFriendlyOrcs()`), wheel UI `drawOrcWheel()` in hud.js. Persisted in menu.js save/load/reset.
+
+**Execution (mouse-driven):** The wheel has an "EXECUTION" button below it (`orcWheelExecBtn`, click handled in main.js click listener). It opens a blackout picker (`executionMode`, world stays frozen): the screen goes black except friendly orcs, click orcs to toggle a death-mark, press **D** to condemn them. Condemned orcs (`orc.condemned`) flee while spawned executioner guards (`executioners`, drawn via `drawGuard`) hunt and kill them. Logic in systems.js (`enterExecutionMode`/`executionPickAt`/`confirmExecution`/`spawnExecutioners`/`updateExecutioners`), overlay `drawExecutionOverlay()` in hud.js. Esc cancels. Transient — cleared on load/reset.
 
 **Touch (iPad/mobile):** Virtual joystick (bottom-right) for movement including diagonals, ACT/HIT/BLK/HEAL buttons (bottom-left). Pause and Shop buttons are tap-enabled. Controls only appear on touch devices.

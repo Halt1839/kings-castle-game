@@ -948,9 +948,9 @@ function drawFriendlyOrc(orc, ox, oy) {
     if (!orc.alive) return;
     const sx = Math.round(orc.x - ox), sy = Math.round(orc.y - oy);
     const cx = sx + orc.width / 2, cy = sy + orc.height / 2;
-    // Ghostly translucency
+    // Ghostly translucency — except condemned orcs, which turn solid as they're executed
     ctx.save();
-    ctx.globalAlpha = 0.75;
+    ctx.globalAlpha = orc.condemned ? 1 : 0.75;
     // Green aura under friendly orc
     ctx.fillStyle = 'rgba(120,255,140,0.25)';
     ctx.beginPath(); ctx.ellipse(cx, sy + orc.height + 1, 10, 3, 0, 0, Math.PI * 2); ctx.fill();

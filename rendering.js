@@ -705,6 +705,11 @@ const SKIN_COLORS = {
     apprentice: { body: '#6a4a25', trim: '#b08a48', crown: '#FFD700', gem: '#FF3030', legs: '#3a2a14', arms: '#c8a070', cape: 'rgba(80,60,30,0.55)' },
     knight:     { body: '#4a3318', trim: '#b8902a', crown: '#FFD700', gem: '#FF3030', legs: '#2a1a0a', arms: '#a07c50', cape: 'rgba(50,35,15,0.7)', pauldron: '#3a2810' },
     master:     { body: '#e0d2b0', trim: '#FFD700', crown: '#FFD700', gem: '#FFFFFF', legs: '#8a7050', arms: '#f0d8b0', cape: 'rgba(240,220,180,0.6)', pauldron: '#b8a070', glow: 'rgba(255,240,200,0.22)' },
+    // Void Star mastery robes (void-themed)
+    shade:       { body: '#2e2440', trim: '#7e5ad0', crown: '#9a6ee0', gem: '#c8a0ff', legs: '#1e1730', arms: '#5a4a7a', glow: 'rgba(140,90,220,0.15)' },
+    rift:        { body: '#241638', trim: '#8c46f5', crown: '#a060ff', gem: '#d0a0ff', legs: '#160a28', arms: '#4a3a6a', glow: 'rgba(120,50,230,0.28)', cape: 'rgba(80,30,160,0.5)' },
+    nebula:      { body: '#191030', trim: '#c85aff', crown: '#d27aff', gem: '#9fe8ff', legs: '#0e0820', arms: '#5a3a7a', glow: 'rgba(170,80,255,0.32)', cape: 'rgba(120,40,200,0.5)' },
+    singularity: { body: '#0a0814', trim: '#a040e0', crown: '#c060ff', gem: '#ffffff', legs: '#050308', arms: '#3a2a5a', glow: 'rgba(120,40,220,0.4)', aura: true, auraColor: '180,90,255' },
 };
 
 const DAGGER_BLADE_COLORS = {
@@ -729,6 +734,15 @@ const MACE_COLORS = {
     inferno:  { shaft: '#4a2000', head: '#dd3300', spike: '#ff5500', glow: 'rgba(255,80,0,0.35)' },
     magma:    { shaft: '#3a1500', head: '#aa2200', spike: '#ff4400', glow: 'rgba(255,50,0,0.4)' },
     hellfire: { shaft: '#2a0a00', head: '#ff2200', spike: '#ffaa00', glow: 'rgba(255,150,0,0.5)' },
+};
+
+// Void Star colors per mastery skin — star is rgb (alpha applied at draw time).
+const VOIDSTAR_COLORS = {
+    default:     { handle: '#8B4513', star: '200,140,255', core: '#ffffff', glow: null },
+    shade:       { handle: '#2e2440', star: '160,110,235', core: '#e8d0ff', glow: null },
+    rift:        { handle: '#241638', star: '150,70,245',  core: '#ffffff', glow: 'rgba(120,50,230,0.35)' },
+    nebula:      { handle: '#191030', star: '210,90,255',  core: '#9fe8ff', glow: 'rgba(170,80,255,0.4)' },
+    singularity: { handle: '#080810', star: '120,40,210',  core: '#ffffff', glow: 'rgba(70,20,150,0.55)' },
 };
 
 // ── Dagger Mastery Particles ────────────────────────────────
@@ -797,7 +811,7 @@ function drawKing(ox, oy) {
     // Aura (diamond skin)
     if (skin.aura) {
         const pulse = 0.15 + 0.1 * Math.sin(performance.now() / 400);
-        ctx.fillStyle = `rgba(185,242,255,${pulse})`;
+        ctx.fillStyle = `rgba(${skin.auraColor || '185,242,255'},${pulse})`;
         ctx.beginPath(); ctx.arc(cx, bodyY + 8, 16, 0, Math.PI * 2); ctx.fill();
     }
     // Glow (gold/diamond skins)
@@ -912,17 +926,24 @@ function drawKing(ox, oy) {
             }
         }
         if (currentSword === 'voidstar') {
-            // Void Star weapon — star shape on a handle
-            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, -2, 3, 6);
+            // Void Star weapon — star shape on a handle, skinned by mastery
+            const vc = VOIDSTAR_COLORS[voidstarMasterySkin] || VOIDSTAR_COLORS.default;
+            ctx.fillStyle = vc.handle; ctx.fillRect(-1, -2, 3, 6);
+            // Glow halo (rift+ skins)
+            if (vc.glow) {
+                const gp = 0.4 + 0.25 * Math.sin(performance.now() / 250);
+                ctx.fillStyle = vc.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0.5, -6, 8, 0, Math.PI * 2); ctx.fill();
+            }
             // Star
             const sp = 0.7 + 0.3 * Math.sin(performance.now() / 300);
-            ctx.fillStyle = `rgba(200,140,255,${sp})`;
+            ctx.fillStyle = `rgba(${vc.star},${sp})`;
             ctx.beginPath();
             ctx.moveTo(0.5, -12); ctx.lineTo(2, -8); ctx.lineTo(6, -7);
             ctx.lineTo(3, -4); ctx.lineTo(4, 0); ctx.lineTo(0.5, -2);
             ctx.lineTo(-3, 0); ctx.lineTo(-2, -4); ctx.lineTo(-5, -7);
             ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = vc.core;
             ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
         } else if (currentSword === 'dagger') {
             // Dagger — short blade with crossguard, skinned
@@ -1079,15 +1100,21 @@ function drawKingInBoat(ox, oy) {
             ctx.rotate((-1 + swingProgress * 2) * Math.PI / 3);
         } else { ctx.rotate(-0.3); }
         if (currentSword === 'voidstar') {
-            ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, -2, 3, 6);
+            const vc = VOIDSTAR_COLORS[voidstarMasterySkin] || VOIDSTAR_COLORS.default;
+            ctx.fillStyle = vc.handle; ctx.fillRect(-1, -2, 3, 6);
+            if (vc.glow) {
+                const gp = 0.4 + 0.25 * Math.sin(performance.now() / 250);
+                ctx.fillStyle = vc.glow.replace(/[\d.]+\)$/, gp + ')');
+                ctx.beginPath(); ctx.arc(0.5, -6, 8, 0, Math.PI * 2); ctx.fill();
+            }
             const sp = 0.7 + 0.3 * Math.sin(performance.now() / 300);
-            ctx.fillStyle = `rgba(200,140,255,${sp})`;
+            ctx.fillStyle = `rgba(${vc.star},${sp})`;
             ctx.beginPath();
             ctx.moveTo(0.5, -12); ctx.lineTo(2, -8); ctx.lineTo(6, -7);
             ctx.lineTo(3, -4); ctx.lineTo(4, 0); ctx.lineTo(0.5, -2);
             ctx.lineTo(-3, 0); ctx.lineTo(-2, -4); ctx.lineTo(-5, -7);
             ctx.lineTo(-1, -8); ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = vc.core;
             ctx.beginPath(); ctx.arc(0.5, -6, 1.5, 0, Math.PI * 2); ctx.fill();
         } else if (currentSword === 'icespear') {
             const ss = SPEAR_BLADE_COLORS[spearMasterySkin] || SPEAR_BLADE_COLORS.default;

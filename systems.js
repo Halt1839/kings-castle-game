@@ -1309,6 +1309,7 @@ function useMaceSpin() {
     maceSpin.cooldownUntil = gameTime + MACE_SPIN_DURATION + MACE_SPIN_COOLDOWN;
     maceSpin.hitSet = new Set();
     abilityInvincibleUntil = gameTime + MACE_SPIN_DURATION + ABILITY_INVINCIBLE_GRACE;
+    provokeOrcCircle(null); // rally the defense ring
 }
 
 function updateMaceSpin() {
@@ -1532,6 +1533,147 @@ let friendlyOrcs = [];
 const FRIENDLY_ORC_DETECT_RANGE = T * 8;
 const FRIENDLY_ORC_ATTACK_RATE = 1000; // 1 dmg per sec
 
+// ── Orc Command Wheel ────────────────────────────────────────
+// Formation the friendly orcs hold. Chosen via the command wheel (C key).
+//   'delta'  — Attack Delta: 4x4 grid behind player, auto-engage nearby enemies (default)
+//   'square' — Square March: diamond formation behind player, still chases nearby enemies
+//   'circle' — Defense Circle: ring around player that blocks enemies; charges the attacker
+//              briefly when a projectile / void rush / mace spin strikes the ring, then reforms
+let orcFormation = 'delta';
+const ORC_FORMATION_LIST = ['delta', 'square', 'circle'];
+const ORC_FORMATION_LABELS = { delta: 'Attack Delta', square: 'Square March', circle: 'Defense Circle' };
+const orcWheel = { open: false, selection: 0 };
+const ORC_CIRCLE_RADIUS = T * 1.6;
+const ORC_CIRCLE_AGGRO_TIME = 5000; // how long orcs hunt the attacker before reforming the ring
+const orcCircleAggro = { active: false, target: null, until: 0 };
+
+function openOrcWheel() {
+    orcWheel.open = true;
+    orcWheel.selection = Math.max(0, ORC_FORMATION_LIST.indexOf(orcFormation));
+}
+function closeOrcWheel() { orcWheel.open = false; }
+function moveOrcWheel(dir) {
+    const n = ORC_FORMATION_LIST.length;
+    orcWheel.selection = (orcWheel.selection + dir + n) % n;
+}
+function confirmOrcWheel() {
+    orcFormation = ORC_FORMATION_LIST[orcWheel.selection];
+    orcWheel.open = false;
+    orcCircleAggro.active = false; orcCircleAggro.target = null;
+    addNotification(`Orcs: ${ORC_FORMATION_LABELS[orcFormation]}`, 1800, 'rgba(180,255,180,1)', 'rgba(0,40,10,0.85)');
+}
+
+function canOpenOrcWheel() {
+    return gameState === 'playing' && !dialog.active && !butlerDialog.active && !messengerDialog.active &&
+        !wizardDialog.active && !campLeaderDialog.active && !campScoutDialog.active && !campBlacksmithDialog.active &&
+        !campHealerDialog.active && !iceTravelerDialog.active && !jackFrostDialog.active && !alienDialog.active &&
+        !shopOpen && !adminOpen && !iceTravelerShopOpen && !iceTrap.active;
+}
+
+// ── Execution ────────────────────────────────────────────────
+// From the command wheel, "Execution" blacks out everything but the orcs. Click orcs to
+// mark them, press D to condemn the marked ones — the king's guards then hunt them down.
+const orcWheelExecBtn = { x: 0, y: 0, w: 0, h: 0 };
+const executionMode = { active: false, selected: [] }; // selected = friendly-orc refs
+let executioners = [];
+const EXECUTIONER_SPEED_MULT = 1.4;
+const EXECUTIONER_DMG = 5;
+
+function enterExecutionMode() {
+    orcWheel.open = false;
+    if (!friendlyOrcs.some(o => o.alive)) {
+        addNotification('No orcs to execute.', 1500, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.85)');
+        return;
+    }
+    executionMode.active = true;
+    executionMode.selected = [];
+}
+
+function cancelExecution() {
+    executionMode.active = false;
+    executionMode.selected = [];
+}
+
+// Toggle the orc at world-space (wx, wy) in/out of the execution list.
+function executionPickAt(wx, wy) {
+    for (const o of friendlyOrcs) {
+        if (!o.alive) continue;
+        if (wx >= o.x - 3 && wx <= o.x + o.width + 3 && wy >= o.y - 3 && wy <= o.y + o.height + 3) {
+            const i = executionMode.selected.indexOf(o);
+            if (i >= 0) executionMode.selected.splice(i, 1);
+            else executionMode.selected.push(o);
+            return;
+        }
+    }
+}
+
+function confirmExecution() {
+    const condemned = executionMode.selected.filter(o => o && o.alive);
+    executionMode.active = false;
+    executionMode.selected = [];
+    if (!condemned.length) return;
+    for (const o of condemned) o.condemned = true;
+    spawnExecutioners(condemned.length);
+    addNotification(`${condemned.length} orc${condemned.length > 1 ? 's' : ''} condemned! Guards move in.`,
+        2500, 'rgba(255,120,120,1)', 'rgba(60,0,0,0.85)');
+}
+
+function spawnExecutioners(condemnedCount) {
+    const count = Math.max(2, Math.min(4, Math.ceil(condemnedCount / 2) + 1));
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    for (let i = 0; i < count; i++) {
+        const ang = (i / count) * Math.PI * 2;
+        executioners.push({
+            x: pcx + Math.cos(ang) * T * 3 - 8,
+            y: pcy + Math.sin(ang) * T * 3 - 8,
+            width: 16, height: 16,
+            speed: player.speed * EXECUTIONER_SPEED_MULT,
+            lastAttack: 0, attackCooldown: 500,
+        });
+    }
+}
+
+function updateExecutioners(dt) {
+    if (!executioners.length) return;
+    const prey = friendlyOrcs.filter(o => o.alive && o.condemned);
+    if (!prey.length) { executioners = []; return; }
+    for (const g of executioners) {
+        const gcx = g.x + g.width / 2, gcy = g.y + g.height / 2;
+        let best = null, bd = Infinity;
+        for (const o of prey) {
+            const d = Math.hypot((o.x + o.width / 2) - gcx, (o.y + o.height / 2) - gcy);
+            if (d < bd) { bd = d; best = o; }
+        }
+        if (!best) continue;
+        const dx = (best.x + best.width / 2) - gcx, dy = (best.y + best.height / 2) - gcy;
+        const dist = Math.hypot(dx, dy) || 1;
+        if (dist > T * 0.7) {
+            // Spectral guards walk straight through walls
+            g.x += (dx / dist) * g.speed * dt;
+            g.y += (dy / dist) * g.speed * dt;
+        } else if (gameTime - g.lastAttack >= g.attackCooldown) {
+            g.lastAttack = gameTime;
+            best.hp -= EXECUTIONER_DMG;
+            if (best.hp <= 0) {
+                best.alive = false;
+                addNotification('Orc executed!', 1200, 'rgba(255,120,120,1)', 'rgba(60,0,0,0.85)');
+            }
+        }
+    }
+}
+
+// Provoke the defense circle: orcs break the ring and hunt the attacker, then reform.
+function provokeOrcCircle(target) {
+    if (orcFormation !== 'circle' || orcCircleAggro.active) return;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    if (!target || !target.alive) target = findNearestEnemyForOrc(pcx, pcy, T * 16);
+    if (!target || !target.alive) return;
+    orcCircleAggro.active = true;
+    orcCircleAggro.target = target;
+    orcCircleAggro.until = gameTime + ORC_CIRCLE_AGGRO_TIME;
+    addNotification('Orcs charge the attacker!', 1500, 'rgba(180,255,180,1)', 'rgba(0,40,10,0.85)');
+}
+
 function getRingMultiplier() { return ringOwned ? 2 : 1; }
 
 function tempt() {
@@ -1584,6 +1726,52 @@ function orcSlotPosition(slot) {
     };
 }
 
+// Facing basis: bx/by point "behind" the player, sxv/syv run side-to-side across the formation.
+function orcFormationBasis() {
+    if (playerFacing === 'south')      return { bx: 0,  by: -1, sxv: 1, syv: 0 };
+    else if (playerFacing === 'north') return { bx: 0,  by: 1,  sxv: 1, syv: 0 };
+    else if (playerFacing === 'east')  return { bx: -1, by: 0,  sxv: 0, syv: 1 };
+    else /* west */                    return { bx: 1,  by: 0,  sxv: 0, syv: 1 };
+}
+
+// Square March: a diamond of rows 1,2,3,4,3,2,1 (16 orcs) trailing behind the player.
+// The tip (slot 0, "corner man") follows the player; the diamond widens then narrows behind it.
+const ORC_DIAMOND_ROWS = [1, 2, 3, 4, 3, 2, 1];
+function orcSquareSlotPosition(slot) {
+    let r = 0, idx = slot;
+    while (r < ORC_DIAMOND_ROWS.length && idx >= ORC_DIAMOND_ROWS[r]) { idx -= ORC_DIAMOND_ROWS[r]; r++; }
+    if (r >= ORC_DIAMOND_ROWS.length) { r = ORC_DIAMOND_ROWS.length - 1; idx = 0; }
+    const size = ORC_DIAMOND_ROWS[r];
+    const side = idx - (size - 1) / 2;
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const gap = T * 0.8;
+    const b = orcFormationBasis();
+    return {
+        x: pcx + b.bx * (r + 1) * gap + b.sxv * side * gap,
+        y: pcy + b.by * (r + 1) * gap + b.syv * side * gap,
+    };
+}
+
+// Defense Circle: evenly spaced ring around the player. The ring widens with the
+// army size so orcs don't pile on top of each other.
+function orcCircleRadius(count) {
+    const minSpacingR = (count * T * 0.95) / (2 * Math.PI); // keep ~T between neighbours
+    return Math.max(ORC_CIRCLE_RADIUS, minSpacingR);
+}
+function orcCircleSlotPosition(idx, count) {
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const ang = (idx / Math.max(1, count)) * Math.PI * 2 - Math.PI / 2;
+    const r = orcCircleRadius(count);
+    return { x: pcx + Math.cos(ang) * r, y: pcy + Math.sin(ang) * r };
+}
+
+// Where a given orc should stand when not chasing, based on the active formation.
+function orcFormationSlotPosition(f, aliveList) {
+    if (orcFormation === 'square') return orcSquareSlotPosition(f.slot != null ? f.slot : 0);
+    if (orcFormation === 'circle') return orcCircleSlotPosition(aliveList.indexOf(f), aliveList.length);
+    return orcSlotPosition(f.slot != null ? f.slot : 0);
+}
+
 function spawnFriendlyOrcs(n) {
     let spawned = 0;
     for (let i = 0; i < n; i++) {
@@ -1593,7 +1781,7 @@ function spawnFriendlyOrcs(n) {
         friendlyOrcs.push({
             x: pos.x - 10, y: pos.y - 10,
             width: 20, height: 20,
-            hp: 15, maxHp: 15, alive: true,
+            hp: 10, maxHp: 10, alive: true,
             lastAttack: 0, attackCooldown: FRIENDLY_ORC_ATTACK_RATE,
             damage: 1, speed: player.speed,
             target: null, targetId: null,
@@ -2182,6 +2370,7 @@ function addWeaponXP(amount) {
     else if (currentSword === 'icespear') addSpearXP(amount);
     else if (currentSword === 'firemace') addMaceXP(amount);
     else if (currentSword === 'saber') addSaberXP(amount);
+    else if (currentSword === 'voidstar') addVoidstarXP(amount);
     else addSwordXP(amount);
 }
 
@@ -2297,11 +2486,50 @@ const SABER_BLADE_COLORS = {
     master:     { glow: 'rgba(255,120,120,X)', blade: '#FF1010', core: '#FFFFFF' },
 };
 
+// ── Void Star Mastery ──────────────────────────────────────
+const voidstarMastery = { xp: 0, level: 0 };
+let voidstarMasterySkin = 'default';
+const VOIDSTAR_MASTERY_SKINS = ['default', 'shade', 'rift', 'nebula', 'singularity'];
+const VOIDSTAR_MASTERY_MILESTONES = { 25: 'shade', 50: 'rift', 75: 'nebula', 100: 'singularity' };
+
+function addVoidstarXP(amount) {
+    if (voidstarMastery.level >= 100 && !extraLevels) return;
+    voidstarMastery.xp += amount;
+    let leveled = false;
+    while (voidstarMastery.level < 100 || extraLevels) {
+        const needed = xpForLevel(voidstarMastery.level + 1);
+        if (voidstarMastery.xp >= needed) {
+            voidstarMastery.xp -= needed;
+            voidstarMastery.level++;
+            leveled = true;
+            const milestone = VOIDSTAR_MASTERY_MILESTONES[voidstarMastery.level];
+            if (milestone) {
+                voidstarMasterySkin = milestone;
+                addNotification(`Void Star Mastery ${voidstarMastery.level}! ${milestone.charAt(0).toUpperCase() + milestone.slice(1)} skin unlocked!`, 6000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            }
+        } else break;
+    }
+    if (leveled && !VOIDSTAR_MASTERY_MILESTONES[voidstarMastery.level]) {
+        addNotification(`Void Star Mastery Level ${voidstarMastery.level}!`, 2000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.8)');
+    }
+    if (voidstarMastery.level >= 100 && !extraLevels) voidstarMastery.xp = 0;
+}
+
+function getVoidstarMasteryUnlockedSkins() {
+    const skins = ['default'];
+    if (voidstarMastery.level >= 25) skins.push('shade');
+    if (voidstarMastery.level >= 50) skins.push('rift');
+    if (voidstarMastery.level >= 75) skins.push('nebula');
+    if (voidstarMastery.level >= 100) skins.push('singularity');
+    return skins;
+}
+
 function getActiveMasterySkin() {
     if (currentSword === 'dagger') return daggerMasterySkin;
     if (currentSword === 'icespear') return spearMasterySkin;
     if (currentSword === 'firemace') return maceMasterySkin;
     if (currentSword === 'saber') return saberMasterySkin;
+    if (currentSword === 'voidstar') return voidstarMasterySkin;
     return masterySkin;
 }
 
@@ -3235,16 +3463,97 @@ function findNearestEnemyForOrc(cx, cy, range) {
     return nearest;
 }
 
+// Detect a projectile striking the defense ring (dragon fire/ice line, or volcano fireballs).
+function circleProjectileThreat(aliveList) {
+    if (typeof dragon !== 'undefined' && dragon.alive && dragon.firing) {
+        const dcx = dragon.x + dragon.width / 2, dcy = dragon.y + dragon.height / 2;
+        for (const f of aliveList) {
+            if (pointToSegmentDist(f.x + f.width / 2, f.y + f.height / 2, dcx, dcy, dragon.fireTargetX, dragon.fireTargetY) < T) return true;
+        }
+    }
+    if (typeof activeFireballs !== 'undefined') {
+        for (const fb of activeFireballs) {
+            const fbx = (fb.col + 1) * T, fby = (fb.row + 1) * T;
+            for (const f of aliveList) {
+                if (Math.hypot((f.x + f.width / 2) - fbx, (f.y + f.height / 2) - fby) < T * 1.2) return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Defense ring acts as a wall: shove enemies back out of the circle.
+function blockEnemiesFromCircle(aliveList) {
+    if (aliveList.length < 2) return; // need enough orcs to form a real ring
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    const ringR = orcCircleRadius(aliveList.length);
+    function block(m) {
+        if (!m || !m.alive) return;
+        const dx = (m.x + m.width / 2) - pcx, dy = (m.y + m.height / 2) - pcy;
+        const dist = Math.hypot(dx, dy);
+        const minR = ringR + m.width / 2;
+        if (dist < minR && dist > 0.001) {
+            const push = minR - dist;
+            m.x += (dx / dist) * push;
+            m.y += (dy / dist) * push;
+        }
+    }
+    if (typeof spider !== 'undefined' && spider.active) block(spider);
+    if (typeof seaSnake !== 'undefined' && seaSnake.active) block(seaSnake);
+    if (typeof troll !== 'undefined') block(troll);
+    if (typeof dragon !== 'undefined') block(dragon);
+    if (typeof lavaMonster !== 'undefined' && inLavaZone) block(lavaMonster);
+    if (typeof orcs !== 'undefined') for (const o of orcs) block(o);
+}
+
 function updateFriendlyOrcs(dt) {
     if (!friendlyOrcs.length) return;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
-    for (const f of friendlyOrcs) {
-        if (!f.alive) continue;
+    const aliveList = friendlyOrcs.filter(o => o.alive);
+
+    // Defense Circle: provocation + aggro timer
+    if (orcFormation === 'circle') {
+        if (!orcCircleAggro.active && circleProjectileThreat(aliveList)) {
+            provokeOrcCircle(findNearestEnemyForOrc(pcx, pcy, T * 16));
+        }
+        if (orcCircleAggro.active) {
+            const t = orcCircleAggro.target;
+            if (!t || !t.alive || gameTime > orcCircleAggro.until) {
+                orcCircleAggro.active = false; orcCircleAggro.target = null;
+            }
+        }
+    }
+
+    for (const f of aliveList) {
         const fcx = f.x + f.width / 2, fcy = f.y + f.height / 2;
-        const target = findNearestEnemyForOrc(fcx, fcy, FRIENDLY_ORC_DETECT_RANGE);
-        f.target = target;
         f.speed = player.speed; // match player speed live
-        if (target) {
+        // Condemned orcs flee from the nearest executioner until cut down.
+        if (f.condemned) {
+            let ex = null, bd = Infinity;
+            for (const g of executioners) {
+                const d = Math.hypot((g.x + g.width / 2) - fcx, (g.y + g.height / 2) - fcy);
+                if (d < bd) { bd = d; ex = g; }
+            }
+            if (ex) {
+                const dx = fcx - (ex.x + ex.width / 2), dy = fcy - (ex.y + ex.height / 2);
+                const dist = Math.hypot(dx, dy) || 1;
+                // Living orcs can't run through walls — axis-separated collision
+                const mx = (dx / dist) * f.speed * dt, my = (dy / dist) * f.speed * dt;
+                if (!isNPCBlocked(f.x + mx, f.y, f.width, f.height)) f.x += mx;
+                if (!isNPCBlocked(f.x, f.y + my, f.width, f.height)) f.y += my;
+            }
+            if (f.hp <= 0) f.alive = false;
+            continue;
+        }
+        // Pick a target: Delta/Square auto-engage; Circle only hunts when provoked.
+        let target;
+        if (orcFormation === 'circle') {
+            target = orcCircleAggro.active ? orcCircleAggro.target : null;
+        } else {
+            target = findNearestEnemyForOrc(fcx, fcy, FRIENDLY_ORC_DETECT_RANGE);
+        }
+        f.target = target;
+        if (target && target.alive) {
             const tcx = target.x + target.width / 2, tcy = target.y + target.height / 2;
             const dx = tcx - fcx, dy = tcy - fcy;
             const dist = Math.hypot(dx, dy);
@@ -3254,17 +3563,19 @@ function updateFriendlyOrcs(dt) {
             } else if (gameTime - f.lastAttack >= f.attackCooldown) {
                 f.lastAttack = gameTime;
                 const playerDmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
-                f.damage = Math.max(1, Math.floor(playerDmg / 2));
+                f.damage = Math.max(1, playerDmg);
                 target.hp -= f.damage;
-                f.hp -= 1; // retaliation cost
                 if (target.hp <= 0) {
+                    // Killing blow is "free" — orc doesn't suicide finishing a target
                     target.hp = 0;
                     handleStabKill(target);
+                } else {
+                    f.hp -= 1; // retaliation cost on non-fatal hits
                 }
             }
         } else {
-            // Follow player in formation slot
-            const slotPos = orcSlotPosition(f.slot != null ? f.slot : 0);
+            // Follow player in formation slot (Delta grid / Square diamond / Circle ring)
+            const slotPos = orcFormationSlotPosition(f, aliveList);
             const dx = slotPos.x - fcx, dy = slotPos.y - fcy;
             const dist = Math.hypot(dx, dy);
             if (dist > 3) {
@@ -3287,6 +3598,8 @@ function updateFriendlyOrcs(dt) {
         }
         if (f.hp <= 0) f.alive = false;
     }
+    // While holding the ring, keep enemies from passing through it.
+    if (orcFormation === 'circle' && !orcCircleAggro.active) blockEnemiesFromCircle(aliveList);
     friendlyOrcs = friendlyOrcs.filter(o => o.alive);
 }
 
@@ -3979,6 +4292,7 @@ function useVoidRush() {
     voidRush.targetX = tx;
     voidRush.targetY = ty;
     voidRush.hitSet = new Set();
+    provokeOrcCircle(null); // rally the defense ring
 }
 
 function updateVoidRush(dt) {
