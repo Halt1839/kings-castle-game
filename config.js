@@ -1,4 +1,4 @@
-const GAME_VERSION = 'v5.2.2';
+const GAME_VERSION = 'v5.3.6';
 
 // Secret arena
 const ARENA_FLOOR = 43; // new tile type for arena floor
@@ -104,6 +104,10 @@ let adminSelection = 0;
 let adminGodMode = false;
 let adminGhostMode = false;
 let adminSwordEquipped = false;
+let ethanBladeUnlocked = false; // password entered once — persists
+let ethanBladeEquipped = false;
+let sashaBladeUnlocked = false; // password entered once — persists
+let sashaBladeEquipped = false;
 let adminUnlocked = (function() { try { const d = JSON.parse(localStorage.getItem('kingGame_admin')); return d && d.unlocked === true; } catch(e) { return false; } })();
 const ADMIN_STORAGE_KEY = 'kingGame_admin';
 

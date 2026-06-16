@@ -18,7 +18,17 @@ window.addEventListener('keydown', (e) => {
     // Execution targeting — captures input while picking orcs
     if (executionMode.active) {
         if (e.key === 'd' || e.key === 'D' || e.key === 'Enter') confirmExecution();
+        else if (e.key === 'z' || e.key === 'Z') executionKillAll();
+        else if (e.key === 'i' || e.key === 'I') executionInstant = true;
+        else if (e.key === 'o' || e.key === 'O') executionInstant = false;
         else if (e.key === 'Escape') cancelExecution();
+        e.preventDefault();
+        return;
+    }
+
+    // Commander picker — captures input while choosing a commander
+    if (commanderPick.active) {
+        if (e.key === 'Escape') cancelCommanderPick();
         e.preventDefault();
         return;
     }
@@ -28,6 +38,7 @@ window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') moveOrcWheel(-1);
         else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') moveOrcWheel(1);
         else if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') confirmOrcWheel();
+        else if (e.key === 'p' || e.key === 'P') enterCommanderPick();
         else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') closeOrcWheel();
         e.preventDefault();
         return;
@@ -175,6 +186,8 @@ window.addEventListener('keydown', (e) => {
         else if (campHealerDialog.active) { campHealerDialog.active = false; }
         else if (iceTravelerDialog.active) { iceTravelerDialog.active = false; iceTravelerDialog.stage = null; iceTravelerShopOpen = false; }
         else if (alienDialog.active) { alienDialog.active = false; alienDialog.stage = null; }
+        else if (spectateOrcArmy) { spectateOrcArmy = false; } // exit spectate
+        else if ((e.key === 'p' || e.key === 'P') && commanderMode.active) { spectateOrcArmy = true; } // spectate the army
         else { gameState = 'paused'; pauseSelection = 0; pauseScreen = 'main'; if (currentSlot) saveGame(currentSlot); }
         return;
     }
@@ -219,6 +232,13 @@ window.addEventListener('keyup', (e) => keys.delete(e.key));
 canvas.addEventListener('click', (e) => {
     const mx = e.clientX, my = e.clientY;
     if (gameState === 'playing') {
+        // Commander picker: click an orc to make it the commander
+        if (commanderPick.active) {
+            const camX = player.x + player.width / 2 - canvas.width / 2;
+            const camY = player.y + player.height / 2 - canvas.height / 2;
+            commanderPickAt(mx + camX, my + camY);
+            return;
+        }
         // Command wheel open: only the Execution button is clickable
         if (orcWheel.open) {
             if (mx >= orcWheelExecBtn.x && mx <= orcWheelExecBtn.x + orcWheelExecBtn.w &&
@@ -227,8 +247,23 @@ canvas.addEventListener('click', (e) => {
             }
             return;
         }
-        // Execution picker: click an orc to toggle its mark
+        // Execution picker: click the Kill All button, mode switch, else an orc to toggle its mark
         if (executionMode.active) {
+            if (mx >= executionKillAllBtn.x && mx <= executionKillAllBtn.x + executionKillAllBtn.w &&
+                my >= executionKillAllBtn.y && my <= executionKillAllBtn.y + executionKillAllBtn.h) {
+                executionKillAll();
+                return;
+            }
+            if (mx >= executionInstantBtn.x && mx <= executionInstantBtn.x + executionInstantBtn.w &&
+                my >= executionInstantBtn.y && my <= executionInstantBtn.y + executionInstantBtn.h) {
+                executionInstant = true;
+                return;
+            }
+            if (mx >= executionExecBtn.x && mx <= executionExecBtn.x + executionExecBtn.w &&
+                my >= executionExecBtn.y && my <= executionExecBtn.y + executionExecBtn.h) {
+                executionInstant = false;
+                return;
+            }
             const camX = player.x + player.width / 2 - canvas.width / 2;
             const camY = player.y + player.height / 2 - canvas.height / 2;
             executionPickAt(mx + camX, my + camY);
@@ -440,7 +475,7 @@ function gameLoop(now) {
 
     // ── PLAYING ──
     // Orc command wheel / execution picker freeze the world (soft pause) while open.
-    const worldFrozen = orcWheel.open || executionMode.active;
+    const worldFrozen = orcWheel.open || executionMode.active || commanderPick.active;
     const dt = worldFrozen ? 0 : realDt / 1000;
     if (!worldFrozen) gameTime += realDt;
 
@@ -524,6 +559,10 @@ function gameLoop(now) {
 
     // Update mace spin
     updateMaceSpin();
+
+    // Update ethan spin
+    updateEthanSpin();
+    updateSashaSpin();
 
     // Update saber throw
     updateSaberThrow();
@@ -658,6 +697,10 @@ function gameLoop(now) {
             useMaceSpin();
         } else if (currentSword === 'saber' && saberUnlocked) {
             startSaberThrow();
+        } else if (currentSword === 'ethanblade' && ethanBladeEquipped) {
+            useEthanSpin();
+        } else if (currentSword === 'sashablade' && sashaBladeEquipped) {
+            useSashaSpin();
         }
         yPressed = false;
     }
@@ -786,7 +829,7 @@ function gameLoop(now) {
     }
 
     // Movement
-    if (!activeAction && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !maceSpin.active && !iceTrap.active && !adminOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active && !alienDialog.active) {
+    if (!activeAction && !spectateOrcArmy && !dialog.active && !butlerDialog.active && !messengerDialog.active && !wizardDialog.active && !campLeaderDialog.active && !shopOpen && voidRush.state === 'idle' && !daggerStab.active && !maceSpin.active && !ethanSpin.active && !sashaSpin.active && !iceTrap.active && !adminOpen && !iceTravelerShopOpen && !campScoutDialog.active && !campBlacksmithDialog.active && !campHealerDialog.active && !jackFrostDialog.active && !iceTravelerDialog.active && !alienDialog.active) {
         let dx = 0, dy = 0;
         if (keys.has('ArrowUp') || keys.has('w') || keys.has('W') || touchState.up) dy -= 1;
         if (keys.has('ArrowDown') || keys.has('s') || keys.has('S') || touchState.down) dy += 1;
@@ -853,9 +896,14 @@ function gameLoop(now) {
         playerWalking = false; playerWalkPhase = 0;
     }
 
-    // Camera
-    const camX = player.x + player.width/2 - canvas.width/2;
-    const camY = player.y + player.height/2 - canvas.height/2;
+    // Camera — follows the commander while spectating the orc army, else the player
+    let focusX = player.x + player.width/2, focusY = player.y + player.height/2;
+    if (spectateOrcArmy && commanderMode.active && commanderMode.commander && commanderMode.commander.alive) {
+        focusX = commanderMode.commander.x + commanderMode.commander.width/2;
+        focusY = commanderMode.commander.y + commanderMode.commander.height/2;
+    }
+    const camX = focusX - canvas.width/2;
+    const camY = focusY - canvas.height/2;
 
     // Draw
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -892,6 +940,7 @@ function gameLoop(now) {
     drawIceTraveler(camX, camY);
     drawAllOrcs(camX, camY);
     drawAllFriendlyOrcs(camX, camY);
+    drawCommanderMarker(camX, camY);
     // Executioner guards are ghostly, like the orcs they hunt
     for (const g of executioners) {
         const sx = Math.round(g.x - camX + g.width / 2), sy = Math.round(g.y - camY + g.height / 2);
@@ -940,6 +989,8 @@ function gameLoop(now) {
 
     drawVoidRush(camX, camY);
     drawMaceSpin(camX, camY);
+    drawEthanSpin(camX, camY);
+    drawSashaSpin(camX, camY);
     drawSaberThrow(camX, camY);
     drawShieldEffect(camX, camY);
     drawFireballs(camX, camY);
@@ -1057,6 +1108,8 @@ function gameLoop(now) {
     drawTouchControls();
     drawOrcWheel();
     drawExecutionOverlay(camX, camY);
+    drawCommanderPickOverlay(camX, camY);
+    drawSpectateBanner();
 
     // Auto-save periodically
     if (currentSlot && Math.floor(gameTime / 30000) > Math.floor((gameTime - realDt) / 30000)) {

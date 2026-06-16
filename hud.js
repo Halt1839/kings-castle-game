@@ -274,10 +274,46 @@ function drawHUD() {
         }
     }
 
+    // Ethan Spin indicator (bottom right, shown when Ethanblade equipped)
+    if (currentSword === 'ethanblade' && ethanBladeEquipped) {
+        const spinCdLeft = Math.max(0, ethanSpin.cooldownUntil - gameTime);
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        if (ethanSpin.active) {
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = `rgba(60,220,90,${pulse})`;
+            ctx.fillText(`[${kl('Y')}] Ethan Spin Active`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else if (spinCdLeft <= 0) {
+            ctx.fillStyle = '#3CDC5A';
+            ctx.fillText(`[${kl('Y')}] Ethan Spin Ready`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else {
+            const secs = Math.ceil(spinCdLeft / 1000);
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[${kl('Y')}] Ethan Spin ${secs}s`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        }
+    }
+
+    // Sasha Spin indicator (bottom right, shown when Sashablade equipped)
+    if (currentSword === 'sashablade' && sashaBladeEquipped) {
+        const spinCdLeft = Math.max(0, sashaSpin.cooldownUntil - gameTime);
+        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        if (sashaSpin.active) {
+            const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 100);
+            ctx.fillStyle = `rgba(255,60,60,${pulse})`;
+            ctx.fillText(`[${kl('Y')}] Sasha Spin Active`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else if (spinCdLeft <= 0) {
+            ctx.fillStyle = '#FF2A2A';
+            ctx.fillText(`[${kl('Y')}] Sasha Spin Ready`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        } else {
+            const secs = Math.ceil(spinCdLeft / 1000);
+            ctx.fillStyle = '#666';
+            ctx.fillText(`[${kl('Y')}] Sasha Spin ${secs}s`, canvas.width - 16, canvas.height - 60 - touchOffsetR);
+        }
+    }
+
     // Sword indicator (bottom right)
     if (swordPickedUp) {
-        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'saber' ? '#FF4646' : currentSword === 'firemace' ? '#ff6600' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
-        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'saber' ? 'Saber' : currentSword === 'firemace' ? 'Firemace' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
+        ctx.fillStyle = currentSword === 'admin' ? '#FF4444' : currentSword === 'ethanblade' ? '#3CDC5A' : currentSword === 'sashablade' ? '#FF2A2A' : currentSword === 'saber' ? '#FF4646' : currentSword === 'firemace' ? '#ff6600' : currentSword === 'voidstar' ? '#C88FFF' : currentSword === 'dragon' ? '#FF6633' : currentSword === 'icespear' ? '#88ccff' : currentSword === 'dagger' ? '#AAAACC' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+        const swordName = currentSword === 'admin' ? 'Admin Sword' : currentSword === 'ethanblade' ? 'Ethanblade' : currentSword === 'sashablade' ? 'Sashablade' : currentSword === 'saber' ? 'Saber' : currentSword === 'firemace' ? 'Firemace' : currentSword === 'voidstar' ? 'Void Star' : currentSword === 'dragon' ? 'Dragon Sword' : currentSword === 'icespear' ? 'Ice Spear' : currentSword === 'dagger' ? 'Dagger' : currentSword === 'kings' ? "King's Sword" : 'Legendary Sword';
         ctx.fillText(`${swordName} (${swordDamage} dmg)`, canvas.width - 16, canvas.height - 30 - touchOffsetR);
     }
 
@@ -342,7 +378,7 @@ function getShopItems() {
     if (!daggerUnlocked) items.push({ name: 'Dagger (3 dmg + Stab)', cost: 300, action: () => { goldCount -= 300; daggerUnlocked = true; currentSword = 'dagger'; swordDamage = 3; addNotification('Dagger acquired! Press ' + kl('Y') + ' to stab!', 5000, 'rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'); } });
     if (!dragonSwordUnlocked) items.push({ name: 'Dragon Sword (5 dmg)', cost: 1000, action: () => { goldCount -= 1000; dragonSwordUnlocked = true; currentSword = 'dragon'; swordDamage = 5; addNotification('Dragon Sword acquired! 5 damage per hit!', 5000, 'rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'); } });
     if (!voidStarUnlocked) items.push({ name: 'Void Star (4x buff)', cost: 2500, action: () => { goldCount -= 2500; voidStarUnlocked = true; addNotification('Void Star unlocked! Press V to activate!', 5000, 'rgba(180,100,255,1)', 'rgba(40,0,60,0.9)'); } });
-    if (!ringOwned && adminUnlocked) {
+    if (!ringOwned && hasRingSword()) {
         const ringCost = Math.max(100000, goldCount);
         items.push({ name: 'The Ring (2x dmg)', cost: ringCost, action: () => { goldCount = Math.max(0, goldCount - Math.max(100000, goldCount)); ringOwned = true; addNotification('The Ring is yours. All damage doubled.', 5000, 'rgba(220,180,255,1)', 'rgba(30,10,40,0.9)'); addNotification('It will tempt you after every kill...', 4500, 'rgba(220,180,255,1)', 'rgba(30,10,40,0.85)'); } });
     }
@@ -874,6 +910,46 @@ function getAdminItems() {
             else { currentSword = 'legendary'; swordDamage = 2; }
             addNotification(adminSwordEquipped ? 'Admin Sword equipped! (1k dmg)' : 'Admin Sword unequipped', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
         }},
+        { name: ethanBladeEquipped ? 'Ethanblade: ON' : 'Ethanblade: OFF', action: () => {
+            if (!ethanBladeEquipped) {
+                if (!ethanBladeUnlocked) {
+                    const pw = prompt('Enter Ethanblade password:');
+                    if (pw === null) return;
+                    if (pw.trim() !== 'ethan_green') {
+                        addNotification('Wrong password', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
+                        return;
+                    }
+                    ethanBladeUnlocked = true;
+                }
+                ethanBladeEquipped = true;
+                swordPickedUp = true; currentSword = 'ethanblade'; swordDamage = 20;
+                addNotification('Ethanblade equipped! (20 dmg + Ethan Spin)', 2000, 'rgba(60,220,90,1)', 'rgba(0,50,10,0.8)');
+            } else {
+                ethanBladeEquipped = false;
+                if (currentSword === 'ethanblade') { currentSword = 'legendary'; swordDamage = 2; }
+                addNotification('Ethanblade unequipped', 1500, 'rgba(60,220,90,1)', 'rgba(0,50,10,0.8)');
+            }
+        }},
+        { name: sashaBladeEquipped ? 'Sashablade: ON' : 'Sashablade: OFF', action: () => {
+            if (!sashaBladeEquipped) {
+                if (!sashaBladeUnlocked) {
+                    const pw = prompt('Enter Sashablade password:');
+                    if (pw === null) return;
+                    if (pw.trim() !== 'red_sasha') {
+                        addNotification('Wrong password', 1500, 'rgba(255,50,50,1)', 'rgba(60,0,0,0.8)');
+                        return;
+                    }
+                    sashaBladeUnlocked = true;
+                }
+                sashaBladeEquipped = true;
+                swordPickedUp = true; currentSword = 'sashablade'; swordDamage = 20;
+                addNotification('Sashablade equipped! (20 dmg + Sasha Spin)', 2000, 'rgba(255,60,60,1)', 'rgba(50,0,0,0.8)');
+            } else {
+                sashaBladeEquipped = false;
+                if (currentSword === 'sashablade') { currentSword = 'legendary'; swordDamage = 2; }
+                addNotification('Sashablade unequipped', 1500, 'rgba(255,60,60,1)', 'rgba(50,0,0,0.8)');
+            }
+        }},
         { name: 'Set Speed', action: () => {
             const val = prompt('Enter speed (default 120):');
             if (val === null) return;
@@ -1019,12 +1095,12 @@ function getAdminItems() {
         { name: 'Revoke Admin Access', action: () => {
             if (confirm('Are you sure? You will lose admin access permanently.')) {
                 adminUnlocked = false; adminOpen = false;
-                adminGodMode = false; adminGhostMode = false; adminSwordEquipped = false;
+                adminGodMode = false; adminGhostMode = false; adminSwordEquipped = false; ethanBladeEquipped = false; ethanBladeUnlocked = false; sashaBladeEquipped = false; sashaBladeUnlocked = false;
                 adminForceSnow = false; adminForceIceTraveler = false; adminForceEruption = false;
                 health.max = 10; health.value = Math.min(health.value, 10);
                 player.speed = 120;
                 swordDamage = SWORD_DMG_MAP[currentSword] || 2;
-                if (currentSword === 'admin') { currentSword = 'legendary'; swordDamage = 2; }
+                if (currentSword === 'admin' || currentSword === 'ethanblade' || currentSword === 'sashablade') { currentSword = 'legendary'; swordDamage = 2; }
                 voidRushDmg1 = 15; voidRushDmg2 = 25;
                 stabFrontDmg = 5; stabBackDmg = 15;
                 maceSpinDmg = 12;
@@ -1204,7 +1280,7 @@ function drawOrcWheel() {
     ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
     ctx.fillText(descs[orcWheel.selection], cx, cy + rOuter + 28);
     ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
-    ctx.fillText(`${kl('nav')} select   ${kl('E')} confirm   Esc cancel`, cx, cy + rOuter + 50);
+    ctx.fillText(`${kl('nav')} select   ${kl('E')} confirm   P: command   Esc cancel`, cx, cy + rOuter + 50);
 
     // Execution button (under the wheel) — click to start picking orcs
     const bw = 190, bh = 34;
@@ -1219,6 +1295,50 @@ function drawOrcWheel() {
     ctx.fillStyle = '#ff8080'; ctx.font = 'bold 15px monospace';
     ctx.textBaseline = 'middle';
     ctx.fillText('☠ EXECUTION', cx, orcWheelExecBtn.y + bh / 2);
+    ctx.restore();
+}
+
+// Banner shown while spectating the orc army (camera follows the commander).
+function drawSpectateBanner() {
+    if (typeof spectateOrcArmy === 'undefined' || !spectateOrcArmy) return;
+    const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 250);
+    const bw = 340, bh = 44, bx = canvas.width / 2 - bw / 2, by = 16;
+    ctx.save();
+    ctx.fillStyle = `rgba(40,30,0,${0.7 * pulse + 0.2})`;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = `rgba(255,215,0,${pulse})`; ctx.lineWidth = 2;
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = `rgba(255,225,120,${pulse})`; ctx.font = 'bold 15px monospace';
+    ctx.fillText('👁 SPECTATING ORC ARMY', canvas.width / 2, by + 15);
+    ctx.fillStyle = '#ddd'; ctx.font = '11px monospace';
+    ctx.fillText('P / Esc to return to the king', canvas.width / 2, by + 32);
+    ctx.restore();
+}
+
+// Blackout overlay for choosing a commander — only the orcs are visible; click one.
+function drawCommanderPickOverlay(ox, oy) {
+    if (!commanderPick.active) return;
+    ctx.save();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (const o of friendlyOrcs) {
+        if (!o.alive) continue;
+        drawFriendlyOrc(o, ox, oy);
+        const sx = Math.round(o.x - ox), sy = Math.round(o.y - oy);
+        const ccx = sx + o.width / 2, ccy = sy + o.height / 2;
+        const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 150);
+        ctx.strokeStyle = `rgba(255,215,0,${pulse})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(ccx, ccy, 15, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 22px monospace';
+    ctx.fillText('CHOOSE COMMANDER', canvas.width / 2, 30);
+    ctx.fillStyle = '#ddd'; ctx.font = '14px monospace';
+    ctx.fillText('Click an orc to lead the charge against all monsters', canvas.width / 2, 62);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('The army marches in square formation until the dragon falls    —    Esc: cancel', canvas.width / 2, 84);
     ctx.restore();
 }
 
@@ -1253,5 +1373,38 @@ function drawExecutionOverlay(ox, oy) {
     const n = executionMode.selected.filter(o => o && o.alive).length;
     ctx.fillStyle = '#fff';
     ctx.fillText(`${n} marked    —    D: execute    Esc: cancel`, canvas.width / 2, 84);
+
+    // Kill All button (top, click or press Z)
+    const kbw = 200, kbh = 34;
+    executionKillAllBtn.x = canvas.width / 2 - kbw / 2;
+    executionKillAllBtn.y = 108;
+    executionKillAllBtn.w = kbw;
+    executionKillAllBtn.h = kbh;
+    const kpulse = 0.7 + 0.3 * Math.sin(performance.now() / 200);
+    ctx.fillStyle = `rgba(120,15,15,${kpulse})`;
+    ctx.fillRect(executionKillAllBtn.x, executionKillAllBtn.y, kbw, kbh);
+    ctx.strokeStyle = '#ff5555'; ctx.lineWidth = 2;
+    ctx.strokeRect(executionKillAllBtn.x, executionKillAllBtn.y, kbw, kbh);
+    ctx.fillStyle = '#ffcaca'; ctx.font = 'bold 15px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('☠ KILL ALL  [Z]', canvas.width / 2, executionKillAllBtn.y + kbh / 2);
+
+    // Kill-mode switch: [I] Instant  /  [O] Executioner (click or press I / O)
+    ctx.font = '13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Kill mode:', canvas.width / 2, 162);
+    const pw = 150, ph = 30, pgap = 10;
+    executionInstantBtn.x = canvas.width / 2 - pw - pgap / 2; executionInstantBtn.y = 178; executionInstantBtn.w = pw; executionInstantBtn.h = ph;
+    executionExecBtn.x = canvas.width / 2 + pgap / 2;        executionExecBtn.y = 178; executionExecBtn.w = pw; executionExecBtn.h = ph;
+    function drawPill(btn, on, label) {
+        ctx.fillStyle = on ? 'rgba(120,15,15,0.95)' : 'rgba(40,40,40,0.9)';
+        ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+        ctx.strokeStyle = on ? '#ff5555' : '#666'; ctx.lineWidth = 2;
+        ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+        ctx.fillStyle = on ? '#ffcaca' : '#999'; ctx.font = 'bold 13px monospace';
+        ctx.fillText(label, btn.x + btn.w / 2, btn.y + btn.h / 2);
+    }
+    drawPill(executionInstantBtn, executionInstant, '[I] Instant');
+    drawPill(executionExecBtn, !executionInstant, '[O] Executioner');
     ctx.restore();
 }

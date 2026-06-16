@@ -1110,7 +1110,7 @@ let stabBackDmg = 8;
 let abilityInvincibleUntil = 0;
 const ABILITY_INVINCIBLE_GRACE = 1000; // 1 second after ability ends
 function isAbilityInvincible() {
-    return daggerStab.active || maceSpin.active || (voidRush.state !== 'idle') || gameTime < abilityInvincibleUntil;
+    return daggerStab.active || maceSpin.active || ethanSpin.active || sashaSpin.active || (voidRush.state !== 'idle') || gameTime < abilityInvincibleUntil;
 }
 
 function findNearestStabTarget() {
@@ -1349,6 +1349,134 @@ function updateMaceSpin() {
     if (inLavaZone && lavaMonster.alive) spinHit(lavaMonster, 'lavaMonster');
 }
 
+// ── Ethan Spin Ability (Ethanblade) ──────────────────────────
+const ethanSpin = {
+    active: false,
+    startTime: 0,
+    cooldownUntil: 0,
+    hitSet: new Set(),
+};
+const ETHAN_SPIN_DURATION = 700;
+const ETHAN_SPIN_COOLDOWN = 8000;
+const ETHAN_SPIN_RANGE = 80;
+let ethanSpinDmg = 50;
+
+function useEthanSpin() {
+    if (currentSword !== 'ethanblade') return;
+    if (ethanSpin.active) return;
+    if (gameTime < ethanSpin.cooldownUntil) {
+        const remaining = Math.ceil((ethanSpin.cooldownUntil - gameTime) / 1000);
+        addNotification(`Ethan Spin cooldown: ${remaining}s`, 1500, 'rgba(60,220,90,1)', 'rgba(0,50,10,0.8)');
+        return;
+    }
+    ethanSpin.active = true;
+    ethanSpin.startTime = gameTime;
+    ethanSpin.cooldownUntil = gameTime + ETHAN_SPIN_DURATION + ETHAN_SPIN_COOLDOWN;
+    ethanSpin.hitSet = new Set();
+    abilityInvincibleUntil = gameTime + ETHAN_SPIN_DURATION + ABILITY_INVINCIBLE_GRACE;
+    provokeOrcCircle(null); // rally the defense ring
+}
+
+function updateEthanSpin() {
+    if (!ethanSpin.active) return;
+    const elapsed = gameTime - ethanSpin.startTime;
+    if (elapsed >= ETHAN_SPIN_DURATION) {
+        ethanSpin.active = false;
+        return;
+    }
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    function spinHit(mob, id) {
+        if (!mob.alive || ethanSpin.hitSet.has(id)) return;
+        const dx = (mob.x + mob.width / 2) - pcx, dy = (mob.y + mob.height / 2) - pcy;
+        if (Math.hypot(dx, dy) < ETHAN_SPIN_RANGE + mob.width / 2) {
+            ethanSpin.hitSet.add(id);
+            const spinDmg = ethanSpinDmg * getRingMultiplier();
+            mob.hp -= spinDmg;
+            addNotification(`Ethan Spin! -${spinDmg} HP`, 1000, 'rgba(60,220,90,1)', 'rgba(0,50,10,0.9)');
+            if (mob === voidSentinel && !voidSentinel.aggro) {
+                voidSentinel.aggro = true;
+                addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            }
+            if (mob === lavaMonster && !lavaMonster.aggro) {
+                lavaMonster.aggro = true;
+                addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+            }
+            if (mob.hp <= 0) { mob.hp = 0; handleStabKill(mob); }
+        }
+    }
+    if (spider.active) spinHit(spider, 'spider');
+    if (seaSnake.active) spinHit(seaSnake, 'seaSnake');
+    for (let i = 0; i < orcs.length; i++) spinHit(orcs[i], 'orc' + i);
+    if (troll.alive) spinHit(troll, 'troll');
+    if (dragon.alive) spinHit(dragon, 'dragon');
+    if (inArena && voidSentinel.alive) spinHit(voidSentinel, 'voidSentinel');
+    if (inLavaZone && lavaMonster.alive) spinHit(lavaMonster, 'lavaMonster');
+}
+
+// ── Sasha Spin Ability (Sashablade) ──────────────────────────
+const sashaSpin = {
+    active: false,
+    startTime: 0,
+    cooldownUntil: 0,
+    hitSet: new Set(),
+};
+const SASHA_SPIN_DURATION = 700;
+const SASHA_SPIN_COOLDOWN = 8000;
+const SASHA_SPIN_RANGE = 80;
+let sashaSpinDmg = 50;
+
+function useSashaSpin() {
+    if (currentSword !== 'sashablade') return;
+    if (sashaSpin.active) return;
+    if (gameTime < sashaSpin.cooldownUntil) {
+        const remaining = Math.ceil((sashaSpin.cooldownUntil - gameTime) / 1000);
+        addNotification(`Sasha Spin cooldown: ${remaining}s`, 1500, 'rgba(255,60,60,1)', 'rgba(50,0,0,0.8)');
+        return;
+    }
+    sashaSpin.active = true;
+    sashaSpin.startTime = gameTime;
+    sashaSpin.cooldownUntil = gameTime + SASHA_SPIN_DURATION + SASHA_SPIN_COOLDOWN;
+    sashaSpin.hitSet = new Set();
+    abilityInvincibleUntil = gameTime + SASHA_SPIN_DURATION + ABILITY_INVINCIBLE_GRACE;
+    provokeOrcCircle(null); // rally the defense ring
+}
+
+function updateSashaSpin() {
+    if (!sashaSpin.active) return;
+    const elapsed = gameTime - sashaSpin.startTime;
+    if (elapsed >= SASHA_SPIN_DURATION) {
+        sashaSpin.active = false;
+        return;
+    }
+    const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
+    function spinHit(mob, id) {
+        if (!mob.alive || sashaSpin.hitSet.has(id)) return;
+        const dx = (mob.x + mob.width / 2) - pcx, dy = (mob.y + mob.height / 2) - pcy;
+        if (Math.hypot(dx, dy) < SASHA_SPIN_RANGE + mob.width / 2) {
+            sashaSpin.hitSet.add(id);
+            const spinDmg = sashaSpinDmg * getRingMultiplier();
+            mob.hp -= spinDmg;
+            addNotification(`Sasha Spin! -${spinDmg} HP`, 1000, 'rgba(255,60,60,1)', 'rgba(50,0,0,0.9)');
+            if (mob === voidSentinel && !voidSentinel.aggro) {
+                voidSentinel.aggro = true;
+                addNotification('Noli awakens!', 3000, 'rgba(200,140,255,1)', 'rgba(40,0,60,0.9)');
+            }
+            if (mob === lavaMonster && !lavaMonster.aggro) {
+                lavaMonster.aggro = true;
+                addNotification('The Lava Monster awakens!', 3000, 'rgba(255,100,20,1)', 'rgba(80,20,0,0.95)');
+            }
+            if (mob.hp <= 0) { mob.hp = 0; handleStabKill(mob); }
+        }
+    }
+    if (spider.active) spinHit(spider, 'spider');
+    if (seaSnake.active) spinHit(seaSnake, 'seaSnake');
+    for (let i = 0; i < orcs.length; i++) spinHit(orcs[i], 'orc' + i);
+    if (troll.alive) spinHit(troll, 'troll');
+    if (dragon.alive) spinHit(dragon, 'dragon');
+    if (inArena && voidSentinel.alive) spinHit(voidSentinel, 'voidSentinel');
+    if (inLavaZone && lavaMonster.alive) spinHit(lavaMonster, 'lavaMonster');
+}
+
 // ── Saber (Savior Quest reward) ──────────────────────────────
 let saberUnlocked = false;
 let infinitePortalUnlocked = false;
@@ -1525,17 +1653,20 @@ function dropSnowflakes() {
     addNotification(`+${amt} Snowflake${amt > 1 ? 's' : ''}`, 1200, 'rgba(180,220,255,1)', 'rgba(20,40,60,0.8)');
 }
 
-// ── The Ring (sneak peak — v6.0.0) ───────────────────────────
+// ── The Ring (Ethanblade-only) ───────────────────────────────
+// The Ring is only available to players wielding the Ethanblade.
 let ringOwned = false;
 const RING_TEMPT_WINDOW = 5000; // 5 sec to press R after a kill
 const ringTempt = { active: false, startTime: 0 };
+
+// ── Friendly Orcs (commandable via the C wheel) ──────────────
 let friendlyOrcs = [];
 const FRIENDLY_ORC_DETECT_RANGE = T * 8;
 const FRIENDLY_ORC_ATTACK_RATE = 1000; // 1 dmg per sec
 
 // ── Orc Command Wheel ────────────────────────────────────────
 // Formation the friendly orcs hold. Chosen via the command wheel (C key).
-//   'delta'  — Attack Delta: 4x4 grid behind player, auto-engage nearby enemies (default)
+//   'delta'  — Attack Delta: 6x5 grid behind player, auto-engage nearby enemies (default)
 //   'square' — Square March: diamond formation behind player, still chases nearby enemies
 //   'circle' — Defense Circle: ring around player that blocks enemies; charges the attacker
 //              briefly when a projectile / void rush / mace spin strikes the ring, then reforms
@@ -1574,8 +1705,20 @@ function canOpenOrcWheel() {
 // From the command wheel, "Execution" blacks out everything but the orcs. Click orcs to
 // mark them, press D to condemn the marked ones — the king's guards then hunt them down.
 const orcWheelExecBtn = { x: 0, y: 0, w: 0, h: 0 };
+const executionKillAllBtn = { x: 0, y: 0, w: 0, h: 0 };
+const executionInstantBtn = { x: 0, y: 0, w: 0, h: 0 }; // "I" instant pill
+const executionExecBtn = { x: 0, y: 0, w: 0, h: 0 };     // "O" executioner pill
 const executionMode = { active: false, selected: [] }; // selected = friendly-orc refs
+let executionInstant = false; // I = instant kill, O = executioner guards hunt them down
 let executioners = [];
+
+// ── Commander Mode ───────────────────────────────────────────
+// From the wheel, press P to pick a commander orc. The army forms square march
+// behind that commander and sweeps the map killing hostile monsters, then reverts
+// to normal once the dragon is slain (or no enemies remain).
+const commanderPick = { active: false };
+const commanderMode = { active: false, commander: null, prevFormation: 'delta', dragonWasAlive: false };
+let spectateOrcArmy = false; // camera follows the army while a commander leads (P toggles)
 const EXECUTIONER_SPEED_MULT = 1.4;
 const EXECUTIONER_DMG = 5;
 
@@ -1607,15 +1750,37 @@ function executionPickAt(wx, wy) {
     }
 }
 
+// Carry out the sentence on a set of orcs, honoring the instant/executioner mode.
+function condemnOrcs(condemned, allText) {
+    if (!condemned.length) return;
+    const plural = condemned.length > 1 ? 's' : '';
+    const prefix = allText ? `All ${condemned.length}` : `${condemned.length}`;
+    if (executionInstant) {
+        for (const o of condemned) { o.condemned = true; o.alive = false; }
+        addNotification(`${prefix} orc${plural} executed instantly!`,
+            2500, 'rgba(255,120,120,1)', 'rgba(60,0,0,0.85)');
+    } else {
+        for (const o of condemned) o.condemned = true;
+        spawnExecutioners(condemned.length);
+        addNotification(`${prefix} orc${plural} condemned! Guards move in.`,
+            2500, 'rgba(255,120,120,1)', 'rgba(60,0,0,0.85)');
+    }
+}
+
 function confirmExecution() {
     const condemned = executionMode.selected.filter(o => o && o.alive);
     executionMode.active = false;
     executionMode.selected = [];
-    if (!condemned.length) return;
-    for (const o of condemned) o.condemned = true;
-    spawnExecutioners(condemned.length);
-    addNotification(`${condemned.length} orc${condemned.length > 1 ? 's' : ''} condemned! Guards move in.`,
-        2500, 'rgba(255,120,120,1)', 'rgba(60,0,0,0.85)');
+    condemnOrcs(condemned, false);
+}
+
+// Condemn every living friendly orc at once (Kill All).
+function executionKillAll() {
+    if (!executionMode.active) return;
+    const condemned = friendlyOrcs.filter(o => o.alive);
+    executionMode.active = false;
+    executionMode.selected = [];
+    condemnOrcs(condemned, true);
 }
 
 function spawnExecutioners(condemnedCount) {
@@ -1662,6 +1827,157 @@ function updateExecutioners(dt) {
     }
 }
 
+// ── Commander Mode logic ─────────────────────────────────────
+function enterCommanderPick() {
+    if (!friendlyOrcs.some(o => o.alive)) {
+        addNotification('No orcs to command.', 1500, 'rgba(255,200,100,1)', 'rgba(60,30,0,0.85)');
+        return;
+    }
+    orcWheel.open = false;
+    commanderPick.active = true;
+}
+
+function cancelCommanderPick() {
+    commanderPick.active = false;
+}
+
+// Pick the orc at world-space (wx, wy) as the commander.
+function commanderPickAt(wx, wy) {
+    for (const o of friendlyOrcs) {
+        if (!o.alive) continue;
+        if (wx >= o.x - 3 && wx <= o.x + o.width + 3 && wy >= o.y - 3 && wy <= o.y + o.height + 3) {
+            startCommanderMode(o);
+            return;
+        }
+    }
+}
+
+function startCommanderMode(commander) {
+    commanderPick.active = false;
+    commanderMode.active = true;
+    commanderMode.commander = commander;
+    commanderMode.prevFormation = orcFormation;
+    commanderMode.dragonWasAlive = (typeof dragon !== 'undefined' && dragon.alive);
+    orcFormation = 'square';
+    addNotification('Commander appointed! The orcs march to war.', 2500, 'rgba(255,215,0,1)', 'rgba(50,40,0,0.9)');
+}
+
+function endCommanderMode(msg) {
+    commanderMode.active = false;
+    commanderMode.commander = null;
+    commanderMode.dragonWasAlive = false;
+    spectateOrcArmy = false; // return the camera to the player
+    orcFormation = commanderMode.prevFormation || 'delta';
+    if (msg) addNotification(msg, 2500, 'rgba(255,215,0,1)', 'rgba(50,40,0,0.9)');
+}
+
+// One orc's move-and-attack step against a target (shared with the normal loop's logic).
+function orcCombatStep(f, target, dt) {
+    const fcx = f.x + f.width / 2, fcy = f.y + f.height / 2;
+    const tcx = target.x + target.width / 2, tcy = target.y + target.height / 2;
+    const dx = tcx - fcx, dy = tcy - fcy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > T * 0.9) {
+        f.x += (dx / dist) * f.speed * dt;
+        f.y += (dy / dist) * f.speed * dt;
+    } else if (gameTime - f.lastAttack >= f.attackCooldown) {
+        f.lastAttack = gameTime;
+        const playerDmg = swordDamage * getVoidMultiplier() * getRingMultiplier();
+        f.damage = Math.max(1, playerDmg);
+        target.hp -= f.damage;
+        if (target.hp <= 0) { target.hp = 0; handleStabKill(target); }
+        else { f.hp -= 1; }
+    }
+}
+
+// A follower's slot in the square/diamond trailing behind the commander, oriented
+// along the commander's march direction.
+function commanderFollowSlot(idx, ccx, ccy, dirx, diry) {
+    const rows = ORC_DIAMOND_ROWS;
+    let r = 0, k = idx;
+    while (r < rows.length && k >= rows[r]) { k -= rows[r]; r++; }
+    if (r >= rows.length) { r = rows.length - 1; k = 0; }
+    const size = rows[r];
+    const side = k - (size - 1) / 2;
+    const gap = T * 0.8;
+    const backx = -dirx, backy = -diry;     // behind the commander
+    const sidex = -diry, sidey = dirx;       // perpendicular
+    return {
+        x: ccx + backx * (r + 1) * gap + sidex * side * gap,
+        y: ccy + backy * (r + 1) * gap + sidey * side * gap,
+    };
+}
+
+// The army's objective in a FIXED priority order, regardless of distance:
+// spider → sea snake → troll → enemy orcs → void sentinel → lava monster → dragon (last).
+function commanderObjective() {
+    if (typeof spider !== 'undefined' && spider.active && spider.alive) return spider;
+    if (typeof seaSnake !== 'undefined' && seaSnake.active && seaSnake.alive) return seaSnake;
+    if (typeof troll !== 'undefined' && troll.alive) return troll;
+    if (typeof orcs !== 'undefined') { for (const o of orcs) if (o.alive) return o; }
+    if (typeof voidSentinel !== 'undefined' && inArena && voidSentinel.alive) return voidSentinel;
+    if (typeof lavaMonster !== 'undefined' && inLavaZone && lavaMonster.alive) return lavaMonster;
+    if (typeof dragon !== 'undefined' && dragon.alive) return dragon;
+    return null;
+}
+
+function updateCommanderMode(dt) {
+    let cmd = commanderMode.commander;
+    if (!cmd || !cmd.alive) {
+        cmd = friendlyOrcs.find(o => o.alive) || null;
+        commanderMode.commander = cmd;
+    }
+    if (!cmd) { endCommanderMode('The orcs have fallen. Command ends.'); return; }
+
+    const ccx = cmd.x + cmd.width / 2, ccy = cmd.y + cmd.height / 2;
+    const dragonAlive = (typeof dragon !== 'undefined' && dragon.alive);
+    if (dragonAlive) commanderMode.dragonWasAlive = true;
+
+    const objective = commanderObjective(); // fixed priority order, ignore distance
+
+    // End: dragon slain (primary goal) or no hostile monsters remain.
+    if (commanderMode.dragonWasAlive && !dragonAlive) {
+        endCommanderMode('The dragon falls! The orcs stand down.');
+        return;
+    }
+    if (!objective) {
+        endCommanderMode('All enemies slain! The orcs return to your side.');
+        return;
+    }
+
+    const objCx = objective.x + objective.width / 2, objCy = objective.y + objective.height / 2;
+    let dirx = objCx - ccx, diry = objCy - ccy;
+    const dl = Math.hypot(dirx, diry) || 1; dirx /= dl; diry /= dl;
+
+    let followIdx = 0;
+    for (const f of friendlyOrcs) {
+        if (!f.alive) continue;
+        f.speed = player.speed;
+        if (f === cmd) {
+            orcCombatStep(f, objective, dt); // commander charges the priority target
+        } else {
+            const fcx = f.x + f.width / 2, fcy = f.y + f.height / 2;
+            // The whole army focuses the same objective — pile on once close, else march behind the commander.
+            const distToObj = Math.hypot(fcx - objCx, fcy - objCy);
+            if (distToObj < FRIENDLY_ORC_DETECT_RANGE) {
+                orcCombatStep(f, objective, dt);
+            } else {
+                const slot = commanderFollowSlot(followIdx, ccx, ccy, dirx, diry);
+                const dx = slot.x - fcx, dy = slot.y - fcy;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 3) {
+                    const step = Math.min(dist, f.speed * dt);
+                    f.x += (dx / dist) * step;
+                    f.y += (dy / dist) * step;
+                }
+            }
+            followIdx++;
+        }
+        if (f.hp <= 0) f.alive = false;
+    }
+    friendlyOrcs = friendlyOrcs.filter(o => o.alive);
+}
+
 // Provoke the defense circle: orcs break the ring and hunt the attacker, then reform.
 function provokeOrcCircle(target) {
     if (orcFormation !== 'circle' || orcCircleAggro.active) return;
@@ -1674,10 +1990,13 @@ function provokeOrcCircle(target) {
     addNotification('Orcs charge the attacker!', 1500, 'rgba(180,255,180,1)', 'rgba(0,40,10,0.85)');
 }
 
-function getRingMultiplier() { return ringOwned ? 2 : 1; }
+// The Ring only empowers a player actively wielding the Ethanblade.
+// The Ring is available to Ethanblade and Sashablade wielders.
+function hasRingSword() { return ethanBladeEquipped || sashaBladeEquipped; }
+function getRingMultiplier() { return (ringOwned && hasRingSword()) ? 2 : 1; }
 
 function tempt() {
-    if (!ringOwned) return;
+    if (!ringOwned || !hasRingSword()) return;
     health.value = Math.min(health.max, health.value + 1);
     for (const f of friendlyOrcs) if (f.alive) f.hp = f.maxHp;
     ringTempt.active = true;
@@ -1699,8 +2018,8 @@ function acceptTempt() {
     return true;
 }
 
-const FRIENDLY_ORC_MAX = 16;
-const FRIENDLY_ORC_COLS = 4;
+const FRIENDLY_ORC_MAX = 30;
+const FRIENDLY_ORC_COLS = 6;
 
 function nextFreeOrcSlot() {
     const used = new Set(friendlyOrcs.filter(o => o.alive).map(o => o.slot));
@@ -1709,9 +2028,9 @@ function nextFreeOrcSlot() {
 }
 
 function orcSlotPosition(slot) {
-    // Formation: 4x4 grid behind the player. Row 1 nearest, row 4 farthest.
-    const row = Math.floor(slot / FRIENDLY_ORC_COLS) + 1;     // 1..4
-    const side = (slot % FRIENDLY_ORC_COLS) - (FRIENDLY_ORC_COLS - 1) / 2; // -1.5..+1.5
+    // Formation: 6x5 grid behind the player. Row 1 nearest, row 5 farthest.
+    const row = Math.floor(slot / FRIENDLY_ORC_COLS) + 1;     // 1..5
+    const side = (slot % FRIENDLY_ORC_COLS) - (FRIENDLY_ORC_COLS - 1) / 2; // -2.5..+2.5
     const pcx = player.x + player.width / 2;
     const pcy = player.y + player.height / 2;
     const gap = T * 0.9;
@@ -1734,9 +2053,9 @@ function orcFormationBasis() {
     else /* west */                    return { bx: 1,  by: 0,  sxv: 0, syv: 1 };
 }
 
-// Square March: a diamond of rows 1,2,3,4,3,2,1 (16 orcs) trailing behind the player.
+// Square March: a diamond of rows 1,2,3,4,5,5,4,3,2,1 (30 orcs) trailing behind the player.
 // The tip (slot 0, "corner man") follows the player; the diamond widens then narrows behind it.
-const ORC_DIAMOND_ROWS = [1, 2, 3, 4, 3, 2, 1];
+const ORC_DIAMOND_ROWS = [1, 2, 3, 4, 5, 5, 4, 3, 2, 1];
 function orcSquareSlotPosition(slot) {
     let r = 0, idx = slot;
     while (r < ORC_DIAMOND_ROWS.length && idx >= ORC_DIAMOND_ROWS[r]) { idx -= ORC_DIAMOND_ROWS[r]; r++; }
@@ -2552,9 +2871,9 @@ function respawnMonsters() {
     if (!peakPassageOpen) openPeakPassage();
 }
 
-const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 10, voidstar: 7, saber: 12, admin: 1000 };
-const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (10 dmg)', voidstar: 'Void Star (7 dmg)', saber: 'Saber (12 dmg + Throw)', admin: 'Admin Sword (1k dmg)' };
-const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], saber: ['rgba(255,70,70,1)', 'rgba(60,0,0,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
+const SWORD_DMG_MAP = { legendary: 2, kings: 3, dagger: 3, icespear: 5, dragon: 5, firemace: 10, voidstar: 7, saber: 12, ethanblade: 20, sashablade: 20, admin: 1000 };
+const SWORD_NAME_MAP = { legendary: 'Legendary Sword (2 dmg)', kings: "King's Sword (3 dmg)", dagger: 'Dagger (3 dmg + Stab)', icespear: 'Ice Spear (5 dmg)', dragon: 'Dragon Sword (5 dmg)', firemace: 'Firemace (10 dmg)', voidstar: 'Void Star (7 dmg)', saber: 'Saber (12 dmg + Throw)', ethanblade: 'Ethanblade (20 dmg + Ethan Spin)', sashablade: 'Sashablade (20 dmg + Sasha Spin)', admin: 'Admin Sword (1k dmg)' };
+const SWORD_COLOR_MAP = { legendary: ['rgba(200,200,255,1)', 'rgba(20,20,60,0.9)'], kings: ['rgba(255,215,0,1)', 'rgba(40,30,0,0.9)'], dagger: ['rgba(255,180,50,1)', 'rgba(60,30,0,0.9)'], icespear: ['rgba(180,220,255,1)', 'rgba(20,40,60,0.9)'], dragon: ['rgba(255,100,50,1)', 'rgba(60,10,0,0.9)'], firemace: ['rgba(255,100,20,1)', 'rgba(80,20,0,0.9)'], voidstar: ['rgba(200,140,255,1)', 'rgba(40,0,60,0.9)'], saber: ['rgba(255,70,70,1)', 'rgba(60,0,0,0.9)'], ethanblade: ['rgba(60,220,90,1)', 'rgba(0,50,10,0.9)'], sashablade: ['rgba(255,45,45,1)', 'rgba(50,0,0,0.9)'], admin: ['rgba(255,50,50,1)', 'rgba(60,0,0,0.9)'] };
 
 function getSwordOrder() {
     const order = ['legendary', 'kings'];
@@ -2564,6 +2883,8 @@ function getSwordOrder() {
     if (firemaceUnlocked) order.push('firemace');
     if (voidStarSwordUnlocked) order.push('voidstar');
     if (saberUnlocked) order.push('saber');
+    if (ethanBladeEquipped) order.push('ethanblade');
+    if (sashaBladeEquipped) order.push('sashablade');
     if (adminSwordEquipped) order.push('admin');
     return order;
 }
@@ -3444,7 +3765,7 @@ function updateOrcs(dt) {
     orcs = orcs.filter(o => o.alive);
 }
 
-// ── Friendly Orcs (from Ring temptation) ─────────────────────
+// ── Friendly Orcs ────────────────────────────────────────────
 function findNearestEnemyForOrc(cx, cy, range) {
     let nearest = null, bestD = range;
     function tryMob(m) {
@@ -3507,6 +3828,11 @@ function blockEnemiesFromCircle(aliveList) {
 }
 
 function updateFriendlyOrcs(dt) {
+    if (commanderMode.active) {
+        if (!friendlyOrcs.some(o => o.alive)) { endCommanderMode('The orcs have fallen. Command ends.'); return; }
+        updateCommanderMode(dt);
+        return;
+    }
     if (!friendlyOrcs.length) return;
     const pcx = player.x + player.width / 2, pcy = player.y + player.height / 2;
     const aliveList = friendlyOrcs.filter(o => o.alive);

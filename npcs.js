@@ -990,6 +990,23 @@ function drawAllFriendlyOrcs(ox, oy) {
     for (const orc of friendlyOrcs) drawFriendlyOrc(orc, ox, oy);
 }
 
+// Yellow ring + star over the active commander during Commander Mode.
+function drawCommanderMarker(ox, oy) {
+    if (typeof commanderMode === 'undefined' || !commanderMode.active) return;
+    const o = commanderMode.commander;
+    if (!o || !o.alive) return;
+    const ccx = Math.round(o.x + o.width / 2 - ox), ccy = Math.round(o.y + o.height / 2 - oy);
+    const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 200);
+    ctx.save();
+    ctx.strokeStyle = `rgba(255,215,0,${pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ccx, ccy, 16, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `rgba(255,215,0,${pulse})`;
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('★', ccx, ccy - 15);
+    ctx.restore();
+}
+
 function drawTroll(ox, oy) {
     if (typeof troll === 'undefined' || !troll.alive) return;
     if (typeof inFutureWorld !== 'undefined' && inFutureWorld) { drawRobotTroll(ox, oy); return; }

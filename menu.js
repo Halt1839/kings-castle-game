@@ -44,6 +44,10 @@ function saveGame(slot) {
         goldCount,
         swordDamage,
         currentSword,
+        ethanBladeUnlocked,
+        ethanBladeEquipped,
+        sashaBladeUnlocked,
+        sashaBladeEquipped,
         kingSwordUnlocked,
         dragonSwordUnlocked,
         weaponryBuilt,
@@ -159,6 +163,13 @@ function loadGame(slot) {
     if (s.goldCount !== undefined) goldCount = s.goldCount;
     if (s.swordDamage !== undefined) swordDamage = s.swordDamage;
     if (s.currentSword !== undefined) currentSword = s.currentSword;
+    if (s.ethanBladeUnlocked !== undefined) ethanBladeUnlocked = s.ethanBladeUnlocked;
+    if (s.ethanBladeEquipped !== undefined) ethanBladeEquipped = s.ethanBladeEquipped;
+    if (s.sashaBladeUnlocked !== undefined) sashaBladeUnlocked = s.sashaBladeUnlocked;
+    if (s.sashaBladeEquipped !== undefined) sashaBladeEquipped = s.sashaBladeEquipped;
+    // Safety: don't load stuck on a special blade if it isn't actually equipped
+    if (currentSword === 'ethanblade' && !ethanBladeEquipped) { currentSword = 'legendary'; swordDamage = 2; }
+    if (currentSword === 'sashablade' && !sashaBladeEquipped) { currentSword = 'legendary'; swordDamage = 2; }
     if (s.kingSwordUnlocked !== undefined) kingSwordUnlocked = s.kingSwordUnlocked;
     if (s.dragonSwordUnlocked !== undefined) dragonSwordUnlocked = s.dragonSwordUnlocked;
     if (s.weaponryBuilt !== undefined) { weaponryBuilt = false; if (s.weaponryBuilt) buildWeaponryRoom(true); }
@@ -217,7 +228,8 @@ function loadGame(slot) {
     orcFormation = (s.orcFormation && ORC_FORMATION_LIST.includes(s.orcFormation)) ? s.orcFormation : 'delta';
     orcWheel.open = false;
     orcCircleAggro.active = false; orcCircleAggro.target = null;
-    executionMode.active = false; executionMode.selected = []; executioners = [];
+    executionMode.active = false; executionMode.selected = []; executionInstant = false; executioners = [];
+    commanderPick.active = false; commanderMode.active = false; commanderMode.commander = null; commanderMode.dragonWasAlive = false; spectateOrcArmy = false;
     if (s.extraLevels !== undefined) extraLevels = s.extraLevels;
     if (s.jackFrostQuestActive !== undefined) jackFrostQuestActive = s.jackFrostQuestActive;
     if (s.jackFrostQuestComplete !== undefined) jackFrostQuestComplete = s.jackFrostQuestComplete;
@@ -316,6 +328,7 @@ function resetGameState() {
     dragon.fireTimer = 0; dragon.windingUp = false; dragon.firing = false;
     dragon.stunned = false; dragon.stunUntil = 0;
     goldCount = 0; swordDamage = 2; currentSword = 'legendary'; kingSwordUnlocked = false; dragonSwordUnlocked = false;
+    ethanBladeEquipped = false; ethanBladeUnlocked = false; sashaBladeEquipped = false; sashaBladeUnlocked = false;
     weaponryBuilt = false; guestRoomBuilt = false; designRoomBuilt = false;
     currentDesign = 'default'; goldDesignUnlocked = false; voidDesignUnlocked = false;
     dragonKills = 0; dragonRespawnTime = -Infinity;
@@ -334,7 +347,8 @@ function resetGameState() {
     snowflakeCount = 0; iceTravelerDialog.active = false; iceTravelerShopOpen = false; iceTravelerWasPresent = false; snowWasActive = false;
     ringOwned = false; ringTempt.active = false; ringTempt.startTime = 0; friendlyOrcs = [];
     orcFormation = 'delta'; orcWheel.open = false; orcCircleAggro.active = false; orcCircleAggro.target = null;
-    executionMode.active = false; executionMode.selected = []; executioners = [];
+    executionMode.active = false; executionMode.selected = []; executionInstant = false; executioners = [];
+    commanderPick.active = false; commanderMode.active = false; commanderMode.commander = null; commanderMode.dragonWasAlive = false; spectateOrcArmy = false;
     iceTrap.active = false; iceTrap.hits = 0;
     jackFrostQuestActive = false; jackFrostQuestComplete = false; icePalaceUnlocked = false;
     jackFrostKills.spider = false; jackFrostKills.seaSnake = false; jackFrostKills.orcs = false; jackFrostKills.troll = false; jackFrostKills.dragon = false;

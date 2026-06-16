@@ -638,6 +638,102 @@ function drawMaceSpin(ox, oy) {
     ctx.restore();
 }
 
+function drawEthanSpin(ox, oy) {
+    if (!ethanSpin.active) return;
+    const elapsed = gameTime - ethanSpin.startTime;
+    const t = elapsed / ETHAN_SPIN_DURATION;
+    const pcx = player.x + player.width / 2 - ox, pcy = player.y + player.height / 2 - oy;
+    const angle = (performance.now() / 55) % (Math.PI * 2);
+    const radius = ETHAN_SPIN_RANGE;
+
+    ctx.save();
+    const alpha = 1 - t * 0.5;
+    // Green ring
+    ctx.strokeStyle = `rgba(60,220,90,${alpha * 0.6})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.stroke();
+
+    // Inner glow
+    const grad = ctx.createRadialGradient(pcx, pcy, 0, pcx, pcy, radius);
+    grad.addColorStop(0, `rgba(40,255,90,${alpha * 0.15})`);
+    grad.addColorStop(0.7, `rgba(0,200,60,${alpha * 0.08})`);
+    grad.addColorStop(1, 'rgba(0,200,60,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.fill();
+
+    // Spinning blade orbs (3 green orbs)
+    for (let i = 0; i < 3; i++) {
+        const a = angle + (Math.PI * 2 / 3) * i;
+        const bx = pcx + Math.cos(a) * radius * 0.85;
+        const by = pcy + Math.sin(a) * radius * 0.85;
+        ctx.fillStyle = `rgba(120,255,140,${alpha * 0.3})`;
+        ctx.beginPath(); ctx.arc(bx, by, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(20,200,50,${alpha * 0.8})`;
+        ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(200,255,200,${alpha * 0.9})`;
+        ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Spark particles
+    for (let i = 0; i < 6; i++) {
+        const sa = angle * 2 + (Math.PI * 2 / 6) * i;
+        const sr = radius * (0.4 + 0.5 * Math.sin(performance.now() / 80 + i));
+        const sx = pcx + Math.cos(sa) * sr;
+        const sy = pcy + Math.sin(sa) * sr;
+        ctx.fillStyle = `rgba(150,255,150,${alpha * 0.6})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawSashaSpin(ox, oy) {
+    if (!sashaSpin.active) return;
+    const elapsed = gameTime - sashaSpin.startTime;
+    const t = elapsed / SASHA_SPIN_DURATION;
+    const pcx = player.x + player.width / 2 - ox, pcy = player.y + player.height / 2 - oy;
+    const angle = (performance.now() / 55) % (Math.PI * 2);
+    const radius = SASHA_SPIN_RANGE;
+
+    ctx.save();
+    const alpha = 1 - t * 0.5;
+    // Red ring
+    ctx.strokeStyle = `rgba(255,45,45,${alpha * 0.6})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.stroke();
+
+    // Inner glow
+    const grad = ctx.createRadialGradient(pcx, pcy, 0, pcx, pcy, radius);
+    grad.addColorStop(0, `rgba(255,60,60,${alpha * 0.15})`);
+    grad.addColorStop(0.7, `rgba(200,0,0,${alpha * 0.08})`);
+    grad.addColorStop(1, 'rgba(200,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, Math.PI * 2); ctx.fill();
+
+    // Spinning blade orbs (3 red orbs)
+    for (let i = 0; i < 3; i++) {
+        const a = angle + (Math.PI * 2 / 3) * i;
+        const bx = pcx + Math.cos(a) * radius * 0.85;
+        const by = pcy + Math.sin(a) * radius * 0.85;
+        ctx.fillStyle = `rgba(255,130,130,${alpha * 0.3})`;
+        ctx.beginPath(); ctx.arc(bx, by, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(200,20,20,${alpha * 0.8})`;
+        ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,210,210,${alpha * 0.9})`;
+        ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Spark particles
+    for (let i = 0; i < 6; i++) {
+        const sa = angle * 2 + (Math.PI * 2 / 6) * i;
+        const sr = radius * (0.4 + 0.5 * Math.sin(performance.now() / 80 + i));
+        const sx = pcx + Math.cos(sa) * sr;
+        const sy = pcy + Math.sin(sa) * sr;
+        ctx.fillStyle = `rgba(255,150,150,${alpha * 0.6})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
+
 // ── Void Rush Visual Effects ────────────────────────────────
 
 function drawVoidRush(ox, oy) {
@@ -1013,8 +1109,10 @@ function drawKing(ox, oy) {
             ctx.fillStyle = sc.core; ctx.fillRect(-0.5, -16, 1, 14);
         } else {
             // Sword blade
-            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : currentSword === 'ethanblade' ? '#3CDC5A' : currentSword === 'sashablade' ? '#FF2A2A' : '#C0C0C0';
             ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
+            if (currentSword === 'ethanblade') { ctx.fillStyle = '#CFFFD8'; ctx.fillRect(-0.5, -14, 1, 12); }
+            if (currentSword === 'sashablade') { ctx.fillStyle = '#FFD0D0'; ctx.fillRect(-0.5, -14, 1, 12); }
             // Guard
             ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
             // Handle
@@ -1158,8 +1256,10 @@ function drawKingInBoat(ox, oy) {
             ctx.fillStyle = '#FF2020'; ctx.fillRect(-1.5, -16, 3, 14);
             ctx.fillStyle = '#FFD0D0'; ctx.fillRect(-0.5, -16, 1, 14);
         } else {
-            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : '#C0C0C0';
+            const swordColor = currentSword === 'dragon' ? '#FF6633' : currentSword === 'kings' ? '#FFD700' : currentSword === 'ethanblade' ? '#3CDC5A' : currentSword === 'sashablade' ? '#FF2A2A' : '#C0C0C0';
             ctx.fillStyle = swordColor; ctx.fillRect(-1, -14, 3, 12);
+            if (currentSword === 'ethanblade') { ctx.fillStyle = '#CFFFD8'; ctx.fillRect(-0.5, -14, 1, 12); }
+            if (currentSword === 'sashablade') { ctx.fillStyle = '#FFD0D0'; ctx.fillRect(-0.5, -14, 1, 12); }
             ctx.fillStyle = '#DAA520'; ctx.fillRect(-3, -2, 7, 2);
             ctx.fillStyle = '#8B4513'; ctx.fillRect(-1, 0, 3, 4);
         }
